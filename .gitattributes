@@ -1,0 +1,4 @@
+# Los documentos de docs/ y los scripts .sh se guardan y se descargan con saltos de línea LF,
+# para que docs/verificar.sh funcione igual en Windows, Mac y Linux.
+docs/** text eol=lf
+*.sh text eol=lf
