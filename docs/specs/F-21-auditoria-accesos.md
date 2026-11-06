@@ -1,7 +1,7 @@
 ---
 id: F-21
 titulo: Consulta de la auditoría de accesos
-version: 0.1.1
+version: 0.2.0
 fecha: 2026-11-06
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -20,7 +20,7 @@ El auditor revisa quién accedió a la información de los pacientes, cuándo, a
 1. El auditor entra a *Auditoría de accesos*.
 2. El sistema muestra todos los eventos de acceso, del más reciente al más antiguo, con el filtro *Todos* seleccionado.
 3. Cada evento muestra su fecha y hora, el usuario y la acción. Al deslizar se ven el recurso, el paciente, el propósito, el resultado y la sede.
-4. Debajo de la lista, el contador dice cuántos eventos hay con el filtro elegido, por ejemplo "8 eventos".
+4. La pantalla muestra el contador de cuántos eventos hay con el filtro elegido, por ejemplo "8 eventos".
 
 ## Flujos alternos
 
@@ -80,6 +80,7 @@ Además:
 - **CA-8** Dado un médico o un administrativo, cuando intenta abrir la auditoría de accesos, entonces no la ve y queda un evento con resultado *Denegado*.
 - **CA-9** Dado el auditor en la auditoría, cuando revisa cualquier evento, entonces no encuentra ninguna opción para editarlo ni borrarlo.
 - **CA-10** Dados los datos simulados, cuando el auditor abre la auditoría, entonces la lista se muestra en menos de 2 segundos (RNF-06).
+- **CA-11** Dados los datos simulados, cuando el auditor abre la auditoría con el filtro *Todos*, entonces ve al menos 8 eventos, al menos 1 *Denegado* y al menos 1 con propósito *Urgencia* (RNF-04). Viene de F-20 CA-8.
 
 ## Fuera de alcance
 
@@ -98,3 +99,4 @@ Además:
 
 - 0.1.0 · 2026-11-05 · Primera versión.
 - 0.1.1 · 2026-11-06 · Autores: los 4 integrantes del equipo.
+- 0.2.0 · 2026-11-06 · Se agrega CA-11, que viene de F-20 CA-8, para comprobar los datos simulados mínimos. El paso 4 del flujo principal ya no nombra una posición en la pantalla.
