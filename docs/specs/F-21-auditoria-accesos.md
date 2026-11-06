@@ -1,12 +1,12 @@
 ---
 id: F-21
 titulo: Consulta de la auditoría de accesos
-version: 0.2.0
+version: 0.1.4
 fecha: 2026-11-06
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-15, RF-16]
-depende_de: [F-20]
+depende_de: [F-18, F-20]
 ---
 
 # F-21 · Consulta de la auditoría de accesos
@@ -19,7 +19,7 @@ El auditor revisa quién accedió a la información de los pacientes, cuándo, a
 
 1. El auditor entra a *Auditoría de accesos*.
 2. El sistema muestra todos los eventos de acceso, del más reciente al más antiguo, con el filtro *Todos* seleccionado.
-3. Cada evento muestra su fecha y hora, el usuario y la acción. Al deslizar se ven el recurso, el paciente, el propósito, el resultado y la sede.
+3. Cada evento muestra su fecha y hora, el usuario y la acción. Al deslizar se ven el recurso, el paciente, el propósito, el resultado, la sede y, en los inicios de sesión fallidos, la IP.
 4. La pantalla muestra el contador de cuántos eventos hay con el filtro elegido, por ejemplo "8 eventos".
 
 ## Flujos alternos
@@ -41,6 +41,8 @@ El auditor revisa quién accedió a la información de los pacientes, cuándo, a
 - La pantalla dice que los registros no se pueden editar. No hay ninguna opción para editar ni borrar eventos (RF-17, F-20).
 - El auditor no puede modificar información clínica ni administrativa desde esta pantalla.
 - Las fechas van en el formato "30 oct 2026 · 09:47", con la hora en formato de 24 horas.
+- En un inicio de sesión fallido, el usuario es el correo con el que se intentó, la sede queda vacía y se ve la IP.
+- Los eventos sin paciente (inicios de sesión, mediciones, la lista de pacientes con alta reciente y la auditoría de accesos) muestran el paciente vacío.
 
 ## Estados
 
@@ -62,6 +64,7 @@ Por cada evento de acceso (definido en F-20):
   - Propósito.
   - Resultado.
   - Sede.
+  - IP, solo en los inicios de sesión fallidos.
 
 Además:
 
@@ -81,6 +84,7 @@ Además:
 - **CA-9** Dado el auditor en la auditoría, cuando revisa cualquier evento, entonces no encuentra ninguna opción para editarlo ni borrarlo.
 - **CA-10** Dados los datos simulados, cuando el auditor abre la auditoría, entonces la lista se muestra en menos de 2 segundos (RNF-06).
 - **CA-11** Dados los datos simulados, cuando el auditor abre la auditoría con el filtro *Todos*, entonces ve al menos 8 eventos, al menos 1 *Denegado* y al menos 1 con propósito *Urgencia* (RNF-04). Viene de F-20 CA-8.
+- **CA-12** Dado un inicio de sesión fallido, cuando el auditor desliza ese evento, entonces ve el correo con el que se intentó como usuario, la IP, el resultado *Denegado* y la sede vacía.
 
 ## Fuera de alcance
 
@@ -92,11 +96,12 @@ Además:
 ## Preguntas abiertas
 
 - ¿Abrir la auditoría, siendo auditor, debe quedar registrado como un evento? Hoy no queda, porque no es información de un paciente (RF-14).
-- ¿Los textos de los estados de carga y de error son los definitivos? Son una propuesta: las capturas no los muestran.
 - Sin paginación, ¿hasta cuántos eventos debe aguantar la pantalla en la entrega 3, cuando haya más que los datos simulados?
 
 ## Historial
 
-- 0.1.0 · 2026-11-05 · Primera versión.
-- 0.1.1 · 2026-11-06 · Autores: los 4 integrantes del equipo.
-- 0.2.0 · 2026-11-06 · Se agrega CA-11, que viene de F-20 CA-8, para comprobar los datos simulados mínimos. El paso 4 del flujo principal ya no nombra una posición en la pantalla.
+- 0.1.0 · 2026-11-06 · Primera versión, alineada con los requisitos 0.1.0: muestra la IP de los inicios de sesión fallidos (CA-12) y el paciente vacío en los eventos sin paciente.
+- 0.1.1 · 2026-11-06 · Los eventos sin paciente incluyen el rechazo de la lista de pacientes con alta reciente (F-20 0.2.0).
+- 0.1.2 · 2026-11-06 · Depende también de F-18, que decide el rechazo de A5.
+- 0.1.3 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
+- 0.1.4 · 2026-11-06 · Formato: línea en blanco antes de los encabezados y lista de criterios sin cortes.

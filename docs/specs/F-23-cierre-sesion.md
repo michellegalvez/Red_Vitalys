@@ -6,7 +6,7 @@ fecha: 2026-11-06
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-23]
-depende_de: [F-22]
+depende_de: [F-13, F-22]
 ---
 
 # F-23 · Cierre de sesión
@@ -33,7 +33,7 @@ Cualquier usuario (médico, administrativo o auditor) termina su sesión para qu
 - No se pide confirmación.
 - Al cerrar sesión se borra la sede de la sesión.
 - Después de cerrar sesión no se puede ver ninguna pantalla de la app sin iniciar sesión otra vez.
-- En esta versión el cierre de sesión no crea un evento de acceso, porque RF-14 solo pide el inicio de sesión.
+- En esta versión el cierre de sesión no crea un evento de acceso, porque RF-14 no lo incluye.
 
 ## Estados
 
@@ -56,18 +56,16 @@ Cualquier usuario (médico, administrativo o auditor) termina su sesión para qu
 
 ## Fuera de alcance
 
-- El inicio de sesión y la elección de la sede (RF-18), que especifica otro integrante del equipo.
-- Cerrar la sesión de forma automática por inactividad.
+- El inicio de sesión y la elección de la sede, que son F-13.
+- Cerrar la sesión de forma automática por inactividad, que es F-15.
 - Cerrar la sesión en otros dispositivos.
 - Registrar el cierre de sesión en la auditoría.
 
 ## Preguntas abiertas
 
 - ¿Se puede cerrar sesión solo desde el perfil o también desde otras pantallas? Las capturas solo lo muestran en el perfil.
-- ¿El texto del estado de error es el definitivo? Es una propuesta: la captura no lo muestra.
-- ¿Cuál es el id de la spec de inicio de sesión? Hay que agregarlo en `depende_de` cuando exista.
 
 ## Historial
 
-- 0.1.0 · 2026-11-05 · Primera versión.
-- 0.1.1 · 2026-11-06 · Autores: los 4 integrantes del equipo.
+- 0.1.0 · 2026-11-06 · Primera versión, alineada con los requisitos 0.1.0: depende de F-13 y remite el cierre por inactividad a F-15.
+- 0.1.1 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.

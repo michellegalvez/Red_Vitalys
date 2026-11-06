@@ -1,12 +1,12 @@
 ---
 id: F-22
 titulo: Perfil del usuario
-version: 0.2.0
+version: 0.2.3
 fecha: 2026-11-06
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-22]
-depende_de: []
+depende_de: [F-18]
 ---
 
 # F-22 · Perfil del usuario
@@ -18,8 +18,8 @@ Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qu
 ## Flujo principal
 
 1. El usuario entra a *Perfil*.
-2. El sistema muestra su nombre, su correo, su rol y la sede de esta sesión.
-3. El sistema muestra la lista *Qué puede hacer con su rol*, con cada acción marcada como *Permitido* o *No incluido*.
+2. El sistema muestra su nombre, su correo, su rol, la sede de esta sesión y las sedes que tiene asignadas.
+3. El sistema muestra la lista *Qué puede hacer con su rol*, con cada acción marcada como *Permitido* o *No incluido*, y los propósitos que su rol puede declarar.
 4. El perfil muestra la nota: "El acceso también depende de la sede desde la que ingresó y del propósito que declare en cada consulta."
 5. El perfil ofrece la opción *Cerrar sesión* (F-23).
 
@@ -31,18 +31,21 @@ Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qu
 
 - Todos los roles pueden ver su propio perfil.
 - El perfil solo muestra datos de la persona que inició sesión.
-- La sede que se muestra es la que el usuario eligió al iniciar sesión.
+- La sede que se muestra es la que el usuario eligió al iniciar sesión. Las sedes asignadas son las que podía elegir (F-13).
+- Los propósitos que se muestran son los de la tabla de F-18: el médico los 5 (*Atención del paciente*, *Consulta de historia clínica*, *Seguimiento de reingreso*, *Revisión de calidad* y *Urgencia*), el administrativo solo *Revisión de calidad* y el auditor ninguno.
 - La lista tiene siempre las mismas 7 acciones, en este orden, para los 3 roles:
 
 | Acción | Médico | Administrativo | Auditor |
 |---|---|---|---|
-| Consultar datos básicos de pacientes | Permitido | Permitido | No incluido |
-| Consultar pacientes y su historia | Permitido | No incluido | No incluido |
-| Ver el riesgo de reingreso y su explicación | Permitido | No incluido | No incluido |
-| Registrar atenciones | Permitido | No incluido | No incluido |
-| Ver el tablero de indicadores | Permitido | Permitido | Permitido |
-| Registrar mediciones de indicadores | No incluido | Permitido | No incluido |
+| Buscar paciente y ver sus datos básicos | Permitido | Permitido | No incluido |
+| Ver la historia clínica y el riesgo de reingreso | Permitido | No incluido | No incluido |
+| Registrar una atención | Permitido | No incluido | No incluido |
+| Ver el tablero y el detalle de los indicadores | Permitido | Permitido | Permitido |
+| Registrar una medición | No incluido | Permitido | No incluido |
 | Ver la auditoría de accesos | No incluido | No incluido | Permitido |
+| Ver el perfil y cerrar sesión | Permitido | Permitido | Permitido |
+
+Es la misma tabla de F-18.
 
 - La lista sale de las mismas reglas que el sistema aplica para permitir o denegar cada acción. Si una acción está *Permitido* en el perfil, el sistema la permite. Si está *No incluido*, el sistema la deniega.
 - El usuario no puede cambiar su rol, su sede ni sus datos desde el perfil.
@@ -60,19 +63,23 @@ Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qu
 - **Correo** institucional, por ejemplo "camila.martinez@vitalys.co".
 - **Rol:** *Médico*, *Administrativo* o *Auditor*.
 - **Sede de esta sesión**, por ejemplo "Clínica Vitalys Cali Norte".
+- **Sedes asignadas** del usuario.
 - **Lista de acciones** del rol, cada una con su marca: *Permitido* o *No incluido*.
+- **Propósitos** que el rol puede declarar.
 
 ## Criterios de aceptación
 
 - **CA-1** Dado que la Dra. Camila Martínez, médica, ingresó desde Clínica Vitalys Cali Norte, cuando abre el perfil, entonces ve su nombre, su correo camila.martinez@vitalys.co, el rol *Médico* y la sede Clínica Vitalys Cali Norte.
-- **CA-2** Dado un médico, cuando abre el perfil, entonces ve como *Permitido* consultar datos básicos de pacientes, consultar pacientes y su historia, ver el riesgo de reingreso y su explicación, registrar atenciones y ver el tablero de indicadores, y como *No incluido* registrar mediciones de indicadores y ver la auditoría de accesos.
-- **CA-3** Dado un administrativo, cuando abre el perfil, entonces ve como *Permitido* consultar datos básicos de pacientes, ver el tablero de indicadores y registrar mediciones de indicadores, y como *No incluido* las otras 4 acciones.
-- **CA-4** Dado un auditor, cuando abre el perfil, entonces ve como *Permitido* ver el tablero de indicadores y ver la auditoría de accesos, y como *No incluido* las otras 5 acciones.
-- **CA-5** Dado un administrativo, cuyo perfil muestra *Consultar pacientes y su historia* como *No incluido*, cuando intenta consultar la historia clínica de un paciente, entonces no ve la historia y el auditor ve en la auditoría de accesos un evento *Denegado*.
+- **CA-2** Dado un médico, cuando abre el perfil, entonces ve como *Permitido* buscar paciente y ver sus datos básicos, ver la historia clínica y el riesgo de reingreso, registrar una atención, ver el tablero y el detalle de los indicadores y ver el perfil y cerrar sesión, y como *No incluido* registrar una medición y ver la auditoría de accesos.
+- **CA-3** Dado un administrativo, cuando abre el perfil, entonces ve como *Permitido* buscar paciente y ver sus datos básicos, ver el tablero y el detalle de los indicadores, registrar una medición y ver el perfil y cerrar sesión, y como *No incluido* ver la historia clínica y el riesgo de reingreso, registrar una atención y ver la auditoría de accesos.
+- **CA-4** Dado un auditor, cuando abre el perfil, entonces ve como *Permitido* ver el tablero y el detalle de los indicadores, ver la auditoría de accesos y ver el perfil y cerrar sesión, y como *No incluido* buscar paciente y ver sus datos básicos, ver la historia clínica y el riesgo de reingreso, registrar una atención y registrar una medición.
+- **CA-5** Dado un administrativo, cuyo perfil muestra *Ver la historia clínica y el riesgo de reingreso* como *No incluido*, cuando intenta consultar la historia clínica de un paciente, entonces no ve la historia y el auditor ve en la auditoría de accesos un evento *Denegado*.
 - **CA-6** Dado un usuario que ingresó desde una sede, cuando cierra sesión, vuelve a entrar desde otra sede y abre el perfil, entonces ve la sede nueva.
 - **CA-7** Dado cualquier usuario, cuando abre el perfil, entonces ve la nota sobre la sede y el propósito.
 - **CA-8** Dado que los datos del perfil no se pueden cargar, cuando el usuario abre el perfil, entonces ve "No se pudo cargar su perfil", puede elegir *Reintentar* y todavía puede cerrar sesión.
-- **CA-9** Dado un administrativo, cuyo perfil muestra *Registrar mediciones de indicadores* como *Permitido*, cuando registra la medición de un indicador para una sede, entonces ve esa medición entre las mediciones registradas.
+- **CA-9** Dado un administrativo, cuyo perfil muestra *Registrar una medición* como *Permitido*, cuando registra la medición de un indicador para una sede, entonces ve esa medición entre las mediciones registradas.
+- **CA-10** Dado un usuario con 2 sedes asignadas que ingresó desde una de ellas, cuando abre el perfil, entonces ve la sede de la sesión y las 2 sedes asignadas.
+- **CA-11** Dado un médico, cuando abre el perfil, entonces ve los 5 propósitos; dado un administrativo, ve solo *Revisión de calidad*; y dado un auditor, ve que no declara ninguno.
 
 ## Fuera de alcance
 
@@ -83,12 +90,12 @@ Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qu
 
 ## Preguntas abiertas
 
-- ¿Los textos de los estados de carga y de error son los definitivos? Son una propuesta: la captura no los muestra.
-- ¿El perfil debe mostrar alguna diferencia según la sede, o la lista de acciones depende solo del rol? Está ligado a las preguntas abiertas del PRD sobre la sede.
-- ¿Qué ve el usuario cuando intenta una acción marcada como *No incluido*? Se define cuando exista la spec del control de acceso (RF-21). Es la misma pregunta que está en F-20.
+Ninguna.
 
 ## Historial
 
-- 0.1.0 · 2026-11-05 · Primera versión.
-- 0.1.1 · 2026-11-06 · Autores: los 4 integrantes del equipo.
-- 0.2.0 · 2026-11-06 · El título pasa a *Perfil del usuario*. CA-5 se parte en dos (CA-5 y CA-9), cada uno con un resultado visible. Los pasos 4 y 5 del flujo principal y CA-7 ya no nombran posiciones en la pantalla. Nueva pregunta abierta sobre lo que ve el usuario cuando se le niega una acción.
+- 0.1.0 · 2026-11-06 · Primera versión, alineada con los requisitos 0.1.0: muestra las sedes asignadas y los propósitos por rol (CA-10, CA-11).
+- 0.2.0 · 2026-11-06 · La tabla de acciones es la misma de F-18, con sus 7 filas, y CA-2, CA-3, CA-4, CA-5 y CA-9 usan sus nombres.
+- 0.2.1 · 2026-11-06 · Los mensajes de rechazo quedan definidos en F-18. Se cierra esa pregunta abierta.
+- 0.2.2 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
+- 0.2.3 · 2026-11-06 · Formato: línea en blanco antes de los encabezados y lista de criterios sin cortes.
