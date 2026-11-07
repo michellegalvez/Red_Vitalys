@@ -22,12 +22,22 @@ Materia: Seminario en Ingeniería de Software · Universidad Icesi.
 
 ## Estructura actual de lib/
 
-Proyecto recién creado con `flutter create`. Todavía no hay código propio:
+Prototipo navegable solo de front-end (Entrega 2): datos simulados en memoria, sin backend ni paquetes externos. Lo hecho hasta ahora es Acceso, Inicio del médico, Pacientes en seguimiento, la declaración del propósito y el acceso denegado. Las demás secciones (tablero, auditoría, perfil, historia y riesgo, registros) son marcadores para que otros integrantes los conecten.
 
 ```
 lib/
-└── main.dart   # app de ejemplo generada por Flutter
+├── main.dart            # arranca la app
+├── tema/                # colores, tema y breakpoint (900 px, contenido máx. 1200)
+├── modelos/             # Rol, Sede, Usuario, PacienteEnSeguimiento, Proposito
+├── datos/               # datos simulados (los del Figma, riesgo entero)
+├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos
+├── formato/             # fechas, horas y búsqueda sin tildes (RNF-05)
+├── widgets/             # componentes de la galería, cada uno una sola vez
+├── pages/               # Pages: solo muestran y avisan con callbacks
+└── screens/             # AppScreen: la Screen anfitriona con todo el estado (setState)
 ```
+
+Reglas del enunciado: el estado vive en la Screen anfitriona, las Pages no guardan datos de la app y los componentes de la galería se construyen una sola vez en `widgets/`. Antes de subir cambios: `dart format .`, `flutter analyze` y `flutter test`.
 
 ## Documentos
 

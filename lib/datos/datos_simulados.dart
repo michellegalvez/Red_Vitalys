@@ -1,0 +1,283 @@
+import 'package:red_vitalys/modelos/modelos.dart';
+
+/// Datos simulados del prototipo (RNF-02, RNF-03, RNF-04). Ninguno es real.
+///
+/// Los pacientes y las sedes salen del diseño del Figma. La red tiene una
+/// cadena de laboratorios clínicos propia; como no se sabe cuántos son, se
+/// simulan 2 (RNF-04).
+class DatosSimulados {
+  const DatosSimulados({
+    required this.hoy,
+    required this.sedes,
+    required this.usuarios,
+    required this.pacientes,
+    required this.contrasenaPrototipo,
+    required this.indicadoresQueEmpeoraron,
+    required this.totalIndicadores,
+  });
+
+  /// La fecha de hoy fija de los datos simulados (RNF-04).
+  final DateTime hoy;
+  final List<Sede> sedes;
+  final List<Usuario> usuarios;
+  final List<PacienteEnSeguimiento> pacientes;
+
+  /// Contraseña única del prototipo, sin servidor.
+  final String contrasenaPrototipo;
+
+  /// Resumen para el inicio del médico. El tablero lo arma otro integrante.
+  final int indicadoresQueEmpeoraron;
+  final int totalIndicadores;
+
+  Sede sede(String id) => sedes.firstWhere((s) => s.id == id);
+
+  Usuario? usuarioPorCorreo(String correo) {
+    final buscado = correo.trim().toLowerCase();
+    for (final u in usuarios) {
+      if (u.correo.toLowerCase() == buscado) return u;
+    }
+    return null;
+  }
+
+  static final DatosSimulados porDefecto = DatosSimulados(
+    hoy: DateTime(2026, 10, 30, 10, 42),
+    contrasenaPrototipo: 'vitalys2026',
+    indicadoresQueEmpeoraron: 0,
+    totalIndicadores: 4,
+    sedes: const [
+      Sede(
+        id: 's1',
+        nombre: 'Clínica Vitalys Cali Norte',
+        nombreCorto: 'Cali Norte',
+        tipo: TipoSede.clinica,
+      ),
+      Sede(
+        id: 's2',
+        nombre: 'Clínica Vitalys Bogotá Usaquén',
+        nombreCorto: 'Bogotá Usaquén',
+        tipo: TipoSede.clinica,
+      ),
+      Sede(
+        id: 's3',
+        nombre: 'Clínica Vitalys Bogotá Chapinero',
+        nombreCorto: 'Bogotá Chapinero',
+        tipo: TipoSede.clinica,
+      ),
+      Sede(
+        id: 's4',
+        nombre: 'Clínica Vitalys Medellín El Poblado',
+        nombreCorto: 'Medellín El Poblado',
+        tipo: TipoSede.clinica,
+      ),
+      Sede(
+        id: 's5',
+        nombre: 'Clínica Vitalys Barranquilla Prado',
+        nombreCorto: 'Barranquilla Prado',
+        tipo: TipoSede.clinica,
+      ),
+      Sede(
+        id: 's6',
+        nombre: 'Clínica Vitalys Bucaramanga Cabecera',
+        nombreCorto: 'Bucaramanga Cabecera',
+        tipo: TipoSede.clinica,
+      ),
+      Sede(
+        id: 's7',
+        nombre: 'Centro Ambulatorio Cali Sur',
+        nombreCorto: 'Amb. Cali Sur',
+        tipo: TipoSede.centroAmbulatorio,
+      ),
+      Sede(
+        id: 's8',
+        nombre: 'Centro Ambulatorio Envigado',
+        nombreCorto: 'Amb. Envigado',
+        tipo: TipoSede.centroAmbulatorio,
+      ),
+      Sede(
+        id: 'l1',
+        nombre: 'Laboratorio Clínico Vitalys Cali',
+        nombreCorto: 'Lab. Cali',
+        tipo: TipoSede.laboratorio,
+      ),
+      Sede(
+        id: 'l2',
+        nombre: 'Laboratorio Clínico Vitalys Bogotá',
+        nombreCorto: 'Lab. Bogotá',
+        tipo: TipoSede.laboratorio,
+      ),
+    ],
+    usuarios: const [
+      Usuario(
+        id: 'u1',
+        nombre: 'Dra. Camila Martínez',
+        saludo: 'Dra. Camila',
+        iniciales: 'CM',
+        correo: 'camila.martinez@vitalys.co',
+        rol: Rol.medico,
+        sedesAsignadas: ['s1', 's7'],
+      ),
+      Usuario(
+        id: 'u2',
+        nombre: 'Andrés Felipe Ruiz',
+        saludo: 'Andrés',
+        iniciales: 'AR',
+        correo: 'andres.ruiz@vitalys.co',
+        rol: Rol.administrativo,
+        sedesAsignadas: ['s2'],
+      ),
+      Usuario(
+        id: 'u3',
+        nombre: 'Marcela Ospina',
+        saludo: 'Marcela',
+        iniciales: 'MO',
+        correo: 'marcela.ospina@vitalys.co',
+        rol: Rol.auditor,
+        sedesAsignadas: ['s1'],
+      ),
+      // Cuenta sin sedes asignadas, para mostrar el caso A3 de F-13.
+      Usuario(
+        id: 'u4',
+        nombre: 'Dr. Tomás Herrera',
+        saludo: 'Dr. Tomás',
+        iniciales: 'TH',
+        correo: 'tomas.herrera@vitalys.co',
+        rol: Rol.medico,
+        sedesAsignadas: [],
+      ),
+    ],
+    // La Dra. Camila tiene relación con p1 (le registró una atención), con
+    // p2 (alta en Cali Norte) y con p8 (alta en Amb. Cali Sur). Con los demás
+    // no, y solo puede abrirlos declarando Urgencia (F-05, F-17).
+    // Los pacientes, riesgos y fechas son los del diseño del Figma.
+    pacientes: [
+      PacienteEnSeguimiento(
+        id: 'p1',
+        nombre: 'Jorge Eliécer Pardo Villamizar',
+        iniciales: 'JP',
+        edad: 78,
+        sexo: 'M',
+        tipoDocumento: 'CC',
+        numeroDocumento: '79457654',
+        sedeAltaId: 's2',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 10, 14),
+        diasEstancia: 15,
+        riesgo: 91,
+        medicosConAtencion: const ['u1'],
+      ),
+      PacienteEnSeguimiento(
+        id: 'p2',
+        nombre: 'María Fernanda Rojas Benítez',
+        iniciales: 'MR',
+        edad: 75,
+        sexo: 'F',
+        tipoDocumento: 'CC',
+        numeroDocumento: '31285876',
+        sedeAltaId: 's1',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 10, 16),
+        diasEstancia: 11,
+        riesgo: 82,
+      ),
+      PacienteEnSeguimiento(
+        id: 'p3',
+        nombre: 'Hernán Darío Quintero Salcedo',
+        iniciales: 'HQ',
+        edad: 71,
+        sexo: 'M',
+        tipoDocumento: 'CC',
+        numeroDocumento: '72105531',
+        sedeAltaId: 's5',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 10, 17),
+        diasEstancia: 16,
+        riesgo: 77,
+      ),
+      PacienteEnSeguimiento(
+        id: 'p4',
+        nombre: 'Carlos Andrés Gómez Ruiz',
+        iniciales: 'CG',
+        edad: 63,
+        sexo: 'M',
+        tipoDocumento: 'CC',
+        numeroDocumento: '80234310',
+        sedeAltaId: 's3',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 10, 15),
+        diasEstancia: 7,
+        riesgo: 72,
+      ),
+      PacienteEnSeguimiento(
+        id: 'p5',
+        nombre: 'Luz Marina Cardona Arias',
+        iniciales: 'LC',
+        edad: 67,
+        sexo: 'F',
+        tipoDocumento: 'CC',
+        numeroDocumento: '43518902',
+        sedeAltaId: 's4',
+        tipoAtencion: TipoAtencion.urgencias,
+        fechaAlta: DateTime(2026, 10, 15),
+        diasEstancia: 1,
+        riesgo: 48,
+      ),
+      PacienteEnSeguimiento(
+        id: 'p6',
+        nombre: 'Ana Lucía Ibarra Medina',
+        iniciales: 'AI',
+        edad: 58,
+        sexo: 'F',
+        tipoDocumento: 'CC',
+        numeroDocumento: '63451204',
+        sedeAltaId: 's6',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 10, 18),
+        diasEstancia: 6,
+        riesgo: 37,
+      ),
+      PacienteEnSeguimiento(
+        id: 'p7',
+        nombre: 'Santiago Restrepo Mejía',
+        iniciales: 'SR',
+        edad: 14,
+        sexo: 'M',
+        tipoDocumento: 'TI',
+        numeroDocumento: '1023456778',
+        sedeAltaId: 's4',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 10, 13),
+        diasEstancia: 3,
+        riesgo: 23,
+      ),
+      PacienteEnSeguimiento(
+        id: 'p8',
+        nombre: 'Valentina Ortiz Salazar',
+        iniciales: 'VO',
+        edad: 3,
+        sexo: 'F',
+        tipoDocumento: 'RC',
+        numeroDocumento: '1107052145',
+        sedeAltaId: 's7',
+        tipoAtencion: TipoAtencion.urgencias,
+        fechaAlta: DateTime(2026, 10, 19),
+        diasEstancia: 0,
+        riesgo: 12,
+      ),
+      // Alta hace 38 días: no sale en la lista aunque su riesgo sea alto.
+      PacienteEnSeguimiento(
+        id: 'p9',
+        nombre: 'Rosa Elena Muñoz Patiño',
+        iniciales: 'RM',
+        edad: 81,
+        sexo: 'F',
+        tipoDocumento: 'CC',
+        numeroDocumento: '29874512',
+        sedeAltaId: 's1',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 9, 22),
+        diasEstancia: 9,
+        riesgo: 88,
+      ),
+    ],
+  );
+}
