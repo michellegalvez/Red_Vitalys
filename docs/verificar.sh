@@ -84,7 +84,7 @@ for f in "${specs[@]}"; do
   nums=$(grep -oE '^- \*\*CA-[0-9]+\*\*' "$f" | grep -oE '[0-9]+' | sort -n)
   [ -n "$nums" ] || { fallo "$id no tiene criterios"; continue; }
   d=$(echo "$nums" | uniq -d); [ -z "$d" ] || fallo "$id tiene criterios repetidos: $d"
-  max=$(echo "$nums" | tail -1); cnt=$(echo "$nums" | wc -l)
+  max=$(echo "$nums" | tail -1); cnt=$(echo "$nums" | wc -l | tr -d ' ')
   [ "$max" = "$cnt" ] || fallo "$id: el último criterio es CA-$max pero hay $cnt"
   # Cada criterio se revisa dentro de bash, sin lanzar procesos: así el script es rápido.
   while IFS= read -r linea; do
