@@ -1,30 +1,42 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:red_vitalys/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('dashboard opens the static indicator detail preview', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(const RedVitalysApp());
+    expect(find.text('Tablero de indicadores'), findsOneWidget);
+    expect(find.text('Dónde actuar primero'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.tap(find.text('Detalle'));
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Tendencia mensual'), findsOneWidget);
+    expect(find.text('Comparación entre sedes'), findsOneWidget);
+    expect(find.text('Mediciones recientes'), findsOneWidget);
+    await tester.tap(find.text('Tablero'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tablero de indicadores'), findsOneWidget);
+  });
+
+  testWidgets('indicator screens fit a 360 pixel viewport', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const RedVitalysApp());
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Detalle'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }
