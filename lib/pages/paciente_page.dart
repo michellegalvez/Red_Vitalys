@@ -5,9 +5,12 @@ import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/aviso.dart';
+import 'package:red_vitalys/widgets/barra_volver.dart';
 import 'package:red_vitalys/widgets/boton.dart';
+import 'package:red_vitalys/widgets/campo_dato.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
 
 /// Historia clínica unificada de un paciente con su riesgo de reingreso y los
 /// factores que lo explican (F-02, F-03, F-07), con la opción de registrar una
@@ -48,16 +51,9 @@ class PacientePage extends StatelessWidget {
 
     return ContenidoPagina(
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: onVolver,
-            icon: const Icon(Icons.arrow_back_rounded, size: 18),
-            label: Text(
-              'Pacientes  /  ${historia.fullName}',
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+        BarraVolver(
+          texto: 'Pacientes  /  ${historia.fullName}',
+          onPressed: onVolver,
         ),
         const SizedBox(height: 8),
         if (proposito == Proposito.urgencia) ...[
@@ -131,9 +127,9 @@ class _Cabecera extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: [
-        _Chip('${paciente.age} años · ${paciente.sex}'),
-        _Chip(paciente.documentDisplay),
-        for (final i in paciente.systemIdentifiers) _Chip(i.systemName),
+        _chip('${paciente.age} años · ${paciente.sex}'),
+        _chip(paciente.documentDisplay),
+        for (final i in paciente.systemIdentifiers) _chip(i.systemName),
       ],
     );
     final anillo = riesgo == null
@@ -153,7 +149,7 @@ class _Cabecera extends StatelessWidget {
               Text(
                 alerta ? 'RIESGO ALTO' : 'SIN ALERTA',
                 style: TextStyle(
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.9,
                   color: alerta
@@ -190,7 +186,7 @@ class _Cabecera extends StatelessWidget {
                       'HISTORIA CLÍNICA UNIFICADA',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 11.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.1,
                       ),
@@ -241,30 +237,13 @@ class _Cabecera extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip(this.texto);
-
-  final String texto;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        texto,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12.5,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
+/// Píldora translúcida sobre el degradado violeta de la cabecera.
+Widget _chip(String texto) => ChipVitalys(
+  texto: texto,
+  colorFondo: Colors.white.withValues(alpha: 0.14),
+  colorTexto: Colors.white,
+  tamanoTexto: 12.5,
+);
 
 /// Contenedor blanco con título, igual para todas las secciones.
 class _Seccion extends StatelessWidget {
@@ -276,13 +255,7 @@ class _Seccion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: ColoresVitalys.borde),
-      ),
+    return TarjetaVitalys(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -320,7 +293,7 @@ class _SeccionRiesgo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final factores = [...riesgo.factors]
-      ..sort((a, b) => b.points.compareTo(a.points));
+      ..sort((a, b) => b.points.abs().compareTo(a.points.abs()));
     final maximo = factores.isEmpty
         ? 1
         : factores.map((f) => f.points.abs()).reduce((a, b) => a > b ? a : b);
@@ -349,9 +322,9 @@ class _SeccionRiesgo extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           if (factores.isEmpty)
-            const Text(
-              'No hay factores registrados para este paciente',
-              style: TextStyle(color: ColoresVitalys.textoSecundario),
+            const EstadoVacio(
+              titulo: 'No hay factores registrados para este paciente',
+              icono: Icons.insights_outlined,
             )
           else
             for (final f in factores)
@@ -375,6 +348,7 @@ class _FilaFactor extends StatelessWidget {
   Widget build(BuildContext context) {
     final sube = factor.impact == RiskFactorImpact.sube;
     final color = sube ? ColoresVitalys.alerta : ColoresVitalys.exito;
+    final colorTexto = sube ? ColoresVitalys.alerta : ColoresVitalys.mentaTexto;
     final signo = sube ? '+' : '−';
     return Semantics(
       label:
@@ -401,7 +375,7 @@ class _FilaFactor extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 15,
-                  color: color,
+                  color: colorTexto,
                 ),
               ),
             ],
@@ -445,9 +419,9 @@ class _SeccionAtenciones extends StatelessWidget {
           ? '1 registro'
           : '${atenciones.length} registros',
       child: atenciones.isEmpty
-          ? const Text(
-              'Este paciente no tiene atenciones registradas',
-              style: TextStyle(color: ColoresVitalys.textoSecundario),
+          ? const EstadoVacio(
+              titulo: 'Este paciente no tiene atenciones registradas',
+              icono: Icons.event_busy_outlined,
             )
           : Column(
               children: [
@@ -471,12 +445,10 @@ class _TarjetaAtencion extends StatelessWidget {
   Widget build(BuildContext context) {
     final a = atencion;
     final enCurso = a.status == EncounterStatus.enCurso;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: ColoresVitalys.fondo,
-        borderRadius: BorderRadius.circular(18),
-      ),
+    return TarjetaVitalys(
+      relleno: const EdgeInsets.all(14),
+      radio: TarjetaVitalys.radioFila,
+      color: ColoresVitalys.fondo,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -491,27 +463,15 @@ class _TarjetaAtencion extends StatelessWidget {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: enCurso
-                      ? ColoresVitalys.advertenciaFondo
-                      : ColoresVitalys.exitoFondo,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  a.statusLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: enCurso
-                        ? ColoresVitalys.advertenciaTexto
-                        : ColoresVitalys.mentaTexto,
-                  ),
-                ),
+              ChipVitalys(
+                texto: a.statusLabel,
+                tamanoTexto: 12,
+                colorFondo: enCurso
+                    ? ColoresVitalys.advertenciaFondo
+                    : ColoresVitalys.exitoFondo,
+                colorTexto: enCurso
+                    ? ColoresVitalys.advertenciaTexto
+                    : ColoresVitalys.mentaTexto,
               ),
             ],
           ),
@@ -525,40 +485,12 @@ class _TarjetaAtencion extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _Dato(etiqueta: 'Médico', valor: a.doctorName),
-          if (a.reason != null) _Dato(etiqueta: 'Motivo', valor: a.reason!),
+          DatoEnLinea(etiqueta: 'Médico', valor: a.doctorName),
+          if (a.reason != null)
+            DatoEnLinea(etiqueta: 'Motivo', valor: a.reason!),
           if (a.diagnosis != null)
-            _Dato(etiqueta: 'Diagnóstico', valor: a.diagnosis!),
+            DatoEnLinea(etiqueta: 'Diagnóstico', valor: a.diagnosis!),
         ],
-      ),
-    );
-  }
-}
-
-class _Dato extends StatelessWidget {
-  const _Dato({required this.etiqueta, required this.valor});
-
-  final String etiqueta;
-  final String valor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 3),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '$etiqueta: ',
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                color: ColoresVitalys.textoSecundario,
-              ),
-            ),
-            TextSpan(text: valor),
-          ],
-        ),
-        style: const TextStyle(fontSize: 13.5, height: 1.35),
       ),
     );
   }
@@ -578,15 +510,19 @@ class _DatosBasicos extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Campo('Edad y sexo', '${p.age} años · ${p.sex}'),
-          _Campo('Documento', p.documentDisplay),
-          _Campo('Fecha de nacimiento', formatoFecha(p.birthDate)),
-          _Campo('Dirección', p.address),
+          CampoDato('Edad y sexo', '${p.age} años · ${p.sex}', separacion: 12),
+          CampoDato('Documento', p.documentDisplay, separacion: 12),
+          CampoDato(
+            'Fecha de nacimiento',
+            formatoFecha(p.birthDate),
+            separacion: 12,
+          ),
+          CampoDato('Teléfono', p.phone, separacion: 12),
           const SizedBox(height: 4),
           const Text(
             'IDENTIFICADORES EN CADA SISTEMA',
             style: TextStyle(
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8,
               color: ColoresVitalys.textoSuave,
@@ -606,36 +542,6 @@ class _DatosBasicos extends StatelessWidget {
                 ],
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Campo extends StatelessWidget {
-  const _Campo(this.etiqueta, this.valor);
-
-  final String etiqueta;
-  final String valor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            etiqueta.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-              color: ColoresVitalys.textoSuave,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(valor, style: const TextStyle(fontSize: 15)),
         ],
       ),
     );

@@ -286,13 +286,23 @@ void main() {
       });
     }
 
-    testWidgets('en celular pide deslizar para ver el resto', (t) async {
-      await abrirApp(t);
-      await entrarComoAuditora(t);
-      expect(find.textContaining('Deslice la tabla'), findsOneWidget);
-      expect(t.takeException(), isNull);
-      await cerrarApp(t);
-    });
+    testWidgets(
+      'en celular cada evento es una tarjeta, sin deslizar (RNF-07)',
+      (t) async {
+        await abrirApp(t);
+        await entrarComoAuditora(t);
+        expect(find.textContaining('Deslice la tabla'), findsNothing);
+        expect(find.text('Recurso: '), findsWidgets);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is Scrollable && w.axisDirection == AxisDirection.right,
+          ),
+          findsNothing,
+        );
+        expect(t.takeException(), isNull);
+        await cerrarApp(t);
+      },
+    );
   });
 
   group('Eventos que crea el flujo (F-20)', () {
@@ -307,6 +317,8 @@ void main() {
       await tocar(t, find.text('Abrir historia clínica'));
       expect(find.text(rechazoRelacion), findsOneWidget);
       await tocar(t, find.text('Declarar Urgencia'));
+      // El pop-up vuelve sin propósito elegido: se elige Urgencia (F-16).
+      await tocar(t, find.text('Urgencia (acceso de emergencia)'));
       await tocar(t, find.text('Abrir historia clínica'));
       await tocar(t, find.textContaining('Pacientes  /'));
 
@@ -314,17 +326,18 @@ void main() {
       await cerrarSesion(t);
       await entrarComoAuditora(t);
 
-      // 8 del Figma + ingreso de Camila + lista + rechazo + Urgencia +
-      // ingreso de Marcela.
-      await t.ensureVisible(find.text('13 eventos'));
-      expect(find.text('13 eventos'), findsOneWidget);
+      // 8 del Figma + ingreso de Camila + lista + rechazo + historia y
+      // riesgo con Urgencia (F-07) + ingreso de Marcela.
+      await t.ensureVisible(find.text('14 eventos'));
+      expect(find.text('14 eventos'), findsOneWidget);
       await tocar(t, find.text('Denegados'));
       await t.ensureVisible(find.text('3 eventos'));
       expect(find.text('3 eventos'), findsOneWidget);
       await tocar(t, find.text('Emergencia'));
-      await t.ensureVisible(find.text('2 eventos'));
-      expect(find.text('2 eventos'), findsOneWidget);
-      expect(find.text('Hernán Darío Quintero Salcedo'), findsOneWidget);
+      // El del Figma + la historia y el riesgo de Hernán con Urgencia.
+      await t.ensureVisible(find.text('3 eventos'));
+      expect(find.text('3 eventos'), findsOneWidget);
+      expect(find.text('Hernán Darío Quintero Salcedo'), findsNWidgets(2));
       await cerrarApp(t);
     });
 

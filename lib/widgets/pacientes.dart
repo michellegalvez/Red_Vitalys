@@ -5,6 +5,7 @@ import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/foco.dart';
 
 /// Fondo y texto de los avatares, en el orden del diseño (JP, MR, HQ, CG).
 const _coloresAvatar = [
@@ -46,12 +47,14 @@ class AvatarIniciales extends StatelessWidget {
       height: tamano,
       alignment: Alignment.center,
       decoration: BoxDecoration(color: fondo ?? f, shape: BoxShape.circle),
-      child: Text(
-        iniciales,
-        style: TextStyle(
-          fontSize: tamano * 0.3,
-          fontWeight: FontWeight.w800,
-          color: colorTexto ?? t,
+      child: ExcludeSemantics(
+        child: Text(
+          iniciales,
+          style: TextStyle(
+            fontSize: tamano * 0.3,
+            fontWeight: FontWeight.w800,
+            color: colorTexto ?? t,
+          ),
         ),
       ),
     );
@@ -59,7 +62,7 @@ class AvatarIniciales extends StatelessWidget {
 }
 
 /// Anillo de riesgo de la galería: el puntaje de 0 a 100 dentro de un
-/// círculo rojo si tiene alerta (70 o más) o verde si no.
+/// círculo rojo si el riesgo es alto (70 o más) o verde si no.
 class AnilloRiesgo extends StatelessWidget {
   const AnilloRiesgo({super.key, required this.riesgo, this.tamano = 62});
 
@@ -72,7 +75,7 @@ class AnilloRiesgo extends StatelessWidget {
     return Semantics(
       label:
           'Riesgo $riesgo de 100'
-          '${alerta ? ', con alerta' : ', sin alerta'}',
+          '${alerta ? ', riesgo alto' : ', riesgo bajo'}',
       excludeSemantics: true,
       child: SizedBox.square(
         dimension: tamano,
@@ -130,8 +133,7 @@ class _AnilloPainter extends CustomPainter {
       old.fraccion != fraccion || old.color != color;
 }
 
-/// Texto de alerta junto al anillo: "CON ALERTA" en rojo o "SIN ALERTA"
-/// en verde.
+/// Texto junto al anillo: "RIESGO ALTO" en rojo o "RIESGO BAJO" en verde.
 class TextoAlerta extends StatelessWidget {
   const TextoAlerta({super.key, required this.riesgo});
 
@@ -141,7 +143,7 @@ class TextoAlerta extends StatelessWidget {
   Widget build(BuildContext context) {
     final alerta = conAlerta(riesgo);
     return Text(
-      alerta ? 'CON ALERTA' : 'SIN ALERTA',
+      alerta ? 'RIESGO ALTO' : 'RIESGO BAJO',
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w800,
@@ -152,7 +154,7 @@ class TextoAlerta extends StatelessWidget {
   }
 }
 
-/// Etiqueta de riesgo de la galería: "Con alerta 91" o "Sin alerta 23".
+/// Etiqueta de riesgo de la galería: "Riesgo alto 91" o "Riesgo bajo 23".
 class EtiquetaRiesgo extends StatelessWidget {
   const EtiquetaRiesgo({super.key, required this.riesgo});
 
@@ -171,7 +173,7 @@ class EtiquetaRiesgo extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        '${alerta ? 'Con alerta' : 'Sin alerta'}  $riesgo',
+        '${alerta ? 'Riesgo alto' : 'Riesgo bajo'}  $riesgo',
         style: TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w800,
@@ -182,7 +184,7 @@ class EtiquetaRiesgo extends StatelessWidget {
   }
 }
 
-/// Tarjeta de paciente de la galería, con alerta o sin alerta.
+/// Tarjeta de paciente de la galería, con riesgo alto o bajo.
 class TarjetaPaciente extends StatelessWidget {
   const TarjetaPaciente({
     super.key,
@@ -201,67 +203,73 @@ class TarjetaPaciente extends StatelessWidget {
     final alerta = conAlerta(p.riesgo);
     return Semantics(
       button: true,
-      label: 'Abrir a ${p.nombre}',
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: ColoresVitalys.tinta.withValues(alpha: 0.07),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          clipBehavior: Clip.antiAlias,
-          child: Ink(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: alerta
-                    ? ColoresVitalys.alerta.withValues(alpha: 0.22)
-                    : ColoresVitalys.borde,
+      excludeSemantics: true,
+      label:
+          'Abrir a ${p.nombre}, ${p.edad} años. Riesgo ${p.riesgo} de 100, '
+          '${alerta ? 'riesgo alto' : 'riesgo bajo'}. $sedeAlta',
+      child: AnilloFoco(
+        radio: BorderRadius.circular(24),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: ColoresVitalys.tinta.withValues(alpha: 0.07),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: alerta
-                    ? const [ColoresVitalys.alertaFondo, Colors.white]
-                    : const [Color(0xFFEFFAF5), Colors.white],
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+            clipBehavior: Clip.antiAlias,
+            child: Ink(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: alerta
+                      ? ColoresVitalys.alerta.withValues(alpha: 0.22)
+                      : ColoresVitalys.borde,
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: alerta
+                      ? const [ColoresVitalys.alertaFondo, Colors.white]
+                      : const [Color(0xFFEFFAF5), Colors.white],
+                ),
               ),
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(24),
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        AvatarIniciales(
-                          iniciales: p.iniciales,
-                          indiceColor: indiceColorDe(p.id),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _DatosPaciente(p: p, sedeAlta: sedeAlta),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        AnilloRiesgo(riesgo: p.riesgo),
-                        const SizedBox(width: 14),
-                        TextoAlerta(riesgo: p.riesgo),
-                      ],
-                    ),
-                  ],
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: onTap,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          AvatarIniciales(
+                            iniciales: p.iniciales,
+                            indiceColor: indiceColorDe(p.id),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _DatosPaciente(p: p, sedeAlta: sedeAlta),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          AnilloRiesgo(riesgo: p.riesgo),
+                          const SizedBox(width: 14),
+                          TextoAlerta(riesgo: p.riesgo),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

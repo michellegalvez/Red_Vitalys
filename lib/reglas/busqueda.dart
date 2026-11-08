@@ -16,6 +16,16 @@ const String mensajeSinResultados =
 bool busquedaValida(String texto) =>
     normalizarTexto(texto).length >= minimoCaracteresBusqueda;
 
+/// Si [p] coincide con [texto], sin distinguir mayúsculas ni tildes: por cualquier parte del
+/// nombre, o por el número de documento completo, escrito con o sin puntos,
+/// guiones ni espacios (F-01). La usan la búsqueda y la lista de pacientes.
+bool coincideBusqueda(PacienteEnSeguimiento p, String texto) {
+  final buscado = normalizarTexto(texto);
+  final documento = buscado.replaceAll(RegExp(r'[.\-\s]'), '');
+  return normalizarTexto(p.nombre).contains(buscado) ||
+      (documento.isNotEmpty && p.numeroDocumento == documento);
+}
+
 /// Los pacientes que coinciden con [texto], cada uno una sola vez y de la A
 /// a la Z (F-01).
 ///
@@ -28,15 +38,11 @@ List<PacienteEnSeguimiento> buscarPacientes(
   String texto,
 ) {
   if (!busquedaValida(texto)) return const [];
-  final buscado = normalizarTexto(texto);
   final vistos = <String>{};
   final encontrados =
       [
         for (final p in todos)
-          if ((normalizarTexto(p.nombre).contains(buscado) ||
-                  p.numeroDocumento == buscado) &&
-              vistos.add(p.id))
-            p,
+          if (coincideBusqueda(p, texto) && vistos.add(p.id)) p,
       ]..sort(
         (a, b) =>
             normalizarTexto(a.nombre).compareTo(normalizarTexto(b.nombre)),

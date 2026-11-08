@@ -4,20 +4,23 @@ import 'package:flutter/material.dart';
 abstract final class ColoresVitalys {
   static const tinta = Color(0xFF141438);
   static const textoSecundario = Color(0xFF55557A);
-  static const textoSuave = Color(0xFF7A7A99);
+  static const textoSuave = Color(0xFF66668A);
   static const primario = Color(0xFF4C48E8);
   static const primarioOscuro = Color(0xFF3B37C8);
   static const fondo = Color(0xFFF4F3FC);
   static const fondoLavanda = Color(0xFFECEAFB);
   static const fondoMenta = Color(0xFFE2F4F3);
   static const borde = Color(0xFFDCDCEC);
+
+  /// Borde de campos y opciones sin elegir: 3:1 sobre blanco.
+  static const bordeControl = Color(0xFF8A8AA8);
   static const superficie = Colors.white;
 
   static const alerta = Color(0xFFDC2033);
   static const alertaTexto = Color(0xFFB3141F);
   static const alertaFondo = Color(0xFFFCE4E0);
   static const naranjaFondo = Color(0xFFFCD8B8);
-  static const naranjaTexto = Color(0xFFB4510F);
+  static const naranjaTexto = Color(0xFF8F3E08);
   static const mentaFondo = Color(0xFFA6F5DA);
   static const mentaTexto = Color(0xFF0B6B4D);
   static const exito = Color(0xFF169C62);
@@ -68,6 +71,7 @@ ThemeData temaRedVitalys() {
       titleMedium: texto.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       bodyMedium: texto.bodyMedium?.copyWith(height: 1.4),
     ),
+    focusColor: ColoresVitalys.tinta.withValues(alpha: 0.18),
     dividerColor: ColoresVitalys.borde,
   );
 }

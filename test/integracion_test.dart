@@ -259,6 +259,8 @@ void main() {
       expect(find.text(rechazoRelacion), findsOneWidget);
 
       await tocar(t, find.text('Declarar Urgencia'));
+      // El pop-up vuelve sin propósito elegido: se elige Urgencia (F-16).
+      await tocar(t, find.text('Urgencia (acceso de emergencia)'));
       await tocar(
         t,
         find.widgetWithText(BotonVitalys, 'Registrar atención').last,
@@ -320,10 +322,10 @@ void main() {
       await tocar(t, find.text('Ingresar'));
       await tocar(t, find.text('Confirmar sede'));
 
-      // 8 del Figma + ingreso de Camila + lista + historia de María +
-      // atención registrada + ingreso de Marcela.
-      await t.ensureVisible(find.text('13 eventos'));
-      expect(find.text('13 eventos'), findsOneWidget);
+      // 8 del Figma + ingreso de Camila + lista + historia y riesgo de
+      // María (F-07) + atención registrada + ingreso de Marcela.
+      await t.ensureVisible(find.text('14 eventos'));
+      expect(find.text('14 eventos'), findsOneWidget);
       await t.pumpWidget(const SizedBox());
     });
   });

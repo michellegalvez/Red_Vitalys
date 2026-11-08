@@ -4,6 +4,7 @@ import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
 
 /// Pacientes en seguimiento: las altas de los últimos 30 días de toda la
 /// red, del mayor al menor riesgo (F-06). La búsqueda la aplica la Screen.
@@ -55,7 +56,7 @@ class SeguimientoPage extends StatelessWidget {
         ),
         const SizedBox(height: 26),
         if (pacientes.isEmpty)
-          _Vacio(mensaje: mensajeVacio)
+          EstadoVacio(titulo: mensajeVacio, icono: Icons.search_off_rounded)
         else
           RejillaTarjetas(
             children: [
@@ -79,39 +80,6 @@ class SeguimientoPage extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Vacio extends StatelessWidget {
-  const _Vacio({required this.mensaje});
-
-  final String mensaje;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: ColoresVitalys.borde),
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.search_off_rounded,
-            size: 40,
-            color: ColoresVitalys.textoSuave,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            mensaje,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: ColoresVitalys.textoSecundario),
-          ),
-        ],
-      ),
     );
   }
 }

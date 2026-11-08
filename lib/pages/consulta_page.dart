@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/barra_volver.dart';
 import 'package:red_vitalys/widgets/boton.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
 
@@ -32,11 +33,7 @@ class ConsultaPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          tooltip: 'Volver',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: onVolver,
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'Acceso denegado',
           style: TextStyle(fontWeight: FontWeight.w800),
@@ -44,6 +41,7 @@ class ConsultaPage extends StatelessWidget {
       ),
       body: ContenidoPagina(
         children: [
+          BarraVolver(texto: 'Volver', onPressed: onVolver),
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
@@ -90,11 +88,6 @@ class ConsultaPage extends StatelessWidget {
                     spacing: 12,
                     runSpacing: 10,
                     children: [
-                      BotonVitalys(
-                        texto: 'Volver',
-                        variante: VarianteBoton.secundario,
-                        onPressed: onVolver,
-                      ),
                       if (sinRelacion)
                         BotonVitalys(
                           texto: 'Declarar Urgencia',

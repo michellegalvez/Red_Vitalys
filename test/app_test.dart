@@ -321,6 +321,8 @@ void main() {
       expect(find.text('Hernán Darío Quintero Salcedo'), findsNothing);
 
       await tocar(t, find.text('Declarar Urgencia'));
+      // El pop-up vuelve sin propósito elegido: se elige Urgencia (F-16).
+      await tocar(t, find.text('Urgencia (acceso de emergencia)'));
       expect(find.text(avisoDeclarandoUrgencia), findsOneWidget);
       await tocar(t, find.text('Abrir historia clínica'));
       expect(find.text(avisoAccesoEmergencia), findsOneWidget);
@@ -464,7 +466,7 @@ void main() {
       await entrarComoMedico(t);
       await tocar(t, find.byTooltip('Menú de usuario'));
       expect(find.text('Médico · Cali Norte'), findsOneWidget);
-      await tocar(t, find.text('Salir'));
+      await tocar(t, find.text('Cerrar sesión'));
       expect(find.text('Ingrese a su sesión'), findsOneWidget);
       expect(find.text(mensajeInactividad), findsNothing);
     });

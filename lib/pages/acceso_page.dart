@@ -6,6 +6,7 @@ import 'package:red_vitalys/widgets/boton.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/marca.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
 
 /// Los dos pasos del inicio de sesión (F-13): primero se validan el correo
 /// y la contraseña, y después se elige la sede entre las asignadas.
@@ -165,7 +166,11 @@ class AccesoPage extends StatelessWidget {
   List<Widget> _pasoCredenciales() {
     return [
       if (avisoInactividad != null) ...[
-        Aviso(tipo: TipoAviso.informativo, texto: avisoInactividad!),
+        Aviso(
+          tipo: TipoAviso.informativo,
+          texto: avisoInactividad!,
+          anunciar: true,
+        ),
         const SizedBox(height: 16),
       ],
       if (mensajeError != null) ...[
@@ -177,14 +182,22 @@ class AccesoPage extends StatelessWidget {
         controller: correo,
         hint: 'nombre@vitalys.co',
         teclado: TextInputType.emailAddress,
-        habilitado: !ingresando,
+        autofillHints: const [AutofillHints.email],
+        textInputAction: TextInputAction.next,
+        maxLength: 254,
+        autocorregir: false,
+        soloLectura: ingresando,
       ),
       const SizedBox(height: 18),
       CampoTexto(
         etiqueta: 'Contraseña',
         controller: contrasena,
         oculto: !mostrarContrasena,
-        habilitado: !ingresando,
+        autofillHints: const [AutofillHints.password],
+        autocorregir: false,
+        textInputAction: TextInputAction.done,
+        maxLength: 128,
+        soloLectura: ingresando,
         onSubmitted: (_) => onIngresar(),
         sufijo: IconButton(
           tooltip: mostrarContrasena
@@ -248,13 +261,9 @@ class _UsuarioVerificado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ColoresVitalys.borde),
-      ),
+    return TarjetaVitalys(
+      relleno: const EdgeInsets.all(14),
+      radio: TarjetaVitalys.radioFila,
       child: Row(
         children: [
           AvatarIniciales(
@@ -311,13 +320,9 @@ class _AyudaPrototipo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ColoresVitalys.borde),
-      ),
+    return TarjetaVitalys(
+      relleno: const EdgeInsets.all(16),
+      radio: TarjetaVitalys.radioFila,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -407,8 +412,23 @@ class _PanelVisual extends StatelessWidget {
       style: TextStyle(
         fontSize: escritorio ? 18 : 14.5,
         height: 1.5,
-        color: Colors.white.withValues(alpha: 0.85),
+        color: Colors.white.withValues(alpha: 0.92),
       ),
+    );
+
+    final contenido = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const MarcaRedVitalys(sobreOscuro: true, tamano: 32),
+        if (escritorio) const Spacer(flex: 3) else const SizedBox(height: 26),
+        lema,
+        SizedBox(height: escritorio ? 22 : 12),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: descripcion,
+        ),
+        if (escritorio) ...[const Spacer(flex: 2), const _Beneficios()],
+      ],
     );
 
     return Container(
@@ -425,30 +445,24 @@ class _PanelVisual extends StatelessWidget {
           colors: [
             ColoresVitalys.violetaHeroInicio,
             ColoresVitalys.violetaHeroFin,
-            Color(0xFF3B7BE8),
+            Color(0xFF2F5FD0),
           ],
           stops: [0, 0.65, 1],
         ),
       ),
       child: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const MarcaRedVitalys(sobreOscuro: true, tamano: 32),
-            if (escritorio)
-              const Spacer(flex: 3)
-            else
-              const SizedBox(height: 26),
-            lema,
-            SizedBox(height: escritorio ? 22 : 12),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 540),
-              child: descripcion,
-            ),
-            if (escritorio) ...[const Spacer(flex: 2), const _Beneficios()],
-          ],
-        ),
+        child: escritorio
+            ? LayoutBuilder(
+                // Con poca altura el panel se desplaza en vez de desbordar.
+                builder: (context, caja) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: caja.maxHeight),
+                    child: IntrinsicHeight(child: contenido),
+                  ),
+                ),
+              )
+            : contenido,
       ),
     );
   }

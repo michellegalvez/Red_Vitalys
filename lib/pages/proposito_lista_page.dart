@@ -5,6 +5,7 @@ import 'package:red_vitalys/widgets/aviso.dart';
 import 'package:red_vitalys/widgets/boton.dart';
 import 'package:red_vitalys/widgets/marca.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 
 /// Último paso después de iniciar sesión: el médico declara para qué va a
@@ -174,16 +175,25 @@ class PropositoListaPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        for (final p in propositos)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 9),
-            child: OpcionProposito(
-              proposito: p,
-              elegido: p == elegido,
-              compacto: compacto,
-              onTap: () => onElegir(p),
-            ),
+        Semantics(
+          container: true,
+          label: 'Propósito de uso',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final p in propositos)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 9),
+                  child: OpcionProposito(
+                    proposito: p,
+                    elegido: p == elegido,
+                    compacto: compacto,
+                    onTap: () => onElegir(p),
+                  ),
+                ),
+            ],
           ),
+        ),
         if (elegido == Proposito.urgencia) ...[
           const SizedBox(height: 2),
           const Aviso(
@@ -234,13 +244,19 @@ class _Bienvenida extends StatelessWidget {
         color: Colors.white,
       ),
     );
+    ChipVitalys chip(IconData icono, String texto) => ChipVitalys(
+      texto: texto,
+      icono: icono,
+      colorFondo: Colors.white.withValues(alpha: 0.2),
+      colorTexto: Colors.white,
+    );
     final etiquetas = Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        _Chip(icono: Icons.location_on_outlined, texto: page.sede),
-        _Chip(icono: Icons.badge_outlined, texto: page.rol),
-        _Chip(icono: Icons.schedule_rounded, texto: page.fecha),
+        chip(Icons.location_on_outlined, page.sede),
+        chip(Icons.badge_outlined, page.rol),
+        chip(Icons.schedule_rounded, page.fecha),
       ],
     );
     final resumen = IntrinsicHeight(
@@ -257,12 +273,29 @@ class _Bienvenida extends StatelessWidget {
           Expanded(
             child: _Dato(
               valor: '${page.conAlerta}',
-              texto: 'con alerta de riesgo',
+              texto: 'con riesgo alto',
               resaltado: true,
             ),
           ),
         ],
       ),
+    );
+
+    final contenido = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const MarcaRedVitalys(sobreOscuro: true, tamano: 32),
+        if (escritorio) const Spacer(flex: 2) else const SizedBox(height: 22),
+        saludo,
+        const SizedBox(height: 14),
+        etiquetas,
+        SizedBox(height: escritorio ? 26 : 16),
+        resumen,
+        if (escritorio) ...[
+          const Spacer(flex: 2),
+          const PorQueSePide(compacto: false, oscuro: true),
+        ],
+      ],
     );
 
     return Container(
@@ -279,66 +312,24 @@ class _Bienvenida extends StatelessWidget {
           colors: [
             ColoresVitalys.violetaHeroInicio,
             ColoresVitalys.violetaHeroFin,
-            Color(0xFF3B7BE8),
+            Color(0xFF2F5FD0),
           ],
           stops: [0, 0.65, 1],
         ),
       ),
       child: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const MarcaRedVitalys(sobreOscuro: true, tamano: 32),
-            if (escritorio)
-              const Spacer(flex: 2)
-            else
-              const SizedBox(height: 22),
-            saludo,
-            const SizedBox(height: 14),
-            etiquetas,
-            SizedBox(height: escritorio ? 26 : 16),
-            resumen,
-            if (escritorio) ...[
-              const Spacer(flex: 2),
-              const PorQueSePide(compacto: false, oscuro: true),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({required this.icono, required this.texto});
-
-  final IconData icono;
-  final String texto;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icono, size: 15, color: ColoresVitalys.turquesa),
-          const SizedBox(width: 6),
-          Text(
-            texto,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+        child: escritorio
+            ? LayoutBuilder(
+                // Con poca altura el panel se desplaza en vez de desbordar.
+                builder: (context, caja) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: caja.maxHeight),
+                    child: IntrinsicHeight(child: contenido),
+                  ),
+                ),
+              )
+            : contenido,
       ),
     );
   }
@@ -381,7 +372,7 @@ class _Dato extends StatelessWidget {
             texto,
             style: TextStyle(
               fontSize: 12.5,
-              color: Colors.white.withValues(alpha: 0.85),
+              color: Colors.white.withValues(alpha: 0.92),
             ),
           ),
         ],

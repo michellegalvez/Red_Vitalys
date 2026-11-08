@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/foco.dart';
 
 const _radioCampo = BorderRadius.all(Radius.circular(18));
 
@@ -25,7 +27,7 @@ InputDecoration _decoracion({
     fillColor: habilitado ? Colors.white : ColoresVitalys.fondoLavanda,
     isDense: true,
     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-    enabledBorder: borde(ColoresVitalys.borde),
+    enabledBorder: borde(ColoresVitalys.bordeControl),
     disabledBorder: borde(ColoresVitalys.borde),
     focusedBorder: borde(ColoresVitalys.primario, 1.8),
     errorBorder: borde(ColoresVitalys.alerta),
@@ -77,11 +79,15 @@ class CampoTexto extends StatelessWidget {
     this.error,
     this.oculto = false,
     this.sufijo,
-    this.accion,
     this.habilitado = true,
+    this.soloLectura = false,
     this.lineas = 1,
     this.teclado,
     this.onSubmitted,
+    this.autofillHints,
+    this.textInputAction,
+    this.maxLength,
+    this.autocorregir,
   });
 
   final String etiqueta;
@@ -92,28 +98,49 @@ class CampoTexto extends StatelessWidget {
   final bool oculto;
   final Widget? sufijo;
 
-  /// Botón que va al lado del campo, por ejemplo *Mostrar*.
-  final Widget? accion;
-
   /// Sin habilitar, el campo se ve y no se puede editar.
   final bool habilitado;
+
+  /// Se puede enfocar y leer, pero no editar (no pierde el foco).
+  final bool soloLectura;
 
   /// Líneas visibles del campo (más de una para textos largos).
   final int lineas;
   final TextInputType? teclado;
   final ValueChanged<String>? onSubmitted;
+  final Iterable<String>? autofillHints;
+  final TextInputAction? textInputAction;
+
+  /// Largo máximo; el contador no se muestra.
+  final int? maxLength;
+  final bool? autocorregir;
 
   @override
   Widget build(BuildContext context) {
     final campo = Semantics(
       label: etiqueta,
+      hint: ayuda,
+      textField: true,
       child: TextField(
         controller: controller,
         enabled: habilitado,
+        readOnly: soloLectura,
         minLines: lineas,
         maxLines: oculto ? 1 : lineas,
         obscureText: oculto,
+        autocorrect: autocorregir ?? !oculto,
+        enableSuggestions: !oculto,
         keyboardType: teclado,
+        textInputAction: textInputAction,
+        autofillHints: autofillHints,
+        maxLength: maxLength,
+        maxLengthEnforcement: MaxLengthEnforcement.enforced,
+        buildCounter: (
+          _, {
+          required currentLength,
+          required isFocused,
+          maxLength,
+        }) => null,
         onSubmitted: onSubmitted,
         decoration: _decoracion(
           hint: hint,
@@ -123,22 +150,11 @@ class CampoTexto extends StatelessWidget {
         ),
       ),
     );
-    final accion = this.accion;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ExcludeSemantics(child: _Etiqueta(etiqueta, ayuda: ayuda)),
-        if (accion == null)
-          campo
-        else
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: campo),
-              const SizedBox(width: 10),
-              Padding(padding: const EdgeInsets.only(top: 4), child: accion),
-            ],
-          ),
+        campo,
       ],
     );
   }
@@ -171,7 +187,7 @@ class SelectorVitalys<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final campo = DropdownButtonFormField<T>(
-      key: ValueKey('${etiqueta ?? hint}-$valor-${opciones.length}'),
+      key: ValueKey('${etiqueta ?? hint}-${opciones.length}'),
       initialValue: valor,
       isExpanded: true,
       borderRadius: _radioCampo,
@@ -191,12 +207,18 @@ class SelectorVitalys<T> extends StatelessWidget {
       ],
       onChanged: onChanged,
     );
-    if (etiqueta == null) return campo;
+    final conEtiqueta = Semantics(
+      label: etiqueta ?? hint,
+      hint: ayuda,
+      container: true,
+      child: campo,
+    );
+    if (etiqueta == null) return conEtiqueta;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Etiqueta(etiqueta!, ayuda: ayuda),
-        campo,
+        ExcludeSemantics(child: _Etiqueta(etiqueta!, ayuda: ayuda)),
+        conEtiqueta,
       ],
     );
   }
@@ -239,33 +261,45 @@ class _BuscadorState extends State<Buscador> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: _controller,
-          onChanged: widget.onChanged,
-          textInputAction: TextInputAction.search,
-          decoration:
-              _decoracion(
-                hint: widget.hint,
-                prefijo: const Icon(Icons.search_rounded),
-              ).copyWith(
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(999)),
-                ),
-                enabledBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(999)),
-                  borderSide: BorderSide(
-                    color: ColoresVitalys.borde,
-                    width: 1.2,
+        Semantics(
+          label: widget.hint,
+          textField: true,
+          child: TextField(
+            controller: _controller,
+            onChanged: widget.onChanged,
+            maxLength: 100,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            buildCounter: (
+              _, {
+              required currentLength,
+              required isFocused,
+              maxLength,
+            }) => null,
+            textInputAction: TextInputAction.search,
+            decoration:
+                _decoracion(
+                  hint: widget.hint,
+                  prefijo: const Icon(Icons.search_rounded),
+                ).copyWith(
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(999)),
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(999)),
+                    borderSide: BorderSide(
+                      color: ColoresVitalys.bordeControl,
+                      width: 1.2,
+                    ),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(999)),
+                    borderSide: BorderSide(
+                      color: ColoresVitalys.primario,
+                      width: 1.8,
+                    ),
                   ),
                 ),
-                focusedBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(999)),
-                  borderSide: BorderSide(
-                    color: ColoresVitalys.primario,
-                    width: 1.8,
-                  ),
-                ),
-              ),
+          ),
         ),
         if (widget.ayuda != null)
           Padding(
@@ -301,25 +335,45 @@ class FiltroPildora extends StatelessWidget {
     return Semantics(
       selected: seleccionado,
       button: true,
-      child: Material(
-        color: seleccionado ? ColoresVitalys.tinta : Colors.white,
-        shape: StadiumBorder(
-          side: BorderSide(
-            color: seleccionado ? ColoresVitalys.tinta : ColoresVitalys.borde,
-            width: 1.2,
-          ),
-        ),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Text(
-              texto,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: seleccionado ? Colors.white : ColoresVitalys.tinta,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: AnilloFoco(
+              child: Material(
+                color: seleccionado ? ColoresVitalys.tinta : Colors.white,
+                shape: StadiumBorder(
+                  side: BorderSide(
+                    color: seleccionado
+                        ? ColoresVitalys.tinta
+                        : ColoresVitalys.bordeControl,
+                    width: 1.2,
+                  ),
+                ),
+                child: InkWell(
+                  customBorder: const StadiumBorder(),
+                  onTap: onTap,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    child: Text(
+                      texto,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: seleccionado
+                            ? Colors.white
+                            : ColoresVitalys.tinta,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

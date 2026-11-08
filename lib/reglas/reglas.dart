@@ -79,6 +79,13 @@ List<Proposito> propositosDe(Rol rol) => switch (rol) {
   Rol.auditor => const [],
 };
 
+/// Propósitos con los que se puede registrar una atención: *Atención del
+/// paciente* y *Urgencia* (F-04).
+List<Proposito> propositosParaRegistrar(Rol rol) => [
+  for (final p in propositosDe(rol))
+    if (p == Proposito.atencionPaciente || p == Proposito.urgencia) p,
+];
+
 /// Relación médico-paciente (RF-25, F-05): registró una atención suya con
 /// *Atención del paciente*, o el paciente fue dado de alta en los últimos
 /// 30 días en una de sus sedes asignadas.
@@ -178,6 +185,29 @@ ResultadoConsulta evaluarConsulta({
   return tieneRelacion(usuario, paciente, hoy)
       ? ResultadoConsulta.permitido
       : ResultadoConsulta.rechazoRelacion;
+}
+
+/// Decide si el usuario puede registrar una atención: solo el médico, con
+/// *Atención del paciente* o *Urgencia*, y con las mismas reglas de relación
+/// que para abrir la historia (F-04, F-05, F-18).
+ResultadoConsulta evaluarRegistro({
+  required Usuario usuario,
+  required PacienteEnSeguimiento paciente,
+  required Proposito proposito,
+  required DateTime hoy,
+}) {
+  if (!rolPermite(usuario.rol, AccionPermitida.registrarAtencion)) {
+    return ResultadoConsulta.rechazoRol;
+  }
+  if (!propositosParaRegistrar(usuario.rol).contains(proposito)) {
+    return ResultadoConsulta.rechazoProposito;
+  }
+  return evaluarConsulta(
+    usuario: usuario,
+    paciente: paciente,
+    proposito: proposito,
+    hoy: hoy,
+  );
 }
 
 // -----------------------------------------------------------------------

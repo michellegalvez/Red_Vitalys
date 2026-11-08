@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/campo_dato.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
 
 /// Una fila de la tabla de eventos, ya con los textos que se muestran.
 typedef FilaEvento = ({
@@ -20,22 +22,6 @@ typedef FilaEvento = ({
   String ip,
 });
 
-/// Una columna de la tabla de celular, con su ancho fijo: la tabla se
-/// desliza hacia los lados.
-typedef _Columna = ({String titulo, double ancho});
-
-const List<_Columna> _columnas = [
-  (titulo: 'Fecha y hora', ancho: 142),
-  (titulo: 'Usuario', ancho: 100),
-  (titulo: 'Acción', ancho: 92),
-  (titulo: 'Recurso', ancho: 150),
-  (titulo: 'Paciente', ancho: 180),
-  (titulo: 'Propósito', ancho: 170),
-  (titulo: 'Resultado', ancho: 118),
-  (titulo: 'Sede', ancho: 180),
-  (titulo: 'IP', ancho: 120),
-];
-
 /// Columnas de la tabla de computador. El peso reparte el espacio que sobra
 /// después de darle a cada columna su ancho mínimo. La IP va debajo del usuario y la sede al
 /// final, para no perder ninguno de los datos de F-21.
@@ -52,13 +38,10 @@ const List<_ColumnaCompleta> _columnasCompletas = [
   (titulo: 'Sede', peso: 12),
 ];
 
-/// Margen a cada lado de las filas, que se suma al ancho de la tabla.
-const double _margenFila = 4;
-
-/// Tabla de eventos de la auditoría (F-21). En celular muestra la fecha y
-/// hora, el usuario y la acción, y se desliza hacia los lados para ver el
-/// resto; en computador se ve completa. Solo muestra: no ofrece ninguna
-/// opción para editar ni borrar eventos (AD-08).
+/// Eventos de la auditoría (F-21). En computador es una tabla; en celular
+/// (menos de [anchoEscritorio]) cada evento es una tarjeta vertical, sin
+/// desplazamiento lateral (RNF-07). Solo muestra: no ofrece ninguna opción
+/// para editar ni borrar eventos (AD-08).
 class TablaEventos extends StatelessWidget {
   const TablaEventos({
     super.key,
@@ -71,9 +54,27 @@ class TablaEventos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (filas.isEmpty) {
+      return EstadoVacio(
+        titulo: mensajeVacio,
+        icono: Icons.filter_alt_off_outlined,
+      );
+    }
+    if (MediaQuery.sizeOf(context).width < anchoEscritorio) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final f in filas)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: TarjetaEvento(fila: f),
+            ),
+        ],
+      );
+    }
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(TarjetaVitalys.radioTarjeta),
         boxShadow: [
           BoxShadow(
             color: ColoresVitalys.tinta.withValues(alpha: 0.07),
@@ -82,57 +83,72 @@ class TablaEventos extends StatelessWidget {
           ),
         ],
       ),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: ColoresVitalys.borde),
+      child: TarjetaVitalys(
+        relleno: EdgeInsets.zero,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(TarjetaVitalys.radioTarjeta - 1),
+          child: _TablaCompleta(filas: filas),
         ),
-        child: Builder(
-          builder: (context) {
-            if (MediaQuery.sizeOf(context).width >= anchoEscritorio) {
-              return _TablaCompleta(filas: filas, mensajeVacio: mensajeVacio);
-            }
-            final anchos = _Tabla.medirAnchos(context, filas);
-            final tabla = _Tabla(
-              filas: filas,
-              anchos: anchos,
-              mensajeVacio: mensajeVacio,
-            );
-            final anchoTotal = anchos.fold<double>(
-              _margenFila * 2,
-              (a, ancho) => a + ancho,
-            );
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 14, 16, 10),
-                  child: Text(
-                    'Deslice la tabla hacia la derecha para ver recurso, '
-                    'paciente, propósito, resultado, sede e IP.',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: ColoresVitalys.textoSecundario,
-                    ),
-                  ),
+      ),
+    );
+  }
+}
+
+/// Un evento de la auditoría como tarjeta vertical, para celular. Cada campo
+/// es "Etiqueta: valor" y se lee como un solo texto.
+class TarjetaEvento extends StatelessWidget {
+  const TarjetaEvento({super.key, required this.fila});
+
+  final FilaEvento fila;
+
+  @override
+  Widget build(BuildContext context) {
+    final e = fila;
+    final permitido = e.resultado == ResultadoAuditoria.permitido;
+    return TarjetaVitalys(
+      relleno: const EdgeInsets.all(16),
+      radio: TarjetaVitalys.radioFila,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                e.fechaHora,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: ColoresVitalys.tinta,
                 ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: anchoTotal,
-                    // El estado vacío se queda a la vista, sin deslizar.
-                    child: filas.isEmpty
-                        ? _Tabla(filas: [], anchos: anchos, mensajeVacio: null)
-                        : tabla,
-                  ),
-                ),
-                if (filas.isEmpty) _Vacio(mensaje: mensajeVacio),
-              ],
-            );
-          },
-        ),
+              ),
+              ChipVitalys(
+                texto: e.resultado.nombre,
+                icono: permitido
+                    ? Icons.check_rounded
+                    : Icons.lock_outline_rounded,
+                tamanoTexto: 12.5,
+                colorFondo: permitido
+                    ? ColoresVitalys.exitoFondo
+                    : ColoresVitalys.alertaFondo,
+                colorTexto: permitido
+                    ? ColoresVitalys.mentaTexto
+                    : ColoresVitalys.alertaTexto,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          DatoEnLinea(etiqueta: 'Usuario', valor: e.usuario, sinPartir: true),
+          DatoEnLinea(etiqueta: 'Acción', valor: e.accion),
+          DatoEnLinea(etiqueta: 'Recurso', valor: e.recurso),
+          DatoEnLinea(etiqueta: 'Paciente', valor: e.paciente),
+          DatoEnLinea(etiqueta: 'Propósito', valor: e.proposito),
+          DatoEnLinea(etiqueta: 'Sede', valor: e.sede),
+          if (e.ip != '—')
+            DatoEnLinea(etiqueta: 'IP', valor: e.ip, sinPartir: true),
+        ],
       ),
     );
   }
@@ -167,162 +183,6 @@ class _Medidor {
       .fold(0, (a, p) => a > ancho(p, estilo) ? a : ancho(p, estilo));
 }
 
-/// La tabla de celular, con columnas de ancho fijo que solo crecen si una
-/// palabra no cabe, por ejemplo el correo de un ingreso fallido.
-class _Tabla extends StatelessWidget {
-  const _Tabla({
-    required this.filas,
-    required this.anchos,
-    required this.mensajeVacio,
-  });
-
-  final List<FilaEvento> filas;
-
-  /// Ancho de cada columna, de [_Tabla.medirAnchos].
-  final List<double> anchos;
-
-  /// Sin mensaje, la tabla vacía muestra solo los títulos.
-  final String? mensajeVacio;
-
-  static const double _relleno = 12;
-
-  static const _estiloCelda = TextStyle(
-    fontSize: 13.5,
-    height: 1.4,
-    color: ColoresVitalys.tinta,
-  );
-
-  /// El ancho fijo de cada columna, o más si su palabra más larga no cabe.
-  /// Las pastillas de propósito y resultado son de una palabra y caben en
-  /// su ancho fijo.
-  static List<double> medirAnchos(
-    BuildContext context,
-    List<FilaEvento> filas,
-  ) {
-    final medidor = _Medidor(context);
-    final anchos = [for (final c in _columnas) c.ancho];
-    void ajustar(int i, String texto) {
-      final necesario =
-          medidor.palabraMasLarga(texto, _estiloCelda) + _relleno * 2;
-      if (necesario > anchos[i]) anchos[i] = necesario;
-    }
-
-    for (final e in filas) {
-      ajustar(0, e.fechaHora);
-      ajustar(1, e.usuario);
-      ajustar(2, e.accion);
-      ajustar(3, e.recurso);
-      ajustar(4, e.paciente);
-      if (!e.emergencia) ajustar(5, e.proposito);
-      ajustar(7, e.sede);
-      ajustar(8, e.ip);
-    }
-    return anchos;
-  }
-
-  Widget _celda(int i, Widget hijo) {
-    return SizedBox(
-      width: anchos[i],
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: _relleno),
-        child: hijo,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final mensaje = mensajeVacio;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          color: ColoresVitalys.fondo,
-          padding: const EdgeInsets.symmetric(
-            horizontal: _margenFila,
-            vertical: 14,
-          ),
-          child: Row(
-            children: [
-              for (var i = 0; i < _columnas.length; i++)
-                _celda(
-                  i,
-                  Text(
-                    _columnas[i].titulo.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
-                      color: ColoresVitalys.textoSecundario,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        for (var f = 0; f < filas.length; f++)
-          Container(
-            decoration: BoxDecoration(
-              border: f == filas.length - 1
-                  ? null
-                  : const Border(
-                      bottom: BorderSide(color: ColoresVitalys.borde),
-                    ),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: _margenFila,
-              vertical: 20,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: _celdasDe(filas[f]),
-            ),
-          ),
-        if (filas.isEmpty && mensaje != null) _Vacio(mensaje: mensaje),
-      ],
-    );
-  }
-
-  List<Widget> _celdasDe(FilaEvento e) {
-    final textos = [e.fechaHora, e.usuario, e.accion, e.recurso, e.paciente];
-    return [
-      for (var i = 0; i < textos.length; i++) _celda(i, _TextoCelda(textos[i])),
-      _celda(
-        5,
-        e.emergencia
-            ? Align(
-                alignment: Alignment.centerLeft,
-                child: _Pildora(
-                  texto: e.proposito,
-                  fondo: ColoresVitalys.advertenciaFondo,
-                  color: ColoresVitalys.advertenciaTexto,
-                ),
-              )
-            : _TextoCelda(e.proposito),
-      ),
-      _celda(
-        6,
-        Align(
-          alignment: Alignment.centerLeft,
-          child: e.resultado == ResultadoAuditoria.permitido
-              ? _Pildora(
-                  texto: e.resultado.nombre,
-                  fondo: ColoresVitalys.exitoFondo,
-                  color: ColoresVitalys.mentaTexto,
-                )
-              : _Pildora(
-                  texto: e.resultado.nombre,
-                  fondo: ColoresVitalys.alertaFondo,
-                  color: ColoresVitalys.alertaTexto,
-                ),
-        ),
-      ),
-      _celda(7, _TextoCelda(e.sede)),
-      _celda(8, _TextoCelda(e.ip)),
-    ];
-  }
-}
-
 /// La tabla de computador (Figma, pantalla 8), con celdas amplias y las
 /// marcas de resultado y de emergencia con su ícono.
 ///
@@ -331,12 +191,19 @@ class _Tabla extends StatelessWidget {
 /// que sobra se reparte según el peso de la columna. Si la ventana no
 /// alcanza para todas, la tabla se desliza hacia los lados.
 class _TablaCompleta extends StatelessWidget {
-  const _TablaCompleta({required this.filas, required this.mensajeVacio});
+  const _TablaCompleta({required this.filas});
 
   final List<FilaEvento> filas;
-  final String mensajeVacio;
 
   static const double _relleno = 10;
+
+  /// Lo que ocupa la pastilla además del texto: relleno e ícono.
+  static const double _marcoPastilla = 12 * 2 + 16 + 6;
+  static const double _tamanoPastilla = 15;
+  static const _estiloPastilla = TextStyle(
+    fontSize: _tamanoPastilla,
+    fontWeight: FontWeight.w700,
+  );
 
   static const _estiloTitulo = TextStyle(
     fontSize: 13,
@@ -380,15 +247,12 @@ class _TablaCompleta extends StatelessWidget {
       ajustar(
         5,
         e.emergencia
-            ? _Pildora.marco +
-                  palabraMasLarga(e.propositoCompleto, _Pildora.estiloGrande)
+            ? _AvisoEmergencia.marco +
+                  palabraMasLarga(e.propositoCompleto, _AvisoEmergencia.estilo)
             : palabraMasLarga(e.propositoCompleto, _estiloCelda),
       );
       // La pastilla de resultado nunca parte su texto.
-      ajustar(
-        6,
-        _Pildora.marco + ancho(e.resultado.nombre, _Pildora.estiloGrande),
-      );
+      ajustar(6, _marcoPastilla + ancho(e.resultado.nombre, _estiloPastilla));
       ajustar(7, palabraMasLarga(e.sede, _estiloCelda));
     }
     return [for (final m in minimos) m + _relleno * 2];
@@ -408,25 +272,15 @@ class _TablaCompleta extends StatelessWidget {
               minimos[i] + sobra * _columnasCompletas[i].peso / pesoTotal,
           ]);
         }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: totalMinimo,
-                child: _cuerpo(minimos, conVacio: false),
-              ),
-            ),
-            // El estado vacío se queda a la vista, sin deslizar.
-            if (filas.isEmpty) _Vacio(mensaje: mensajeVacio),
-          ],
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(width: totalMinimo, child: _cuerpo(minimos)),
         );
       },
     );
   }
 
-  Widget _cuerpo(List<double> anchos, {bool conVacio = true}) {
+  Widget _cuerpo(List<double> anchos) {
     Widget celda(int i, Widget hijo) => SizedBox(
       width: anchos[i],
       child: Padding(
@@ -472,7 +326,6 @@ class _TablaCompleta extends StatelessWidget {
             ),
             child: Row(children: _celdasDe(filas[f], celda)),
           ),
-        if (filas.isEmpty && conVacio) _Vacio(mensaje: mensajeVacio),
       ],
     );
   }
@@ -500,13 +353,7 @@ class _TablaCompleta extends StatelessWidget {
         e.emergencia
             ? Align(
                 alignment: Alignment.centerLeft,
-                child: _Pildora(
-                  texto: e.propositoCompleto,
-                  icono: Icons.warning_amber_rounded,
-                  fondo: ColoresVitalys.alertaFondo,
-                  color: ColoresVitalys.alertaTexto,
-                  grande: true,
-                ),
+                child: _AvisoEmergencia(texto: e.propositoCompleto),
               )
             : Text(e.propositoCompleto, style: _estiloCelda),
       ),
@@ -514,17 +361,16 @@ class _TablaCompleta extends StatelessWidget {
         6,
         Align(
           alignment: Alignment.centerLeft,
-          child: _Pildora(
+          child: ChipVitalys(
             texto: e.resultado.nombre,
             icono: permitido ? Icons.check_rounded : Icons.lock_outline_rounded,
-            fondo: permitido
+            tamanoTexto: _tamanoPastilla,
+            colorFondo: permitido
                 ? ColoresVitalys.exitoFondo
                 : ColoresVitalys.alertaFondo,
-            color: permitido
+            colorTexto: permitido
                 ? ColoresVitalys.mentaTexto
                 : ColoresVitalys.alertaTexto,
-            grande: true,
-            unaLinea: true,
           ),
         ),
       ),
@@ -533,112 +379,40 @@ class _TablaCompleta extends StatelessWidget {
   }
 }
 
-class _TextoCelda extends StatelessWidget {
-  const _TextoCelda(this.texto);
+/// El propósito de un acceso de emergencia en la tabla: sobre la superficie
+/// de la galería, con un ícono, y que parte el texto en líneas si hace falta.
+class _AvisoEmergencia extends StatelessWidget {
+  const _AvisoEmergencia({required this.texto});
 
   final String texto;
 
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      texto,
-      style: const TextStyle(
-        fontSize: 13.5,
-        height: 1.4,
-        color: ColoresVitalys.tinta,
-      ),
-    );
-  }
-}
-
-/// Pastilla de resultado o de emergencia. La de computador es más grande y
-/// lleva ícono.
-class _Pildora extends StatelessWidget {
-  const _Pildora({
-    required this.texto,
-    required this.fondo,
-    required this.color,
-    this.icono,
-    this.grande = false,
-    this.unaLinea = false,
-  });
-
-  final String texto;
-  final Color fondo;
-  final Color color;
-  final IconData? icono;
-  final bool grande;
-
-  /// El texto nunca se parte, por ejemplo en el resultado.
-  final bool unaLinea;
-
-  /// Texto de la pastilla grande, para medirla.
-  static const estiloGrande = TextStyle(
-    fontSize: 15,
-    fontWeight: FontWeight.w800,
+  static const estilo = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: ColoresVitalys.alertaTexto,
   );
 
-  /// Lo que ocupa la pastilla grande además del texto: relleno e ícono.
-  static const double marco = 14 * 2 + 17 + 8;
+  /// Lo que ocupa además del texto: relleno e ícono.
+  static const double marco = 12 * 2 + 18 + 8;
 
   @override
   Widget build(BuildContext context) {
-    final etiqueta = Text(
-      texto,
-      softWrap: !unaLinea,
-      style: grande
-          ? estiloGrande.copyWith(color: color)
-          : TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-    );
-    final icono = this.icono;
-    return Container(
-      padding: grande
-          ? const EdgeInsets.symmetric(horizontal: 14, vertical: 7)
-          : const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: fondo,
-        borderRadius: BorderRadius.circular(grande ? 18 : 999),
-      ),
-      child: icono == null
-          ? etiqueta
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icono, size: 17, color: color),
-                const SizedBox(width: 8),
-                if (unaLinea) etiqueta else Flexible(child: etiqueta),
-              ],
-            ),
-    );
-  }
-}
-
-class _Vacio extends StatelessWidget {
-  const _Vacio({required this.mensaje});
-
-  final String mensaje;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-      child: Column(
+    return TarjetaVitalys(
+      relleno: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      radio: TarjetaVitalys.radioFila,
+      color: ColoresVitalys.alertaFondo,
+      colorBorde: ColoresVitalys.alertaFondo,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(
-            Icons.filter_alt_off_outlined,
-            size: 36,
-            color: ColoresVitalys.textoSuave,
+            Icons.warning_amber_rounded,
+            size: 18,
+            color: ColoresVitalys.alertaTexto,
           ),
-          const SizedBox(height: 10),
-          Text(
-            mensaje,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: ColoresVitalys.textoSecundario),
-          ),
+          const SizedBox(width: 8),
+          Flexible(child: Text(texto, style: estilo)),
         ],
       ),
     );

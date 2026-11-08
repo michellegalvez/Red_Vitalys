@@ -127,7 +127,7 @@ void main() {
       await entrarComoAdministrativo(t);
       await tocar(t, find.text('Eventos adversos evitables'));
       await elegir<String?>(t, 'Amb. Envigado');
-      expect(find.text('Sin medición: Oct'), findsOneWidget);
+      expect(find.text('Sin medición: oct 2026'), findsOneWidget);
       await cerrarApp(t);
     });
 
@@ -389,8 +389,8 @@ void main() {
         await tocar(t, find.text('Revisión de calidad'));
         await tocar(t, find.text('Ver datos básicos'));
         expect(find.text('DATOS BÁSICOS'), findsOneWidget);
-        expect(find.text('Dirección'.toUpperCase()), findsOneWidget);
-        expect(find.text('Cl 70 # 52-31, Barranquilla'), findsOneWidget);
+        expect(find.text('Teléfono'.toUpperCase()), findsOneWidget);
+        expect(find.text('312 555 0103'), findsOneWidget);
         // Sin historia, atenciones, riesgo ni identificadores de origen.
         expect(find.text('HISTORIA CLÍNICA UNIFICADA'), findsNothing);
         expect(find.text('Atenciones'), findsNothing);
@@ -474,6 +474,8 @@ void main() {
       expect(find.text(rechazoRelacion), findsOneWidget);
 
       await tocar(t, find.text('Declarar Urgencia'));
+      // El pop-up vuelve sin propósito elegido: se elige Urgencia (F-16).
+      await tocar(t, find.text('Urgencia (acceso de emergencia)'));
       await tocar(t, find.text('Abrir historia clínica'));
       expect(find.text('HISTORIA CLÍNICA UNIFICADA'), findsOneWidget);
       expect(find.text(avisoAccesoEmergencia), findsOneWidget);

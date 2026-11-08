@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/foco.dart';
 import 'package:red_vitalys/widgets/marca.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
+
+/// Desde este ancho los destinos de la barra superior llevan texto.
+const double _anchoDestinosCompletos = 1100;
 
 /// Un destino de la navegación: su ícono y su nombre.
 typedef DestinoNavegacion = ({IconData icono, String nombre});
@@ -39,7 +44,11 @@ class BarraSuperior extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final escritorio = MediaQuery.sizeOf(context).width >= anchoEscritorio;
+    final ancho = MediaQuery.sizeOf(context).width;
+    final escritorio = ancho >= anchoEscritorio;
+
+    // Entre 900 y 1100 px los destinos solo muestran el ícono.
+    final soloIconos = ancho < _anchoDestinosCompletos;
     return Material(
       color: Colors.white,
       child: SafeArea(
@@ -62,6 +71,7 @@ class BarraSuperior extends StatelessWidget implements PreferredSizeWidget {
                             _EnlaceDestino(
                               destino: destinos[i],
                               activo: i == indiceActual,
+                              soloIcono: soloIconos,
                               onTap: () => onDestino?.call(i),
                             ),
                         ],
@@ -69,9 +79,18 @@ class BarraSuperior extends StatelessWidget implements PreferredSizeWidget {
                     : const SizedBox.shrink(),
               ),
               if (escritorio)
-                Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: _ChipSede(sede: sede),
+                // Ancho máximo: los destinos se quedan con el resto.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 200),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: ChipVitalys(
+                      texto: sede,
+                      icono: Icons.location_on_outlined,
+                      colorFondo: ColoresVitalys.fondoMenta,
+                      colorTexto: ColoresVitalys.mentaTexto,
+                    ),
+                  ),
                 ),
               MenuUsuario(
                 iniciales: iniciales,
@@ -93,95 +112,71 @@ class _EnlaceDestino extends StatelessWidget {
     required this.destino,
     required this.activo,
     required this.onTap,
+    required this.soloIcono,
   });
 
   final DestinoNavegacion destino;
   final bool activo;
   final VoidCallback onTap;
+  final bool soloIcono;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final color = activo
+        ? ColoresVitalys.primario
+        : ColoresVitalys.textoSecundario;
+    final enlace = Padding(
       padding: const EdgeInsets.only(right: 6),
       child: Semantics(
         selected: activo,
         button: true,
-        child: Material(
-          color: activo ? ColoresVitalys.fondoLavanda : Colors.transparent,
-          shape: const StadiumBorder(),
-          child: InkWell(
-            customBorder: const StadiumBorder(),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  Icon(
-                    destino.icono,
-                    size: 19,
-                    color: activo
-                        ? ColoresVitalys.primario
-                        : ColoresVitalys.textoSecundario,
+        label: destino.nombre,
+        excludeSemantics: true,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+          child: AnilloFoco(
+            child: Material(
+              color: activo ? ColoresVitalys.fondoLavanda : Colors.transparent,
+              shape: const StadiumBorder(),
+              child: InkWell(
+                customBorder: const StadiumBorder(),
+                onTap: onTap,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: soloIcono ? 14 : 16,
+                    vertical: 12,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    destino.nombre,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: activo
-                          ? ColoresVitalys.primario
-                          : ColoresVitalys.textoSecundario,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(destino.icono, size: 20, color: color),
+                      if (!soloIcono) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          destino.nombre,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       ),
     );
-  }
-}
-
-class _ChipSede extends StatelessWidget {
-  const _ChipSede({required this.sede});
-
-  final String sede;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: ColoresVitalys.fondoMenta,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.location_on_outlined,
-            size: 16,
-            color: ColoresVitalys.mentaTexto,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            sede,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: ColoresVitalys.mentaTexto,
-            ),
-          ),
-        ],
-      ),
-    );
+    return soloIcono ? Tooltip(message: destino.nombre, child: enlace) : enlace;
   }
 }
 
 enum _OpcionMenu { perfil, salir }
 
-/// Menú de usuario de la galería: el avatar abre *Mi perfil* y *Salir*.
+/// Menú de usuario de la galería: el avatar abre *Mi perfil* y *Cerrar sesión*.
 class MenuUsuario extends StatelessWidget {
   const MenuUsuario({
     super.key,
@@ -200,7 +195,7 @@ class MenuUsuario extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<_OpcionMenu>(
+    final menu = PopupMenuButton<_OpcionMenu>(
       tooltip: 'Menú de usuario',
       offset: const Offset(0, 56),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -247,7 +242,7 @@ class MenuUsuario extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             leading: Icon(Icons.logout_rounded, color: ColoresVitalys.alerta),
             title: Text(
-              'Salir',
+              'Cerrar sesión',
               style: TextStyle(color: ColoresVitalys.alertaTexto),
             ),
           ),
@@ -255,11 +250,12 @@ class MenuUsuario extends StatelessWidget {
       ],
       child: AvatarIniciales(
         iniciales: iniciales,
-        tamano: 42,
+        tamano: 48,
         fondo: ColoresVitalys.primario,
         colorTexto: Colors.white,
       ),
     );
+    return AnilloFoco(child: menu);
   }
 }
 

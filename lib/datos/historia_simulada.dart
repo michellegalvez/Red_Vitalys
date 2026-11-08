@@ -10,21 +10,27 @@ import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 
-const _direcciones = <String, String>{
-  'p1': 'Cra 7 # 116-50, Bogotá',
-  'p2': 'Av 6N # 24-18, Cali',
-  'p3': 'Cl 70 # 52-31, Barranquilla',
-  'p4': 'Cl 63 # 11-40, Bogotá',
-  'p5': 'Cra 43A # 7-50, Medellín',
-  'p6': 'Cra 33 # 48-12, Bucaramanga',
-  'p7': 'Cra 37 # 10-22, Medellín',
-  'p8': 'Cl 5 # 38-14, Cali',
-  'p9': 'Av 3N # 45-09, Cali',
-  'p10': 'Cl 72 # 10-34, Bogotá',
-  'p11': 'Cra 70 # 1-141, Medellín',
-  'p12': 'Cl 36 # 27-18, Bucaramanga',
-  'p13': 'Cra 100 # 11-90, Cali',
+/// Teléfono de contacto de cada paciente (F-03). Ninguno es real.
+const _telefonos = <String, String>{
+  'p1': '310 555 0101',
+  'p2': '311 555 0102',
+  'p3': '312 555 0103',
+  'p4': '313 555 0104',
+  'p5': '314 555 0105',
+  'p6': '315 555 0106',
+  'p7': '316 555 0107',
+  'p8': '317 555 0108',
+  'p9': '318 555 0109',
+  'p10': '319 555 0110',
+  'p11': '320 555 0111',
+  'p12': '321 555 0112',
+  'p13': '322 555 0113',
 };
+
+/// Sede del control previo de cada paciente: es otra sede de la red, para
+/// que su historia reúna atenciones de varias sedes (F-02, RNF-04).
+String _sedeControl(String sedeAlta) =>
+    sedeAlta == 'Amb. Cali Sur' ? 'Amb. Envigado' : 'Amb. Cali Sur';
 
 /// Motivo y diagnóstico de la hospitalización de cada paciente.
 const _motivos = <String, (String, String)>{
@@ -155,7 +161,7 @@ List<Encounter> _atenciones(
         id: 'enc-${p.id}-0',
         type: EncounterType.consultaExterna,
         status: EncounterStatus.finalizada,
-        facilityName: sedeAlta,
+        facilityName: _sedeControl(sedeAlta),
         startDate: alta
             .subtract(Duration(days: p.diasEstancia + 75))
             .add(manana(0)),
@@ -192,15 +198,16 @@ Patient historiaDe(
     documentType: p.tipoDocumento,
     documentNumber: p.numeroDocumento,
     birthDate: DateTime(hoy.year - p.edad, 6, 2),
-    address: _direcciones[p.id] ?? 'Dirección no registrada',
+    phone: _telefonos[p.id] ?? 'No registrado',
     systemIdentifiers: [
       SystemIdentifier(
         systemName: 'HCE $sedeAlta',
-        identifier: '${p.tipoDocumento} ${p.numeroDocumento}',
+        identifier:
+            'HCE-${p.numeroDocumento.substring(p.numeroDocumento.length - 6)}',
       ),
       SystemIdentifier(
         systemName: 'Laboratorio central',
-        identifier: '${p.tipoDocumento} ${p.numeroDocumento}',
+        identifier: 'LAB-${p.id.substring(1).padLeft(4, '0')}${p.edad}',
       ),
     ],
     readmissionRisk: ReadmissionRisk(

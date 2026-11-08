@@ -93,7 +93,7 @@ class Patient {
     required this.documentType,
     required this.documentNumber,
     required this.birthDate,
-    required this.address,
+    required this.phone,
     required this.systemIdentifiers,
     this.readmissionRisk,
     this.encounters = const [],
@@ -109,7 +109,9 @@ class Patient {
   final String documentType;
   final String documentNumber;
   final DateTime birthDate;
-  final String address;
+
+  /// Teléfono de contacto (F-03).
+  final String phone;
   final List<SystemIdentifier> systemIdentifiers;
   final ReadmissionRisk? readmissionRisk;
 

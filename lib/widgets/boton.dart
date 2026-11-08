@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/foco.dart';
 
 enum VarianteBoton { principal, secundario, pequeno }
 
@@ -62,9 +63,7 @@ class BotonVitalys extends StatelessWidget {
       ],
     );
 
-    return Semantics(
-      button: true,
-      enabled: habilitado,
+    final visual = AnilloFoco(
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
@@ -95,6 +94,24 @@ class BotonVitalys extends StatelessWidget {
               ),
               child: contenido,
             ),
+          ),
+        ),
+      ),
+    );
+
+    // El área táctil mide al menos 48 dp aunque el botón se vea más chico.
+    return Semantics(
+      button: true,
+      enabled: habilitado,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onPressed,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+          child: Center(
+            widthFactor: expandido ? null : 1,
+            heightFactor: 1,
+            child: visual,
           ),
         ),
       ),

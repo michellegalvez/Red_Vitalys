@@ -28,6 +28,8 @@ import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
 
+part 'app_screen_paginas.dart';
+
 /// Una declaración de propósito en curso. Sin paciente es la de la lista de
 /// pacientes con alta reciente (F-06); con paciente, la de abrirlo o, si
 /// [registrar], la de registrarle una atención (F-04).
@@ -45,14 +47,12 @@ class _Solicitud {
   final bool registrar;
 }
 
-/// Un paciente abierto, con el propósito declarado.
-typedef _Historia = ({PacienteEnSeguimiento paciente, Proposito proposito});
-
-/// Los datos básicos de un paciente que abrió el administrativo (F-03).
-typedef _DatosBasicos = ({PacienteEnSeguimiento paciente, Proposito proposito});
-
-/// Un registro de atención en curso, con el propósito declarado.
-typedef _Registro = ({PacienteEnSeguimiento paciente, Proposito proposito});
+/// Un paciente abierto con el propósito declarado: su historia, sus datos
+/// básicos (F-03) o el registro de una atención en curso (F-04).
+typedef _ConsultaAbierta = ({
+  PacienteEnSeguimiento paciente,
+  Proposito proposito,
+});
 
 /// Un acceso rechazado: al abrir al paciente o al registrarle una atención.
 typedef _Denegado = ({
@@ -106,17 +106,20 @@ class _AppScreenState extends State<AppScreen> {
   Seccion _seccion = Seccion.inicio;
   bool _listaDeclarada = false;
   _Solicitud? _solicitud;
-  _Historia? _historia;
-  _Registro? _registro;
+  _ConsultaAbierta? _historia;
+  _ConsultaAbierta? _registro;
   _Denegado? _denegado;
   bool _verPerfil = false;
   IdIndicador? _indicadorAbierto;
-  _DatosBasicos? _datosBasicos;
+  _ConsultaAbierta? _datosBasicos;
 
   /// La sede de la tendencia en el detalle de un indicador. `null` es *Toda
   /// la red* (F-09).
   String? _sedeTendencia;
   String _busquedaPaciente = '';
+
+  /// El indicador cuyas sedes se ven en el tablero (F-08).
+  IdIndicador _indicadorTablero = IdIndicador.reingreso;
 
   // Pacientes y atenciones registradas en esta sesión. Viven aquí, en la
   // Screen anfitriona; las Pages solo las muestran.
@@ -189,9 +192,11 @@ class _AppScreenState extends State<AppScreen> {
     setState(() {
       _ingresando = false;
       if (resultado.cuentaComoFallo ||
-          resultado == ResultadoIngreso.bloqueado) {
-        // Inicio de sesión fallido o intento durante el bloqueo (F-14 A3,
-        // F-20 A4): con el correo escrito, la IP y sin sede.
+          resultado == ResultadoIngreso.bloqueado ||
+          resultado == ResultadoIngreso.sinSedes) {
+        // Inicio de sesión fallido, intento durante el bloqueo o cuenta sin
+        // sedes (F-13 A3, F-14 A3, F-20 A4): con el correo escrito, la IP y
+        // sin sede. La cuenta sin sedes no suma al bloqueo.
         _registrarEvento(
           accion: AccionAuditoria.ingresar,
           recurso: RecursoAuditoria.sesion,
@@ -287,6 +292,11 @@ class _AppScreenState extends State<AppScreen> {
       _cerrarDetalles();
       _listaDeclarada = false;
       _filtroAuditoria = FiltroAuditoria.todos;
+      // Lo escrito en las búsquedas no pasa al siguiente usuario (F-15).
+      _busqueda = '';
+      _busquedaPaciente = '';
+      _seccion = Seccion.inicio;
+      _indicadorTablero = IdIndicador.reingreso;
       _correo.clear();
       _contrasena.clear();
       _mostrarContrasena = false;
@@ -362,21 +372,54 @@ class _AppScreenState extends State<AppScreen> {
     }
   }
 
-  void _elegirSeccion(Seccion seccion) => setState(() => _irA(seccion));
+  void _elegirSeccion(Seccion seccion) {
+    final usuario = _usuario;
+    if (usuario == null) return;
+    if (!seccionesDe(usuario.rol).contains(seccion)) {
+      _rechazarPorRol(usuario, RecursoAuditoria.pacientesAltaReciente);
+      return;
+    }
+    setState(() => _irA(seccion));
+  }
+
+  /// Lo que el rol no tiene en la tabla de F-18 se rechaza y queda como
+  /// evento *Denegado* (F-18 CA-1, F-20). La navegación no ofrece esas
+  /// acciones; esta es la guarda por si se llega por otro camino.
+  void _rechazarPorRol(Usuario usuario, RecursoAuditoria recurso) {
+    setState(() {
+      _registrarEvento(
+        usuario: usuario,
+        sedeId: _sedeSesion,
+        accion:
+            recurso == RecursoAuditoria.atencion ||
+                recurso == RecursoAuditoria.medicionIndicador
+            ? AccionAuditoria.registrar
+            : AccionAuditoria.consultar,
+        recurso: recurso,
+        resultado: ResultadoAuditoria.denegado,
+      );
+    });
+    ScaffoldMessenger.maybeOf(context)
+        ?.showSnackBar(const SnackBar(content: Text(rechazoRol)));
+  }
 
   void _verPacientes() => _elegirSeccion(Seccion.pacientes);
 
-  void _abrirPaciente(PacienteEnSeguimiento p, {Proposito? elegido}) {
+  void _abrirPaciente(PacienteEnSeguimiento p) {
     // El propósito no se hereda: arranca sin elegir (F-16 CA-4).
-    setState(() => _solicitud = _Solicitud(paciente: p, elegido: elegido));
+    setState(() => _solicitud = _Solicitud(paciente: p));
   }
 
   /// El médico elige *Registrar atención* en la historia: antes declara el
   /// propósito (F-04, F-16).
-  void _pedirRegistro(PacienteEnSeguimiento p, {Proposito? elegido}) {
-    setState(() {
-      _solicitud = _Solicitud(paciente: p, elegido: elegido, registrar: true);
-    });
+  void _pedirRegistro(PacienteEnSeguimiento p) {
+    final usuario = _usuario;
+    if (usuario == null) return;
+    if (!rolPermite(usuario.rol, AccionPermitida.registrarAtencion)) {
+      _rechazarPorRol(usuario, RecursoAuditoria.atencion);
+      return;
+    }
+    setState(() => _solicitud = _Solicitud(paciente: p, registrar: true));
   }
 
   void _elegirProposito(Proposito p) {
@@ -444,12 +487,19 @@ class _AppScreenState extends State<AppScreen> {
         }
         return;
       }
-      final resultado = evaluarConsulta(
-        usuario: usuario,
-        paciente: paciente,
-        proposito: elegido,
-        hoy: _datos.hoy,
-      );
+      final resultado = s.registrar
+          ? evaluarRegistro(
+              usuario: usuario,
+              paciente: paciente,
+              proposito: elegido,
+              hoy: _datos.hoy,
+            )
+          : evaluarConsulta(
+              usuario: usuario,
+              paciente: paciente,
+              proposito: elegido,
+              hoy: _datos.hoy,
+            );
       final permitido = resultado == ResultadoConsulta.permitido;
       if (s.registrar) {
         // Registrar una atención (F-04): el evento *Permitido* se crea al
@@ -488,6 +538,17 @@ class _AppScreenState extends State<AppScreen> {
         proposito: elegido,
       );
       if (permitido) {
+        // La historia muestra también el riesgo de reingreso: es otro
+        // recurso y deja su propio evento (F-07 pasos 3-4).
+        _registrarEvento(
+          usuario: usuario,
+          sedeId: _sedeSesion,
+          accion: AccionAuditoria.consultar,
+          recurso: RecursoAuditoria.riesgoReingreso,
+          resultado: ResultadoAuditoria.permitido,
+          paciente: paciente,
+          proposito: elegido,
+        );
         _historia = (paciente: paciente, proposito: elegido);
       } else {
         _denegado = (
@@ -533,10 +594,12 @@ class _AppScreenState extends State<AppScreen> {
     final d = _denegado;
     if (d == null) return;
     setState(() => _denegado = null);
+    // Vuelve a pedir el propósito sin ninguno elegido: el médico elige
+    // *Urgencia* y confirma (F-16, F-17 paso 2).
     if (d.alRegistrar) {
-      _pedirRegistro(d.paciente, elegido: Proposito.urgencia);
+      _pedirRegistro(d.paciente);
     } else {
-      _abrirPaciente(d.paciente, elegido: Proposito.urgencia);
+      _abrirPaciente(d.paciente);
     }
   }
 
@@ -559,6 +622,12 @@ class _AppScreenState extends State<AppScreen> {
     final usuario = _usuario;
     final valor = leerValor(nueva.valorTexto);
     if (usuario == null || valor == null) return;
+    if (!rolPermite(usuario.rol, AccionPermitida.registrarMedicion)) {
+      _rechazarPorRol(usuario, RecursoAuditoria.medicionIndicador);
+      return;
+    }
+    // Se vuelve a validar al guardar: la regla no depende de la Page.
+    if (_validarMedicion(nueva) != null) return;
     setState(() {
       _mediciones = [
         ..._mediciones,
@@ -649,142 +718,19 @@ class _AppScreenState extends State<AppScreen> {
       normalizarTexto(_busqueda).length >= minimoCaracteresBusqueda;
 
   /// Altas recientes con la búsqueda aplicada (por nombre o documento).
-  List<PacienteEnSeguimiento> get _pacientesBuscados {
-    final texto = normalizarTexto(_busqueda);
-    return [
-      for (final p in _altasRecientes)
-        if (!_busquedaActiva ||
-            normalizarTexto(p.nombre).contains(texto) ||
-            p.numeroDocumento.contains(texto))
-          p,
-    ];
-  }
+  /// Conserva el orden por riesgo de la lista; el criterio es el mismo de
+  /// la búsqueda de pacientes (F-01).
+  List<PacienteEnSeguimiento> get _pacientesBuscados => [
+    for (final p in _altasRecientes)
+      if (!_busquedaActiva || coincideBusqueda(p, _busqueda)) p,
+  ];
 
   // ---------------------------------------------------------------------
   // Construcción
   // ---------------------------------------------------------------------
 
   @override
-  Widget build(BuildContext context) {
-    final usuario = _usuario;
-    final solicitud = _solicitud;
-    // Registrar una atención se pide desde la historia, que está apilada
-    // encima de la pantalla raíz: su pop-up tiene que dibujarse por encima de
-    // todas las pantallas para verse.
-    final dialogoArriba =
-        usuario != null && solicitud != null && solicitud.registrar;
-    return Focus(
-      canRequestFocus: false,
-      skipTraversal: true,
-      onKeyEvent: (_, _) {
-        _registrarActividad();
-        return KeyEventResult.ignored;
-      },
-      child: Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) => _registrarActividad(),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ExcludeSemantics(
-                excluding: dialogoArriba,
-                child: ExcludeFocus(
-                  excluding: dialogoArriba,
-                  child: NavigatorPopHandler(
-                    enabled: _atrasPendiente,
-                    // Atrás cierra primero el pop-up de propósito que esté abierto y,
-                    // si no hay, la pantalla de arriba.
-                    onPopWithResult: (_) {
-                      if (_solicitud != null) {
-                        _cancelarProposito();
-                      } else {
-                        _navegador.currentState?.maybePop();
-                      }
-                    },
-                    child: Navigator(
-                      key: _navegador,
-                      pages: [
-                        if (usuario == null)
-                          MaterialPage<void>(
-                            key: const ValueKey('acceso'),
-                            child: _acceso(),
-                          )
-                        else ...[
-                          MaterialPage<void>(
-                            key: const ValueKey('app'),
-                            child: _aplicacion(usuario),
-                          ),
-                          if (_indicadorAbierto case final indicador?)
-                            MaterialPage<void>(
-                              key: const ValueKey('indicador'),
-                              child: _detalleIndicador(usuario, indicador),
-                            ),
-                          if (_datosBasicos case final datos?)
-                            MaterialPage<void>(
-                              key: ValueKey('datos-${datos.paciente.id}'),
-                              child: _paginaDatosBasicos(usuario, datos),
-                            ),
-                          if (_historia case final historia?)
-                            MaterialPage<void>(
-                              key: ValueKey('historia-${historia.paciente.id}'),
-                              child: _paginaHistoria(usuario, historia),
-                            ),
-                          if (_registro case final registro?)
-                            MaterialPage<void>(
-                              key: ValueKey('registro-${registro.paciente.id}'),
-                              child: _paginaRegistro(usuario, registro),
-                            ),
-                          if (_denegado case final denegado?)
-                            MaterialPage<void>(
-                              key: ValueKey('denegado-${denegado.paciente.id}'),
-                              child: ConsultaPage(
-                                resultado: denegado.resultado,
-                                onVolver: _cerrarDenegado,
-                                onDeclararUrgencia: _declararUrgencia,
-                              ),
-                            ),
-                          if (_verPerfil)
-                            MaterialPage<void>(
-                              key: const ValueKey('perfil'),
-                              child: _perfil(),
-                            ),
-                        ],
-                      ],
-                      onDidRemovePage: (page) {
-                        final clave = page.key;
-                        if (clave is! ValueKey<String>) return;
-                        final id = clave.value;
-                        if (id.startsWith('historia')) {
-                          _cerrarHistoria();
-                        } else if (id.startsWith('datos')) {
-                          setState(() => _datosBasicos = null);
-                        } else if (id.startsWith('registro')) {
-                          setState(() => _registro = null);
-                        } else if (id.startsWith('denegado')) {
-                          _cerrarDenegado();
-                        } else if (id == 'indicador') {
-                          setState(() {
-                            _indicadorAbierto = null;
-                            _sedeTendencia = null;
-                          });
-                        } else if (id == 'perfil') {
-                          setState(() => _verPerfil = false);
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (dialogoArriba) ...[
-              const Positioned.fill(child: FondoDialogo()),
-              Positioned.fill(child: _dialogo(usuario, solicitud)),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => _raiz();
 
   /// Hay algo a lo que volver con Atrás: el paso de la sede, una pantalla de
   /// detalle o una declaración de propósito. Si no, Atrás sale de la app como
@@ -800,481 +746,7 @@ class _AppScreenState extends State<AppScreen> {
         _solicitud != null;
   }
 
-  Widget _acceso() {
-    final validado = _usuarioValidado;
-    return PopScope(
-      canPop: _paso == PasoAcceso.credenciales,
-      onPopInvokedWithResult: (hizoPop, _) {
-        if (!hizoPop) _volverACredenciales();
-      },
-      child: AccesoPage(
-        paso: _paso,
-        correo: _correo,
-        contrasena: _contrasena,
-        mostrarContrasena: _mostrarContrasena,
-        ingresando: _ingresando,
-        mensajeError: _mensajeError,
-        avisoInactividad: _avisoInactividad,
-        contrasenaPrototipo: _datos.contrasenaPrototipo,
-        perfiles: [
-          for (final u in _datos.usuarios)
-            (
-              etiqueta: u.sedesAsignadas.isEmpty ? 'Sin sedes' : u.rol.nombre,
-              correo: u.correo,
-            ),
-        ],
-        usuario: validado,
-        sedes: [
-          if (validado != null)
-            for (final id in validado.sedesAsignadas) _datos.sede(id),
-        ],
-        sedeElegida: _sedeElegida,
-        errorSede: _errorSede,
-        onAlternarContrasena: () =>
-            setState(() => _mostrarContrasena = !_mostrarContrasena),
-        onIngresar: _ingresar,
-        onElegirPerfil: _rellenarPerfil,
-        onElegirSede: (id) => setState(() {
-          _sedeElegida = id;
-          _errorSede = null;
-        }),
-        onConfirmarSede: _confirmarSede,
-        onVolver: _volverACredenciales,
-      ),
-    );
-  }
-
-  Widget _aplicacion(Usuario usuario) {
-    final escritorio = MediaQuery.sizeOf(context).width >= anchoEscritorio;
-    final secciones = seccionesDe(usuario.rol);
-    final sede = _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
-    final solicitud = _solicitud;
-    // El pop-up de registrar una atención lo dibuja `build`, por encima de
-    // todas las pantallas.
-    final enRaiz = solicitud != null && !solicitud.registrar;
-
-    return PopScope(
-      canPop: solicitud == null,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _cancelarProposito();
-      },
-      child: solicitud != null && solicitud.paciente == null
-          ? _propositoLista(usuario, sede, solicitud)
-          : Stack(
-              children: [
-                Positioned.fill(
-                  child: ExcludeSemantics(
-                    excluding: enRaiz,
-                    child: ExcludeFocus(
-                      excluding: enRaiz,
-                      child: _marco(
-                        usuario: usuario,
-                        sede: sede,
-                        escritorio: escritorio,
-                        onDestino: (i) => _elegirSeccion(secciones[i]),
-                        body: _contenido(usuario, sede),
-                      ),
-                    ),
-                  ),
-                ),
-                // El pop-up de un paciente desenfoca toda la pantalla.
-                if (enRaiz) ...[
-                  const Positioned.fill(child: FondoDialogo()),
-                  Positioned.fill(child: _dialogo(usuario, solicitud)),
-                ],
-              ],
-            ),
-    );
-  }
-
-  /// La app con su barra superior y, en celular, la barra inferior. La
-  /// usan las secciones y el perfil (F-22), que se ve con las mismas barras.
-  Widget _marco({
-    required Usuario usuario,
-    required Sede sede,
-    required bool escritorio,
-    required ValueChanged<int> onDestino,
-    required Widget body,
-  }) {
-    final secciones = seccionesDe(usuario.rol);
-    final indice = secciones.indexOf(_seccion).clamp(0, secciones.length - 1);
-    final destinos = [for (final s in secciones) s.destino];
-    return Scaffold(
-      appBar: BarraSuperior(
-        iniciales: usuario.iniciales,
-        nombreUsuario: usuario.nombre,
-        sede: sede.nombreCorto,
-        detalleUsuario: '${usuario.rol.nombre} · ${sede.nombreCorto}',
-        destinos: destinos,
-        indiceActual: indice,
-        onDestino: onDestino,
-        onPerfil: () => setState(() => _verPerfil = true),
-        onSalir: _cerrarSesion,
-      ),
-      bottomNavigationBar: escritorio
-          ? null
-          : BarraInferior(
-              destinos: destinos,
-              indiceActual: indice,
-              onDestino: onDestino,
-            ),
-      body: body,
-    );
-  }
-
-  Widget _contenido(Usuario usuario, Sede sede) {
-    if (_seccion.muestraPacientes && !_listaDeclarada) {
-      // Detrás del diálogo no se ve ningún paciente.
-      return const SizedBox.shrink();
-    }
-    return switch (_seccion) {
-      Seccion.inicio => _inicio(usuario, sede),
-      Seccion.pacientes => _seguimiento(),
-      Seccion.indicadores => _tablero(),
-      Seccion.buscar => _buscar(usuario),
-      Seccion.mediciones => _registrarMedicion(),
-      Seccion.auditoria => _auditoria(),
-    };
-  }
-
-  Widget _inicio(Usuario usuario, Sede sede) {
-    final altas = _altasRecientes;
-    final conAlertaLista = [
-      for (final p in altas)
-        if (conAlerta(p.riesgo)) p,
-    ];
-    return InicioPage(
-      fecha: formatoFechaHora(_datos.hoy),
-      saludo: '${saludoSegunHora(_datos.hoy)}, ${usuario.saludo}',
-      totalConAlerta: conAlertaLista.length,
-      totalEnSeguimiento: altas.length,
-      indicadoresQueEmpeoraron: indicadoresQueEmpeoraron(
-        resumenes(_mediciones, _datos.hoy),
-      ),
-      totalIndicadores: indicadores.length,
-      prioridad: conAlertaLista,
-      nombresSedes: _nombresSedes,
-      onVerConAlerta: _verPacientes,
-      onVerTodos: _verPacientes,
-      onVerIndicadores: () => _elegirSeccion(Seccion.indicadores),
-      onAbrirPaciente: _abrirPaciente,
-    );
-  }
-
-  Widget _seguimiento() {
-    final escribiendo = _busqueda.trim().isNotEmpty && !_busquedaActiva;
-    return SeguimientoPage(
-      pacientes: _pacientesBuscados,
-      busqueda: _busqueda,
-      ayudaBusqueda: escribiendo
-          ? 'Escriba al menos $minimoCaracteresBusqueda caracteres para buscar.'
-          : null,
-      nombresSedes: _nombresSedes,
-      mensajeVacio: _altasRecientes.isEmpty
-          ? mensajeSinAltas
-          : 'Ningún paciente coincide con la búsqueda.',
-      onBuscar: (texto) => setState(() => _busqueda = texto),
-      onAbrirPaciente: _abrirPaciente,
-    );
-  }
-
-  /// Pantalla completa del último paso tras iniciar sesión: el propósito
-  /// para ver la lista de pacientes con alta reciente (F-06, F-16).
-  Widget _propositoLista(Usuario usuario, Sede sede, _Solicitud solicitud) {
-    final altas = _altasRecientes;
-    return PropositoListaPage(
-      saludo: '${saludoSegunHora(_datos.hoy)}, ${usuario.saludo}',
-      rol: usuario.rol.nombre,
-      sede: sede.nombreCorto,
-      fecha: formatoFechaHora(_datos.hoy),
-      totalPacientes: altas.length,
-      conAlerta: altas.where((p) => conAlerta(p.riesgo)).length,
-      propositos: propositosDe(usuario.rol),
-      elegido: solicitud.elegido,
-      error: solicitud.error,
-      quedaraRegistrado: _quedaraRegistrado(usuario, sede),
-      onElegir: _elegirProposito,
-      onConfirmar: _confirmarProposito,
-      onCancelar: _cancelarProposito,
-    );
-  }
-
-  String _quedaraRegistrado(Usuario usuario, Sede sede) =>
-      '${usuario.nombre} · ${sede.nombreCorto} · '
-      '${formatoFechaHora(_datos.hoy)}';
-
-  /// Pop-up para declarar el propósito de abrir a un paciente (F-16).
-  Widget _dialogo(Usuario usuario, _Solicitud solicitud) {
-    final paciente = solicitud.paciente;
-    if (paciente == null) return const SizedBox.shrink();
-    final sede = _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
-    return DialogoProposito(
-      destino: DestinoPaciente(
-        paciente: paciente,
-        sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
-        mostrarRiesgo: usuario.rol != Rol.administrativo,
-      ),
-      accion: solicitud.registrar
-          ? AccionDialogo.registrarAtencion
-          : (usuario.rol == Rol.administrativo
-                ? AccionDialogo.verDatosBasicos
-                : AccionDialogo.abrirHistoria),
-      // Al registrar solo sirven *Atención del paciente* y *Urgencia* (F-04).
-      propositos: [
-        for (final p in propositosDe(usuario.rol))
-          if (!solicitud.registrar ||
-              p == Proposito.atencionPaciente ||
-              p == Proposito.urgencia)
-            p,
-      ],
-      elegido: solicitud.elegido,
-      error: solicitud.error,
-      quedaraRegistrado: _quedaraRegistrado(usuario, sede),
-      onElegir: _elegirProposito,
-      onConfirmar: _confirmarProposito,
-      onCancelar: _cancelarProposito,
-    );
-  }
-
-  /// Las acciones que cierran lo abierto y llevan a una sección.
-  ValueChanged<int> _irASeccion(Usuario usuario) {
-    final secciones = seccionesDe(usuario.rol);
-    return (i) => setState(() {
-      _cerrarDetalles();
-      _irA(secciones[i]);
-    });
-  }
-
-  Sede _sedeDe(Usuario usuario) =>
-      _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
-
-  /// Tablero de indicadores (F-08): el valor de la red de cada uno, su cambio
-  /// y las sedes donde actuar primero.
-  Widget _tablero() {
-    final destacado = indicadorDe(IdIndicador.reingreso);
-    final comparacion = comparacionDe(
-      _mediciones,
-      destacado,
-      _datos.sedes,
-      _datos.hoy,
-    );
-    return IndicadoresPage(
-      resumenes: resumenes(_mediciones, _datos.hoy),
-      destacado: destacado,
-      comparacionDestacada: comparacion,
-      promedioDestacado: valorRed(
-        _mediciones,
-        destacado.id,
-        ultimoPeriodo(_datos.hoy),
-      ),
-      onAbrirDetalle: (id) => setState(() {
-        _indicadorAbierto = id;
-        _sedeTendencia = null;
-      }),
-    );
-  }
-
-  /// Detalle de un indicador (F-09, F-10, F-11) con las barras de la app.
-  Widget _detalleIndicador(Usuario usuario, IdIndicador id) {
-    final indicador = indicadorDe(id);
-    final sedes = [
-      for (final s in _datos.sedes)
-        if (aplica(indicador, s.tipo)) s,
-    ];
-    return _marco(
-      usuario: usuario,
-      sede: _sedeDe(usuario),
-      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
-      onDestino: _irASeccion(usuario),
-      body: DetalleIndicadorPage(
-        indicador: indicador,
-        sedesDisponibles: sedes,
-        sedeTendencia: _sedeTendencia,
-        tendencia: tendenciaDe(
-          _mediciones,
-          id,
-          _datos.hoy,
-          sedeId: _sedeTendencia,
-        ),
-        comparacion: comparacionDe(
-          _mediciones,
-          indicador,
-          _datos.sedes,
-          _datos.hoy,
-        ),
-        promedio: valorRed(_mediciones, id, ultimoPeriodo(_datos.hoy)),
-        mediciones: medicionesRecientes(
-          _mediciones,
-          indicador,
-          _datos.sedes,
-          _datos.hoy,
-        ),
-        onElegirSede: (sedeId) => setState(() => _sedeTendencia = sedeId),
-        onVolver: () => setState(() {
-          _indicadorAbierto = null;
-          _sedeTendencia = null;
-        }),
-      ),
-    );
-  }
-
-  /// Registrar la medición mensual de un indicador (F-12).
-  Widget _registrarMedicion() {
-    final registradas = [
-      for (final m in _mediciones.reversed)
-        if (m.registradaPor != null)
-          (
-            indicador: indicadorDe(m.indicador),
-            sede: _datos.sede(m.sedeId).nombreCorto,
-            periodo: m.periodo,
-            valor: m.valor,
-          ),
-    ];
-    return RegistrarMedicionPage(
-      sedes: _datos.sedes,
-      hoy: _datos.hoy,
-      registradas: registradas,
-      validar: _validarMedicion,
-      onGuardar: _guardarMedicion,
-    );
-  }
-
-  /// Buscar pacientes por nombre o documento (F-01). Buscar no crea un evento:
-  /// solo muestra el nombre y el documento; el evento se crea al abrirlo.
-  Widget _buscar(Usuario usuario) {
-    final esMedico = usuario.rol == Rol.medico;
-    return BuscarPacientesPage(
-      busqueda: _busquedaPaciente,
-      resultados: buscarPacientes(_pacientes, _busquedaPaciente),
-      accionAlElegir: esMedico
-          ? 'Abrir la historia clínica'
-          : 'Ver los datos básicos',
-      onBuscar: (texto) => setState(() => _busquedaPaciente = texto),
-      onElegir: _abrirPaciente,
-    );
-  }
-
-  /// Datos básicos de un paciente para el administrativo (F-03).
-  Widget _paginaDatosBasicos(Usuario usuario, _DatosBasicos d) {
-    final paciente = _pacientes.firstWhere(
-      (p) => p.id == d.paciente.id,
-      orElse: () => d.paciente,
-    );
-    return _marco(
-      usuario: usuario,
-      sede: _sedeDe(usuario),
-      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
-      onDestino: _irASeccion(usuario),
-      body: DatosBasicosPage(
-        paciente: historiaDe(
-          paciente,
-          sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
-          hoy: _datos.hoy,
-        ),
-        propositoTexto: d.proposito.nombreCorto,
-        fechaConsulta: formatoFechaHora(_datos.hoy),
-        onVolver: () => setState(() => _datosBasicos = null),
-      ),
-    );
-  }
-
-  /// Historia clínica unificada, con el riesgo y sus factores (F-02, F-07).
-  Widget _paginaHistoria(Usuario usuario, _Historia h) {
-    // El paciente puede haber cambiado (por ejemplo, ganó relación al
-    // registrarle una atención), así que se busca el actual.
-    final paciente = _pacientes.firstWhere(
-      (p) => p.id == h.paciente.id,
-      orElse: () => h.paciente,
-    );
-    final historia = historiaDe(
-      paciente,
-      sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
-      hoy: _datos.hoy,
-      nuevas: _atenciones[paciente.id] ?? const [],
-    );
-    return _marco(
-      usuario: usuario,
-      sede: _sedeDe(usuario),
-      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
-      onDestino: _irASeccion(usuario),
-      body: PacientePage(
-        historia: historia,
-        proposito: h.proposito,
-        fechaConsulta: formatoFechaHora(_datos.hoy),
-        puedeRegistrar: usuario.rol == Rol.medico,
-        onVolver: _cerrarHistoria,
-        onRegistrarAtencion: () => _pedirRegistro(paciente),
-      ),
-    );
-  }
-
-  /// Formulario para registrar una atención (F-04).
-  Widget _paginaRegistro(Usuario usuario, _Registro r) {
-    return _marco(
-      usuario: usuario,
-      sede: _sedeDe(usuario),
-      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
-      onDestino: _irASeccion(usuario),
-      body: RegistrarAtencionPage(
-        nombrePaciente: r.paciente.nombre,
-        proposito: r.proposito,
-        medico: usuario.nombre,
-        sedes: [
-          for (final s in _datos.sedes)
-            if (s.tipo != TipoSede.laboratorio) s,
-        ],
-        sedeInicialId: _sedeSesion ?? usuario.sedesAsignadas.first,
-        ahora: _datos.hoy,
-        onGuardar: _guardarAtencion,
-        onCancelar: () => setState(() => _registro = null),
-      ),
-    );
-  }
-
-  /// Auditoría de accesos (F-21). Solo el auditor tiene esta sección
-  /// (F-18): los demás roles no la ven en su navegación.
-  Widget _auditoria() {
-    return AuditoriaPage(
-      eventos: eventosFiltrados(_eventos, _filtroAuditoria),
-      filtro: _filtroAuditoria,
-      nombresUsuarios: {for (final u in _datos.usuarios) u.id: u.nombre},
-      nombresPacientes: {for (final p in _pacientes) p.id: p.nombre},
-      nombresSedes: {for (final s in _datos.sedes) s.id: s.nombre},
-      onElegirFiltro: (f) => setState(() => _filtroAuditoria = f),
-    );
-  }
-
-  /// Perfil (F-22) con las mismas barras de la app. Tocar un destino cierra
-  /// el perfil y va a esa sección; *Cerrar sesión* es el de F-23.
-  Widget _perfil() {
-    final usuario = _usuario;
-    if (usuario == null) return const SizedBox.shrink();
-    final sede = _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
-    return _marco(
-      usuario: usuario,
-      sede: sede,
-      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
-      onDestino: _irASeccion(usuario),
-      body: PerfilPage(
-        datos: [
-          (etiqueta: 'Nombre', valor: usuario.nombre),
-          (etiqueta: 'Correo', valor: usuario.correo),
-          (etiqueta: 'Rol', valor: usuario.rol.nombre),
-          (etiqueta: 'Sede de esta sesión', valor: sede.nombre),
-          (
-            etiqueta: 'Sedes asignadas',
-            valor: [
-              for (final id in usuario.sedesAsignadas) _datos.sede(id).nombre,
-            ].join('\n'),
-          ),
-        ],
-        permisos: [
-          for (final a in AccionPermitida.values)
-            (accion: a.nombre, permitido: rolPermite(usuario.rol, a)),
-        ],
-        propositos: [for (final p in propositosDe(usuario.rol)) p.nombreCorto],
-        onCerrarSesion: _cerrarSesion,
-      ),
-    );
-  }
+  /// Las Pages se arman en `app_screen_paginas.dart`; cambian el estado
+  /// solo a través de este método.
+  void _actualizar(VoidCallback cambio) => setState(cambio);
 }

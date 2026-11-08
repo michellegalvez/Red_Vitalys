@@ -305,7 +305,9 @@ double? leerValor(String texto) {
 int _decimales(String texto) {
   final limpio = texto.trim().replaceAll(',', '.');
   final i = limpio.indexOf('.');
-  return i < 0 ? 0 : limpio.length - i - 1;
+  if (i < 0) return 0;
+  // "8,50" vale como "8,5": los ceros al final no cuentan.
+  return limpio.substring(i + 1).replaceFirst(RegExp(r'0+$'), '').length;
 }
 
 /// El rango de un indicador como se muestra en el mensaje (F-12 A1).

@@ -11,11 +11,15 @@ class Aviso extends StatelessWidget {
     required this.tipo,
     required this.texto,
     this.items = const [],
+    this.anunciar = false,
   });
 
   final TipoAviso tipo;
   final String texto;
   final List<String> items;
+
+  /// Hace que el lector de pantalla lo anuncie aunque sea informativo.
+  final bool anunciar;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +46,7 @@ class Aviso extends StatelessWidget {
       ),
     };
     return Semantics(
-      liveRegion: tipo != TipoAviso.informativo,
+      liveRegion: anunciar || tipo != TipoAviso.informativo,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),

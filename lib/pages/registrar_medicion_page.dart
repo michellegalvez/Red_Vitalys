@@ -10,6 +10,7 @@ import 'package:red_vitalys/widgets/aviso.dart';
 import 'package:red_vitalys/widgets/boton.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
 
 /// Lo que el administrativo llenó en el formulario de una medición (F-12).
 typedef NuevaMedicion = ({
@@ -91,7 +92,9 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
 
   Future<void> _guardar() async {
     if (_guardando) return;
-    final error = widget.validar(_nueva);
+    // Se toma la copia antes de esperar: lo validado es lo que se guarda.
+    final nueva = _nueva;
+    final error = widget.validar(nueva);
     if (error != null) {
       setState(() {
         _error = error;
@@ -107,7 +110,7 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
     // El guardado es simulado; se nota el estado "Guardando medición…".
     await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
-    widget.onGuardar(_nueva);
+    widget.onGuardar(nueva);
     setState(() {
       _guardando = false;
       _exito = mensajeMedicionRegistrada;
@@ -165,13 +168,8 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
   }
 
   Widget _formulario(Indicador indicador) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: ColoresVitalys.borde),
-      ),
+    return TarjetaVitalys(
+      relleno: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -180,11 +178,13 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
             ayuda: indicador.descripcion,
             valor: _indicador,
             opciones: [for (final i in indicadores) (i.id, i.nombre)],
-            onChanged: (v) => setState(() {
-              _indicador = v ?? _indicador;
-              _error = null;
-              _exito = null;
-            }),
+            onChanged: _guardando
+                ? null
+                : (v) => setState(() {
+                    _indicador = v ?? _indicador;
+                    _error = null;
+                    _exito = null;
+                  }),
           ),
           const SizedBox(height: 18),
           SelectorVitalys<String>(
@@ -192,11 +192,13 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
             ayuda: 'Puede registrar la de cualquier sede de la red.',
             valor: _sedeId,
             opciones: [for (final s in widget.sedes) (s.id, s.nombre)],
-            onChanged: (v) => setState(() {
-              _sedeId = v ?? _sedeId;
-              _error = null;
-              _exito = null;
-            }),
+            onChanged: _guardando
+                ? null
+                : (v) => setState(() {
+                    _sedeId = v ?? _sedeId;
+                    _error = null;
+                    _exito = null;
+                  }),
           ),
           const SizedBox(height: 18),
           SelectorVitalys<DateTime>(
@@ -204,11 +206,13 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
             ayuda: 'Un mes se puede registrar cuando termina.',
             valor: _periodo,
             opciones: [for (final m in _meses) (m, formatoPeriodo(m))],
-            onChanged: (v) => setState(() {
-              _periodo = v ?? _periodo;
-              _error = null;
-              _exito = null;
-            }),
+            onChanged: _guardando
+                ? null
+                : (v) => setState(() {
+                    _periodo = v ?? _periodo;
+                    _error = null;
+                    _exito = null;
+                  }),
           ),
           const SizedBox(height: 18),
           CampoTexto(
@@ -217,6 +221,7 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
                 '${textoRango(indicador)}, con hasta 1 decimal. Por ejemplo, '
                 '8,5.',
             controller: _valor,
+            habilitado: !_guardando,
             teclado: const TextInputType.numberWithOptions(decimal: true),
             onSubmitted: (_) => _guardar(),
           ),
@@ -251,14 +256,10 @@ class _FilaRegistrada extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final m = medicion;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ColoresVitalys.borde),
-      ),
+    return TarjetaVitalys(
+      margen: const EdgeInsets.only(bottom: 10),
+      relleno: const EdgeInsets.all(14),
+      radio: TarjetaVitalys.radioFila,
       child: Row(
         children: [
           const Icon(Icons.check_circle_rounded, color: ColoresVitalys.exito),

@@ -4,11 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
+import 'package:red_vitalys/reglas/atencion.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/aviso.dart';
+import 'package:red_vitalys/widgets/barra_volver.dart';
 import 'package:red_vitalys/widgets/boton.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
+
+export 'package:red_vitalys/reglas/atencion.dart'
+    show mensajeCompleteAtencion, mensajeFechaFutura, mensajeFechaInvalida;
 
 /// Lo que el médico llenó en el formulario de una atención (F-04).
 typedef NuevaAtencion = ({
@@ -18,10 +24,6 @@ typedef NuevaAtencion = ({
   String motivo,
   String diagnostico,
 });
-
-const mensajeCompleteAtencion = 'Complete el motivo y el diagnóstico';
-const mensajeFechaFutura = 'La fecha no puede ser futura';
-const mensajeFechaInvalida = 'Escriba la fecha como 30/10/2026 10:42';
 
 /// Formulario para registrar una atención (F-04). Solo captura: valida lo que
 /// el médico escribió y lo reporta con [onGuardar]; la Screen anfitriona
@@ -81,19 +83,25 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
 
   Future<void> _guardar() async {
     if (_guardando) return;
-    if (_motivo.text.trim().isEmpty || _diagnostico.text.trim().isEmpty) {
-      setState(() => _error = mensajeCompleteAtencion);
+    final validacion = validarAtencion(
+      motivo: _motivo.text,
+      diagnostico: _diagnostico.text,
+      fechaTexto: _fecha.text,
+      ahora: widget.ahora,
+    );
+    final fecha = validacion.fecha;
+    if (validacion.error != null || fecha == null) {
+      setState(() => _error = validacion.error);
       return;
     }
-    final fecha = leerFechaHoraCampo(_fecha.text);
-    if (fecha == null) {
-      setState(() => _error = mensajeFechaInvalida);
-      return;
-    }
-    if (fecha.isAfter(widget.ahora)) {
-      setState(() => _error = mensajeFechaFutura);
-      return;
-    }
+    // Se toma la copia antes de esperar: lo validado es lo que se guarda.
+    final nueva = (
+      tipo: _tipo,
+      sedeId: _sedeId,
+      fecha: fecha,
+      motivo: _motivo.text.trim(),
+      diagnostico: _diagnostico.text.trim(),
+    );
     setState(() {
       _error = null;
       _guardando = true;
@@ -101,26 +109,16 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
     // El guardado es simulado; se nota el estado "Guardando atención…".
     await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
-    widget.onGuardar((
-      tipo: _tipo,
-      sedeId: _sedeId,
-      fecha: fecha,
-      motivo: _motivo.text.trim(),
-      diagnostico: _diagnostico.text.trim(),
-    ));
+    widget.onGuardar(nueva);
   }
 
   @override
   Widget build(BuildContext context) {
     return ContenidoPagina(
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: widget.onCancelar,
-            icon: const Icon(Icons.arrow_back_rounded, size: 18),
-            label: Text('${widget.nombrePaciente}  /  Nueva atención'),
-          ),
+        BarraVolver(
+          texto: '${widget.nombrePaciente}  /  Nueva atención',
+          onPressed: widget.onCancelar,
         ),
         const SizedBox(height: 8),
         Align(
@@ -149,13 +147,8 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
   }
 
   Widget _formulario() {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: ColoresVitalys.borde),
-      ),
+    return TarjetaVitalys(
+      relleno: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -176,7 +169,9 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
                 FiltroPildora(
                   texto: texto,
                   seleccionado: _tipo == tipo,
-                  onTap: () => setState(() => _tipo = tipo),
+                  onTap: () {
+                    if (!_guardando) setState(() => _tipo = tipo);
+                  },
                 ),
             ],
           ),
@@ -186,27 +181,35 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
             ayuda: 'Por defecto, la sede de su sesión.',
             valor: _sedeId,
             opciones: [for (final s in widget.sedes) (s.id, s.nombre)],
-            onChanged: (id) => setState(() => _sedeId = id ?? _sedeId),
+            onChanged: _guardando
+                ? null
+                : (id) => setState(() => _sedeId = id ?? _sedeId),
           ),
           const SizedBox(height: 18),
           CampoTexto(
             etiqueta: 'Fecha y hora',
             ayuda: 'Por defecto, la actual. Formato 30/10/2026 10:42.',
             controller: _fecha,
+            maxLength: 16,
+            habilitado: !_guardando,
           ),
           const SizedBox(height: 18),
           CampoTexto(
             etiqueta: 'Motivo de consulta',
             controller: _motivo,
             hint: 'Por qué consulta el paciente',
+            maxLength: maxCaracteresMotivo,
             lineas: 2,
+            habilitado: !_guardando,
           ),
           const SizedBox(height: 18),
           CampoTexto(
             etiqueta: 'Diagnóstico',
             controller: _diagnostico,
             hint: 'Por ejemplo, I10 Hipertensión esencial',
+            maxLength: maxCaracteresDiagnostico,
             lineas: 2,
+            habilitado: !_guardando,
           ),
           const SizedBox(height: 18),
           Text(

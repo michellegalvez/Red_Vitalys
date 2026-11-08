@@ -86,10 +86,7 @@ class BloqueInicio extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       detalle,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: color.withValues(alpha: 0.85),
-                      ),
+                      style: TextStyle(fontSize: 13.5, color: color),
                     ),
                   ],
                 ),

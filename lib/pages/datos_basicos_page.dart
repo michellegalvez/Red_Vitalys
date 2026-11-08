@@ -3,8 +3,11 @@ import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/aviso.dart';
+import 'package:red_vitalys/widgets/barra_volver.dart';
+import 'package:red_vitalys/widgets/campo_dato.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
 
 /// Datos básicos de un paciente, para el administrativo (F-03, RF-03).
 ///
@@ -35,13 +38,9 @@ class DatosBasicosPage extends StatelessWidget {
     ].join();
     return ContenidoPagina(
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: onVolver,
-            icon: const Icon(Icons.arrow_back_rounded, size: 18),
-            label: Text('Buscar pacientes  /  ${p.fullName}'),
-          ),
+        BarraVolver(
+          texto: 'Buscar pacientes  /  ${p.fullName}',
+          onPressed: onVolver,
         ),
         const SizedBox(height: 8),
         Align(
@@ -86,20 +85,30 @@ class DatosBasicosPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: ColoresVitalys.borde),
-                  ),
+                TarjetaVitalys(
+                  relleno: const EdgeInsets.all(22),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _Campo('Edad y sexo', '${p.age} años · ${p.sex}'),
-                      _Campo('Documento', p.documentDisplay),
-                      _Campo('Fecha de nacimiento', formatoFecha(p.birthDate)),
-                      _Campo('Dirección', p.address, ultimo: true),
+                      CampoDato(
+                        'Edad y sexo',
+                        '${p.age} años · ${p.sex}',
+                        tamanoValor: 16,
+                        separacion: 16,
+                      ),
+                      CampoDato(
+                        'Documento',
+                        p.documentDisplay,
+                        tamanoValor: 16,
+                        separacion: 16,
+                      ),
+                      CampoDato(
+                        'Fecha de nacimiento',
+                        formatoFecha(p.birthDate),
+                        tamanoValor: 16,
+                        separacion: 16,
+                      ),
+                      CampoDato('Teléfono', p.phone, tamanoValor: 16),
                     ],
                   ),
                 ),
@@ -124,37 +133,6 @@ class DatosBasicosPage extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Campo extends StatelessWidget {
-  const _Campo(this.etiqueta, this.valor, {this.ultimo = false});
-
-  final String etiqueta;
-  final String valor;
-  final bool ultimo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: ultimo ? 0 : 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            etiqueta.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-              color: ColoresVitalys.textoSuave,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(valor, style: const TextStyle(fontSize: 16)),
-        ],
-      ),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
 
 /// Buscar pacientes por nombre o documento (F-01). Solo muestra el nombre y
 /// el documento, ningún dato clínico. La búsqueda y lo que se abre al elegir
@@ -75,7 +76,10 @@ class BuscarPacientesPage extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (resultados.isEmpty)
-            const _SinResultados()
+            const EstadoVacio(
+              titulo: mensajeSinResultados,
+              icono: Icons.search_off_rounded,
+            )
           else
             Align(
               alignment: Alignment.topLeft,
@@ -189,37 +193,6 @@ class _Pista extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SinResultados extends StatelessWidget {
-  const _SinResultados();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: ColoresVitalys.borde),
-      ),
-      child: const Column(
-        children: [
-          Icon(
-            Icons.search_off_rounded,
-            size: 40,
-            color: ColoresVitalys.textoSuave,
-          ),
-          SizedBox(height: 12),
-          Text(
-            mensajeSinResultados,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: ColoresVitalys.textoSecundario),
-          ),
-        ],
-      ),
     );
   }
 }

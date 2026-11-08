@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
-import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/bloque_inicio.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
+import 'package:red_vitalys/widgets/tarjeta.dart';
 
 /// Inicio del médico: el resumen del día y los pacientes que más
 /// prioridad tienen (F-06). Solo muestra y avisa por callbacks.
@@ -99,9 +99,9 @@ class InicioPage extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         if (prioridad.isEmpty)
-          const Text(
-            'Hoy no hay pacientes con alerta.',
-            style: TextStyle(color: ColoresVitalys.textoSecundario),
+          const EstadoVacio(
+            titulo: 'Hoy no hay pacientes con alerta.',
+            icono: Icons.check_circle_outline_rounded,
           )
         else
           RejillaTarjetas(
