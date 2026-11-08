@@ -1,10 +1,10 @@
 ---
 documento: architectural_spine
 proyecto: Red Vitalys
-version: 0.6.5
-fecha: 2026-11-06
+version: 0.6.10
+fecha: 2026-11-08
 estado: borrador
-basado_en: [prd 0.7.1, requisitos 0.7.2]
+basado_en: [prd 0.7.6, requisitos 0.7.7]
 ---
 
 # Architectural spine · Red Vitalys
@@ -80,7 +80,7 @@ flowchart LR
 
 ### AD-07 · Todo intento se audita
 
-- **Regla:** el control de acceso escribe un evento por cada inicio de sesión, exitoso o fallido, por cada intento de consultar o registrar información de un paciente, por cada registro de una medición, por cada apertura de la lista de pacientes con alta reciente y por toda acción denegada, se permita o se deniegue. El evento se escribe antes de ejecutar la acción; el de un inicio de sesión exitoso, al confirmar la sede y antes de abrir la sesión. Si el evento no se puede escribir, la acción no se ejecuta. Cada evento lleva quién, cuándo, la acción, el recurso, el propósito, el resultado y la sede, salvo el inicio de sesión fallido, que todavía no tiene sesión y por eso no lleva sede. En un inicio de sesión fallido, quién es el correo con el que se intentó y el evento lleva además la IP (AD-15). La búsqueda de pacientes, que solo muestra nombre y documento, no se audita. Los accesos con propósito *Urgencia* quedan marcados como emergencia.
+- **Regla:** el control de acceso escribe un evento por cada inicio de sesión, exitoso o fallido, por cada intento de consultar o registrar información de un paciente, por cada registro de una medición, por cada apertura de la lista de pacientes con alta reciente y por toda acción denegada, se permita o se deniegue. El evento se escribe antes de ejecutar la acción; el de un inicio de sesión exitoso, al confirmar la sede y antes de abrir la sesión. Si el evento no se puede escribir, la acción no se ejecuta. Cada evento lleva quién, cuándo, la acción, el recurso, el propósito, el resultado y la sede, salvo el inicio de sesión fallido, que todavía no tiene sesión y por eso no lleva sede. En un inicio de sesión fallido, quién es el correo con el que se intentó y el evento lleva además la IP (AD-15). La búsqueda de pacientes, que solo muestra nombre y documento, no se audita, salvo que el rol la rechace: entonces queda como acción denegada. Abrir la historia de un paciente crea dos eventos, el de *Historia clínica* y el de *Riesgo de reingreso*. No son eventos el intento de ingreso con campos vacíos ni la medición ni la atención que la validación rechaza. Los accesos con propósito *Urgencia* quedan marcados como emergencia.
 - **Evita:** huecos en la auditoría porque una funcionalidad se olvidó de registrar sus accesos.
 
 ### AD-08 · Auditoría solo de agregar
@@ -148,3 +148,8 @@ flowchart LR
 - 0.6.3 · 2026-11-06 · Alineada con el prd 0.7.0 y los requisitos 0.7.0, sin cambios en las invariantes.
 - 0.6.4 · 2026-11-06 · Alineada con los requisitos 0.7.1, sin cambios en las invariantes.
 - 0.6.5 · 2026-11-06 · Alineada con el prd 0.7.1 y los requisitos 0.7.2, sin cambios en las invariantes.
+- 0.6.6 · 2026-11-08 · Alineada con el prd 0.7.2 y los requisitos 0.7.3, sin cambios en las invariantes.
+- 0.6.7 · 2026-11-08 · AD-07 recoge la búsqueda rechazada y las dos excepciones de eventos. Alineada con el prd 0.7.3 y los requisitos 0.7.4.
+- 0.6.8 · 2026-11-08 · AD-07: la atención rechazada por validación tampoco es evento. Alineada con el prd 0.7.4 y los requisitos 0.7.5.
+- 0.6.9 · 2026-11-08 · AD-07: abrir la historia crea dos eventos. Alineada con el prd 0.7.5 y los requisitos 0.7.6.
+- 0.6.10 · 2026-11-08 · Alineada con el prd 0.7.6 y los requisitos 0.7.7, sin cambios en las invariantes.

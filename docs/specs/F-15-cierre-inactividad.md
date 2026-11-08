@@ -1,8 +1,8 @@
 ---
 id: F-15
 titulo: Cierre de sesión por inactividad
-version: 0.2.2
-fecha: 2026-11-06
+version: 0.2.3
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-35]
@@ -56,7 +56,7 @@ El sistema cierra la sesión de un usuario que lleva 15 minutos sin usar la app,
 - **CA-3** Dado un usuario cuya sesión se cerró por inactividad, cuando usa *Atrás*, entonces sigue en el inicio de sesión.
 - **CA-4** Dado un usuario cuya sesión se cerró por inactividad, cuando vuelve a iniciar sesión, entonces tiene que elegir la sede otra vez.
 - **CA-5** Dado un usuario cuya sesión se cerró por inactividad, cuando el auditor revisa la auditoría, entonces no ve ningún evento de ese cierre.
-- **CA-6** Dado un médico sin relación con un paciente, cuya sesión se cerró por inactividad con la historia abierta, cuando vuelve a iniciar sesión, entonces tiene que volver a declarar el propósito para ver esa historia.
+- **CA-6** Dado un médico cuya sesión se cerró por inactividad con la historia de un paciente abierta, cuando vuelve a iniciar sesión y abre otra vez esa historia, entonces tiene que volver a declarar el propósito.
 - **CA-7** Dado que el cierre automático falla, cuando se cumplen 15 minutos sin ninguna acción, entonces el usuario no ve ninguna pantalla de la app y ve el inicio de sesión.
 
 ## Fuera de alcance
@@ -76,3 +76,4 @@ El sistema cierra la sesión de un usuario que lleva 15 minutos sin usar la app,
 - 0.2.0 · 2026-11-06 · Se agrega CA-7 para el estado de error.
 - 0.2.1 · 2026-11-06 · Redacción: se quitan los gestos del teléfono de las reglas.
 - 0.2.2 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
+- 0.2.3 · 2026-11-08 · CA-6 ya no supone que el médico vuelve a la historia al iniciar sesión: entra a su pantalla inicial (RF-37, F-13).

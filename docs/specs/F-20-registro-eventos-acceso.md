@@ -1,8 +1,8 @@
 ---
 id: F-20
 titulo: Registro de eventos de acceso
-version: 0.4.2
-fecha: 2026-11-06
+version: 0.4.6
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-14, RF-17, RF-31]
@@ -27,13 +27,13 @@ El sistema deja un evento de acceso cada vez que alguien inicia sesión, consult
 - **A1 · Acción denegada:** si el rol no permite la acción, el sistema la rechaza y crea el evento con resultado *Denegado*, sea o no sobre información de un paciente. Por ejemplo, un médico que intenta abrir la auditoría de accesos. El usuario no ve la información que pidió.
 - **A2 · Acceso de emergencia:** si el médico declaró el propósito *Urgencia*, el acceso se permite y el evento queda con propósito *Urgencia*, que lo marca como emergencia para que el auditor lo revise (F-17).
 - **A3 · Inicio de sesión exitoso:** al confirmar la sede, antes de abrir la sesión, el evento queda con la acción *Ingresar*, el recurso *Sesión*, sin paciente, con el propósito *No aplica*, el resultado *Permitido* y la sede elegida.
-- **A4 · Inicio de sesión fallido:** el evento queda con la acción *Ingresar*, el recurso *Sesión*, sin paciente, el propósito *No aplica*, el resultado *Denegado*, el correo con el que se intentó en lugar del usuario, la IP y sin sede. Lo mismo pasa con cada intento durante un bloqueo del inicio de sesión (F-14).
+- **A4 · Inicio de sesión fallido:** el evento queda con la acción *Ingresar*, el recurso *Sesión*, sin paciente, el propósito *No aplica*, el resultado *Denegado*, el correo con el que se intentó en lugar del usuario, la IP y sin sede. Lo mismo pasa con cada intento durante un bloqueo del inicio de sesión (F-14) y con el ingreso de una cuenta sin sedes asignadas (F-13), que no suma al conteo del bloqueo.
 - **A5 · Registro de una medición:** el evento queda con la acción *Registrar*, el recurso *Medición de indicador*, sin paciente y con el propósito *No aplica*.
 - **A6 · Intento de editar o borrar un evento:** no existe ninguna opción para editar ni borrar un evento, para ningún rol, incluido el auditor.
 
 ## Reglas
 
-- Se crea un evento por cada inicio de sesión, exitoso o fallido, por cada consulta o registro sobre información de un paciente, por cada apertura de la lista de pacientes con alta reciente (F-06) y por cada registro de una medición, se permita o se deniegue. Ninguno se omite.
+- Se crea un evento por cada inicio de sesión, exitoso o fallido, por cada consulta o registro sobre información de un paciente, por cada apertura de la lista de pacientes con alta reciente (F-06) y por cada registro de una medición, se permita o se deniegue. Ninguno se omite. No son eventos un intento de ingreso con el correo o la contraseña vacíos (F-13, F-14) ni una medición o una atención que la validación rechaza (F-12, F-04).
 - La única excepción es la búsqueda de pacientes (F-01), que solo muestra nombre y documento: no crea evento, salvo que se rechace por el rol.
 - También se crea un evento *Denegado* por toda acción que el rol no permite, aunque no sea sobre información de un paciente (RF-21). Por ejemplo, cuando un médico o un administrativo intenta abrir la auditoría de accesos.
 - La acción es siempre una de estas tres:
@@ -41,12 +41,12 @@ El sistema deja un evento de acceso cada vez que alguien inicia sesión, consult
   - **Consultar:** ver información de un paciente, abrir la lista de pacientes con alta reciente o intentar abrir la auditoría de accesos.
   - **Registrar:** agregar información de un paciente, por ejemplo una atención, o una medición de un indicador.
 - El resultado es siempre *Permitido* o *Denegado*.
-- El propósito es el que el usuario declaró en esa consulta o al registrar la atención: *Atención del paciente*, *Consulta de historia clínica*, *Seguimiento de reingreso*, *Revisión de calidad* o *Urgencia*. El inicio de sesión y el registro de una medición llevan *No aplica*.
-- Un evento es de emergencia si su propósito es *Urgencia*.
+- El propósito es el que el usuario declaró en esa consulta o al registrar la atención: *Atención del paciente*, *Consulta de historia clínica*, *Seguimiento de reingreso*, *Revisión de calidad* o *Urgencia*. El inicio de sesión, el registro de una medición y toda acción rechazada que no tiene propósito, como un rol que intenta abrir la auditoría o buscar pacientes, llevan *No aplica*.
+- Un evento es de emergencia si su propósito es *Urgencia* y su resultado es *Permitido*.
 - La sede del evento es la que el usuario eligió al iniciar sesión. Un inicio de sesión fallido no tiene sede.
 - La IP solo se registra en los inicios de sesión fallidos. En la entrega 2 es un dato simulado y en la entrega 3 no la manda quien intenta ingresar, sino que la registra el sistema (AD-15).
 - Un evento creado no se puede editar ni borrar. Solo se pueden agregar eventos nuevos (AD-08).
-- El evento se crea antes de ejecutar la acción. Si no se puede crear, la acción no se hace y el usuario ve "No se pudo completar la acción". Así ninguna acción queda sin registro (O-04).
+- El evento se crea antes de ejecutar la acción. Si no se puede crear, la acción no se hace y el usuario ve "No se pudo completar la acción"; en el inicio de sesión ve "No se pudo iniciar sesión. Intente de nuevo." (F-13). Si de los dos eventos de abrir la historia (F-02) solo se crea uno, no se muestra ni la historia ni el riesgo y se ve lo mismo. Así ninguna acción queda sin registro (O-04).
 - El cierre de sesión, manual (F-23) o por inactividad (F-15), no crea evento.
 - Los datos son simulados: no se registran personas ni pacientes reales.
 
@@ -56,7 +56,7 @@ Esta funcionalidad no tiene pantalla propia, porque el evento se crea sin que el
 
 - **Cargando:** no aplica. El usuario ve el estado de la acción que hizo, por ejemplo la carga de la historia clínica.
 - **Vacío:** no aplica.
-- **Error:** si el evento no se pudo crear, la acción no se hace y el usuario ve "No se pudo completar la acción".
+- **Error:** si el evento no se pudo crear, la acción no se hace y el usuario ve "No se pudo completar la acción", o el mensaje de F-13 si es el inicio de sesión.
 
 ## Datos
 
@@ -66,8 +66,8 @@ Cada evento de acceso tiene:
 - **Usuario** que hizo la acción, por su nombre. En un inicio de sesión fallido, el correo con el que se intentó.
 - **Acción:** *Ingresar*, *Consultar* o *Registrar*.
 - **Recurso** sobre el que se hizo, por ejemplo *Sesión*, *Datos básicos*, *Historia clínica*, *Riesgo de reingreso*, *Atención*, *Medición de indicador*, *Pacientes con alta reciente* o *Auditoría de accesos*.
-- **Paciente** al que pertenece la información. Queda vacío en *Ingresar*, en *Medición de indicador* y cuando el recurso es *Pacientes con alta reciente* o *Auditoría de accesos*.
-- **Propósito** declarado.
+- **Paciente** al que pertenece la información. Queda vacío en *Ingresar*, en *Medición de indicador*, en *Pacientes con alta reciente*, en *Auditoría de accesos* y en la búsqueda que el rol rechaza (recurso *Datos básicos*).
+- **Propósito** declarado, o *No aplica*.
 - **Resultado:** *Permitido* o *Denegado*.
 - **Sede** de la sesión desde la que se hizo. Vacía en un inicio de sesión fallido.
 - **IP**, solo en los inicios de sesión fallidos.
@@ -81,8 +81,8 @@ Cada evento de acceso tiene:
 - **CA-5** Dado un médico que declara *Urgencia* para un paciente con el que no tiene relación, cuando consulta su historia, entonces el acceso se permite y el evento queda con el propósito *Urgencia* y aparece en el filtro *Emergencia* de la auditoría.
 - **CA-6** Dado cualquier rol, cuando busca una opción para editar o borrar un evento de acceso, entonces no la encuentra en ninguna parte de la app.
 - **CA-7** Dado un usuario con sesión iniciada, cuando cierra sesión, entonces el auditor no ve en la auditoría de accesos ningún evento de ese cierre de sesión.
-- **CA-8** *(movido a F-21 como CA-11)*
-- **CA-9** Dado un médico con sesión iniciada, cuando intenta abrir la auditoría de accesos, entonces no la ve y el auditor ve un evento con la acción *Consultar*, el recurso *Auditoría de accesos*, sin paciente y con el resultado *Denegado*.
+- **CA-8** Dado un intento de ingreso con el correo o la contraseña vacíos, cuando el usuario elige *Ingresar*, entonces el auditor no ve ningún evento de ese intento.
+- **CA-9** Dado un médico con sesión iniciada, cuando intenta abrir la auditoría de accesos, entonces no la ve y el auditor ve un evento con la acción *Consultar*, el recurso *Auditoría de accesos*, sin paciente, con el propósito *No aplica* y el resultado *Denegado*.
 - **CA-10** Dado un inicio de sesión con una contraseña equivocada para el correo camila.martinez@vitalys.co, cuando el auditor revisa la auditoría, entonces ve un evento con ese correo en lugar del usuario, la acción *Ingresar*, el recurso *Sesión*, el resultado *Denegado*, la IP y sin sede.
 - **CA-11** Dado un administrativo que registra una medición, cuando el auditor revisa la auditoría, entonces ve un evento con la acción *Registrar*, el recurso *Medición de indicador*, sin paciente, el propósito *No aplica* y el resultado *Permitido*.
 - **CA-12** Dado un médico que intenta registrar una medición, cuando el auditor revisa la auditoría, entonces ve un evento con la acción *Registrar*, el recurso *Medición de indicador* y el resultado *Denegado*.
@@ -110,3 +110,7 @@ Cada evento de acceso tiene:
 - 0.4.0 · 2026-11-06 · Si el evento no se puede crear, la acción no se hace (CA-15). El bloqueo del inicio de sesión es por dispositivo (F-14 0.2.0). Se cierran 2 preguntas abiertas.
 - 0.4.1 · 2026-11-06 · El propósito de un evento también es el que se declara al registrar una atención, como RF-19 0.5.0.
 - 0.4.2 · 2026-11-06 · El evento se crea antes de ejecutar la acción (paso 3, regla y CA-16). El paso 2 suma la relación con el paciente. Alineada con RF-14 0.6.1 y AD-07 0.6.1.
+- 0.4.3 · 2026-11-08 · Coherencia con F-12, F-13 y F-14: el intento con campos vacíos y la medición rechazada por validación no son eventos, y el inicio de sesión usa el mensaje de error de F-13.
+- 0.4.4 · 2026-11-08 · El propósito No aplica cubre también los rechazos sin propósito; el ingreso sin sedes deja evento; CA-8 pasa a ser un criterio real (campos vacíos, sin evento).
+- 0.4.5 · 2026-11-08 · La atención rechazada por validación tampoco es evento (F-04), y la búsqueda rechazada queda sin paciente.
+- 0.4.6 · 2026-11-08 · Emergencia es Urgencia con resultado Permitido; se corrige la frase del paciente vacío; si de los dos eventos de la historia solo se crea uno, no se muestra nada.

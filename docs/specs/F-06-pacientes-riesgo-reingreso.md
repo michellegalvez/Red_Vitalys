@@ -1,8 +1,8 @@
 ---
 id: F-06
 titulo: Pacientes con alta reciente por riesgo de reingreso
-version: 0.3.2
-fecha: 2026-11-06
+version: 0.3.6
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-05, RF-06]
@@ -23,7 +23,7 @@ El médico ve a los pacientes dados de alta en los últimos 30 días en toda la 
 4. El sistema muestra los pacientes dados de alta en los últimos 30 días, del mayor al menor riesgo de reingreso.
 5. Cada paciente muestra su nombre, su riesgo de 0 a 100, la fecha de alta y la sede del alta. Los de 70 o más muestran además la alerta *Riesgo alto*.
 6. El sistema muestra el contador de pacientes, por ejemplo "8 pacientes".
-7. El médico elige un paciente y el sistema le pide declarar el propósito otra vez (F-16) y abre su riesgo con la explicación (F-07).
+7. El médico elige un paciente y el sistema le pide declarar el propósito otra vez (F-16) y abre su historia, que muestra el riesgo con la explicación (F-02, F-07).
 
 ## Flujos alternos
 
@@ -36,11 +36,11 @@ El médico ve a los pacientes dados de alta en los últimos 30 días en toda la 
 - La lista incluye a los pacientes de todas las sedes de la red, no solo los de las sedes del médico.
 - Cuenta el alta de los últimos 30 días contando desde hoy.
 - El riesgo es un número entero de 0 a 100. La alerta *Riesgo alto* se muestra con 70 o más. Con 69 no. El umbral se define en un solo lugar (AD-10).
-- Si dos pacientes tienen el mismo riesgo, va primero el que tiene el alta más reciente.
+- Si dos pacientes tienen el mismo riesgo, va primero el que tiene el alta más reciente. Si además tienen la misma fecha de alta, va primero el que sigue en orden alfabético por nombre.
 - La app muestra el riesgo tal como está guardado y no lo calcula (AD-10).
 - No hay paginación: se muestran todos los pacientes.
-- Cada vez que el médico abre la lista se crea un evento *Consultar* sobre *Pacientes con alta reciente*, sin paciente y con el propósito declarado (F-20). Al abrir a un paciente se crea otro evento (F-07).
-- El propósito se declara cada vez que se abre la lista y cada vez que se abre a un paciente. No se hereda (AD-05).
+- Cada vez que el médico abre la lista se crea un evento *Consultar* sobre *Pacientes con alta reciente*, sin paciente y con el propósito declarado (F-20). Al abrir a un paciente se crean otros dos eventos, uno sobre *Historia clínica* y otro sobre *Riesgo de reingreso* (F-02, F-07).
+- El propósito se declara cada vez que se abre la lista y cada vez que se abre a un paciente. No se hereda (AD-05). Inicio y *Pacientes* son la misma lista: el propósito se declara al entrar a cualquiera de las dos y de nuevo al volver a ella desde otra sección. La pantalla se llama *Pacientes con alta reciente*, como su recurso en la auditoría; en la navegación se ve como *Pacientes*.
 - Los datos son simulados.
 
 ## Estados
@@ -70,6 +70,8 @@ El médico ve a los pacientes dados de alta en los últimos 30 días en toda la 
 - **CA-11** Dados los datos simulados, cuando el médico abre la lista, entonces ve al menos 8 pacientes, de los que al menos 4 tienen la alerta (RNF-04).
 - **CA-12** Dado un médico que entra a la lista, cuando todavía no declaró el propósito, entonces el sistema se lo pide y no ve ningún paciente.
 - **CA-13** Dado un médico que abre la lista declarando *Seguimiento de reingreso*, cuando el auditor revisa la auditoría, entonces ve un evento con la acción *Consultar*, el recurso *Pacientes con alta reciente*, sin paciente, el propósito *Seguimiento de reingreso* y el resultado *Permitido*.
+- **CA-14** Dados 2 pacientes con el mismo riesgo y la misma fecha de alta, cuando el médico abre la lista, entonces va primero el que sigue en orden alfabético por nombre.
+- **CA-15** Dado un médico que abre la lista declarando *Urgencia*, cuando el auditor elige el filtro *Emergencia*, entonces ve ese evento, con el recurso *Pacientes con alta reciente*.
 
 ## Fuera de alcance
 
@@ -89,3 +91,7 @@ El médico ve a los pacientes dados de alta en los últimos 30 días en toda la 
 - 0.3.0 · 2026-11-06 · Abrir la lista exige declarar el propósito y crea un evento (pasos 2 y 6, CA-12, CA-13), para cumplir RF-14 y O-04. Depende también de F-16 y F-20. Se cierra esa pregunta abierta.
 - 0.3.1 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
 - 0.3.2 · 2026-11-06 · El evento se crea antes de ejecutar la acción, y si no se puede crear la acción no se hace, como RF-14 0.6.1 y AD-07 0.6.1.
+- 0.3.3 · 2026-11-08 · Coherencia con F-02, que abre la historia desde la lista: el riesgo con su explicación se ve dentro de la historia.
+- 0.3.4 · 2026-11-08 · Segundo desempate por nombre (CA-14) y los eventos al abrir un paciente quedan como en F-02 y F-07: historia y riesgo.
+- 0.3.5 · 2026-11-08 · Inicio y Pacientes son una sola lista para el propósito y el evento; se aclara el título de la pantalla frente al recurso de la auditoría.
+- 0.3.6 · 2026-11-08 · Un solo nombre para la pantalla: Pacientes con alta reciente (RF-37, F-13, F-16, PRD). Nuevo CA-15: abrir la lista con Urgencia es de emergencia.

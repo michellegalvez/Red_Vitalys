@@ -87,7 +87,6 @@ La carpeta `docs/` guía el desarrollo (Spec Driven Development), en este orden:
 - `docs/requisitos.md`: los requisitos funcionales (RF) y no funcionales (RNF).
 - `docs/architectural_spine.md`: la architectural spine, con el stack, el diagrama y las invariantes.
 - `docs/specs/`: una spec funcional por funcionalidad, con el índice y el avance en `docs/specs/README.md` (incluye las excepciones del prototipo) y la crítica en `docs/specs/reporte.md`.
-- `docs/specs-tecnicas/`: specs técnicas de las pantallas de indicadores (T-01 y T-02).
 
 ## Equipo
 

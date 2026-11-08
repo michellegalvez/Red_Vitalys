@@ -1,10 +1,10 @@
 # Reporte de specs · Red Vitalys
 
-Fecha: 2026-11-06 · Revisado: prd 0.7.1 · requisitos 0.7.2 · spine 0.6.5 · 23 specs (F-01 a F-23)
+Fecha: 2026-11-08 · Revisado: prd 0.7.6 · requisitos 0.7.7 · spine 0.6.10 · 23 specs (F-01 a F-23)
 
-Este reporte reemplaza al anterior del mismo día, que daba 1 inconsistencia: el alcance del PRD describía como una sola pantalla la historia unificada y el riesgo de reingreso, que en F-02 y F-07 son dos. Se corrigió el PRD y se cerró la cadena de versiones.
+Este reporte reemplaza al anterior. Se hicieron cuatro pasadas de la crítica sobre los documentos y se corrigió en cada una lo que encontró. La primera dejó la consistencia en rojo con 5 contradicciones; la segunda, con 8 (nacidas de los cambios de esa misma ronda: la historia con el riesgo y sus dos eventos, el formulario de la atención, el orden de las sedes); la tercera, con 2; la cuarta, con 3. Las 3 de la cuarta pasada se corrigieron en el texto, pero la crítica no se volvió a ejecutar después de esa última ronda, así que no hay una quinta lectura que lo confirme. El script de verificación pasa.
 
-Versiones de las specs: F-01 0.1.3 · F-02 0.1.4 · F-03 0.1.3 · F-04 0.3.1 · F-05 0.2.2 · F-06 0.3.2 · F-07 0.2.5 · F-08 0.1.3 · F-09 0.1.3 · F-10 0.1.2 · F-11 0.1.1 · F-12 0.2.3 · F-13 0.4.1 · F-14 0.2.1 · F-15 0.2.2 · F-16 0.3.3 · F-17 0.2.3 · F-18 0.2.3 · F-19 0.2.0 · F-20 0.4.2 · F-21 0.1.4 · F-22 0.2.3 · F-23 0.1.1.
+Versiones de las specs: F-01 0.1.3 · F-02 0.1.9 · F-03 0.1.3 · F-04 0.3.6 · F-05 0.2.6 · F-06 0.3.6 · F-07 0.2.8 · F-08 0.1.6 · F-09 0.1.3 · F-10 0.1.3 · F-11 0.1.1 · F-12 0.2.3 · F-13 0.4.3 · F-14 0.2.3 · F-15 0.2.3 · F-16 0.3.6 · F-17 0.2.7 · F-18 0.2.5 · F-19 0.2.1 · F-20 0.4.6 · F-21 0.1.9 · F-22 0.2.3 · F-23 0.1.1.
 
 ## Métricas
 
@@ -12,45 +12,39 @@ Versiones de las specs: F-01 0.1.3 · F-02 0.1.4 · F-03 0.1.3 · F-04 0.3.1 · 
 - **Trazabilidad** (amarillo):
   - RF → objetivo: 37/37 · 100 %.
   - Spec → RF: 22/23 · 96 %. F-19 cita solo RNF, a propósito. Con RF o RNF, el resultado es 23/23 · 100 %.
-- **Verificabilidad** (verde): 219/219 · 100 %. El script comprueba que cada criterio empiece con Dado y tenga "cuando" antes de "entonces".
+- **Verificabilidad** (verde): 241/241 · 100 %. Cada criterio empieza con Dado y tiene "cuando" antes de "entonces". Ninguna spec está sin criterios.
 - **Ambigüedad** (verde): 0.
-- **Consistencia** (verde): 0. El alcance del PRD separa la historia unificada (F-02) del riesgo de reingreso (F-07), que se abre desde la lista de pacientes con alta reciente (F-06).
-- **Atomicidad** (verde): 0.
+- **Consistencia** (sin confirmar): 0 contradicciones conocidas. La cuarta pasada encontró 3 y se corrigieron, pero falta una lectura posterior que lo confirme.
+- **Atomicidad** (verde): 0. F-19 reúne a propósito 4 requisitos no funcionales, sin flujo propio.
 - **Pureza funcional** (verde): 0.
-- **Formato** (amarillo): 1 defecto. **F-05** tiene los criterios en el orden CA-6, CA-9, CA-7, CA-8. El CA-9 se agregó al final de la ronda de relación y quedó antes del CA-7. Las demás 22 specs tienen los criterios y los flujos alternos en orden. Ningún historial repite una versión.
-- **Preguntas abiertas:** 31. Son las de las specs y ninguna cambia lo que ya está escrito. Subió de 30 por la pregunta nueva de F-07 sobre un paciente que ya no está en la lista.
+- **Formato** (verde): 0 defectos. Los criterios y los flujos alternos de las 23 specs van en orden y ningún historial repite una versión.
+- **Preguntas abiertas:** 28. Bajó de 31 en el reporte anterior. Ninguna cambia lo que ya está escrito.
 - **Avance de implementación:** todo en borrador. Hay 0 specs aprobadas o implementadas.
-- **Estabilidad:** ninguna spec ha subido de versión mayor.
+- **Estabilidad:** ninguna spec ha subido de versión mayor. Las que más versiones menores acumulan son F-13 y F-20 (0.4), y F-04, F-06 y F-16 (0.3).
 
 ## Verificación automática
 
-`docs/verificar.sh` revisa, sin modificar ningún archivo:
+`docs/verificar.sh` revisa, sin modificar ningún archivo: versiones e índice, dependencias sin ciclos, requisitos citados, forma Dado / cuando / entonces de los criterios, estructura de las 10 secciones, formato, palabras vagas y tecnología, las reglas compartidas, las frases retiradas, la tabla de permisos y que este reporte esté al día. Con este reporte debe dar 0 fallas.
 
-- Versiones: la de cada documento coincide con el último renglón de su historial, con el índice y con el `basado_en` de los documentos que lo citan. Ningún historial repite una versión ni retrocede.
-- Dependencias entre specs: existen, no apuntan a sí mismas y no forman ciclos.
-- Requisitos: todos los citados existen, cada spec cita al menos uno y los 37 RF tienen spec.
-- Criterios: sin repetidos ni saltos, con la forma Dado / cuando / entonces.
-- Estructura: las 10 secciones en orden, pasos del flujo consecutivos y sin pasos pegados, y ninguna sección de preguntas abiertas vacía.
-- Formato: línea en blanco antes de cada encabezado, listas sin cortes, sin dobles líneas en blanco, salto de línea al final y sin CRLF.
-- Palabras: ninguna palabra vaga, ninguna tecnología y ninguna posición en la pantalla en el cuerpo de las specs.
-- Reglas compartidas: 20 reglas que aparecen en varios documentos tienen que decir lo mismo en cada uno.
-- Frases retiradas: las redacciones que ya se corrigieron no pueden volver.
-- Tabla de permisos: la de los requisitos, F-18 y F-22 son iguales.
-- Reporte al día: dice las versiones y las cifras actuales.
+Lo que el script **no** puede revisar: contradicciones con reglas que todavía no tiene en su lista, casos sin definir e ids de criterio mal escritos (por ejemplo `CA-{M}`, que apareció dos veces durante las correcciones y se borró a mano).
 
-Lo que el script **no** puede revisar es si una regla nueva contradice a otra que todavía no está en su lista, ni si un caso de uso quedó sin definir. Eso sigue exigiendo leer. Tarda cerca de 2 minutos en Git Bash, porque lanza muchos procesos pequeños.
+## Correcciones aplicadas en esta ronda
 
-## Correcciones propuestas
-
-1. **F-05, *Criterios de aceptación*.** Mover el CA-9 después del CA-8. Es redacción, así que sube el parche de F-05 a 0.2.2.
-2. **`docs/verificar.sh`.** Agregar un chequeo de que los criterios y los flujos alternos de cada spec estén en orden creciente. Hoy solo comprueba que no haya repetidos ni saltos, y por eso no vio este defecto.
-
-Con esas dos correcciones no queda nada más. Se releyeron las 23 specs, el PRD, los requisitos y la spine, y el resto del contenido no se contradice.
+1. **Eventos al abrir la historia.** Abrir la historia con un propósito crea dos eventos, *Historia clínica* y *Riesgo de reingreso*, que se permiten o se deniegan juntos. Es igual en RF-14, AD-07, F-02, F-05, F-06, F-07, F-17 y F-20. Si solo se crea uno, no se muestra nada.
+2. **Atención (F-04).** Sin motivo ni diagnóstico, como en el Figma: tipo de atención, sede, fecha de inicio, fecha de alta y destino al alta. Las fechas se escriben como "30 oct 2026". Una atención rechazada por validación no crea evento, como una medición.
+3. **Relación con *Urgencia*.** Una atención registrada con *Urgencia* no da relación, ni por la atención ni por el alta que lleve (PRD, RF-25, F-05, F-04 CA-17).
+4. **Emergencia.** Un evento es de emergencia si su propósito es *Urgencia* y su resultado es *Permitido* (F-17, F-20, F-21).
+5. **Ingreso sin sedes.** Queda un evento *Denegado* con el correo y la IP; no suma al bloqueo ni lo reinicia, y abandonar antes de elegir la sede tampoco lo reinicia (F-13, F-14, F-20).
+6. **Sedes de peor a mejor** en el tablero y en la comparación (F-08, F-10), con categoría del indicador y marca *Mejora* / *Empeora* / *Sin cambio*.
+7. **F-21.** En celular cada evento es una tarjeta y en computador una tabla, sin desplazarse hacia los lados (RNF-07).
+8. **Nombre de la pantalla de la lista:** *Pacientes con alta reciente* en todas partes; en la navegación se ve como *Pacientes*.
+9. **Historia y riesgo.** El alcance del PRD une las dos aperturas en una: la historia, desde la búsqueda o la lista, con su riesgo. La regla compartida del script se reescribió para el nuevo diseño.
+10. **Al registrar una atención** solo se ofrecen *Atención del paciente* y *Urgencia* (PRD, RF-19, F-16, F-04).
+11. **Datos simulados (RNF-04):** una cuenta sin sedes, un usuario con 2 sedes y una sede de prueba sin medición en el último periodo.
 
 ## Lo que está bien
 
-- **El contenido de las 23 specs, el PRD, los requisitos, la spine y `AGENTS.md` no tiene contradicciones entre sí.**
-- **Las reglas que se repiten en varios documentos y las frases ya corregidas están vigiladas por el script.**
-- **Las tablas de permisos (F-18, F-22) y de indicadores (F-08, F-12) coinciden con `docs/requisitos.md`.**
-- **Las dependencias no tienen ciclos.**
-- **Ninguna spec nombra tecnología concreta:** ni Supabase, ni Flutter, ni tablas, ni SQL.
+- Las tablas de permisos (requisitos, F-18 y F-22) son iguales entre sí.
+- La tabla de indicadores coincide entre los requisitos, F-08 y F-12.
+- Las dependencias no tienen ciclos y los 37 RF tienen spec.
+- Ninguna spec nombra tecnología concreta.

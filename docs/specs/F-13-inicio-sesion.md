@@ -1,8 +1,8 @@
 ---
 id: F-13
 titulo: Inicio de sesión con la sede asignada
-version: 0.4.1
-fecha: 2026-11-06
+version: 0.4.3
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-32, RF-33, RF-18, RF-37]
@@ -28,7 +28,7 @@ El médico, el administrativo y el auditor entran a la app con su correo institu
 
 - **A1 · Datos incorrectos:** si el correo o la contraseña no son correctos, se ve "Correo o contraseña incorrectos", sin decir cuál falló, y el usuario sigue en el inicio de sesión. Queda un evento *Denegado* con el correo escrito y la IP (F-20).
 - **A2 · Inicio de sesión bloqueado:** después de 5 intentos fallidos seguidos en el dispositivo, nadie entra desde él durante 15 minutos, aunque la contraseña sea correcta (F-14).
-- **A3 · Sin sedes asignadas:** si el usuario no tiene ninguna sede asignada, se ve "Su cuenta no tiene sedes asignadas" y no entra.
+- **A3 · Sin sedes asignadas:** si el usuario no tiene ninguna sede asignada, se ve "Su cuenta no tiene sedes asignadas" y no entra. Queda un evento *Denegado* con el correo en lugar del usuario, la IP y sin sede, registrado como un inicio de sesión fallido, aunque no suma al conteo del bloqueo ni lo reinicia (F-14, F-20).
 - **A4 · Una sola sede:** si el usuario tiene una sola sede asignada, esa aparece elegida y el usuario debe confirmarla.
 - **A5 · Campos vacíos:** si falta el correo o la contraseña, se ve "Escriba su correo y su contraseña" y no se intenta ingresar.
 - **A6 · Abandona antes de elegir la sede:** el usuario valida sus datos y sale sin confirmar la sede. No se abre la sesión y no queda un evento de ingreso exitoso.
@@ -65,11 +65,11 @@ El médico, el administrativo y el auditor entran a la app con su correo institu
 - **CA-4** Dado un correo que existe y una contraseña equivocada, cuando el usuario elige *Ingresar*, entonces ve "Correo o contraseña incorrectos".
 - **CA-5** Dado un correo que no existe, cuando el usuario elige *Ingresar*, entonces ve el mismo mensaje "Correo o contraseña incorrectos".
 - **CA-6** Dado un inicio de sesión fallido, cuando el auditor revisa la auditoría, entonces ve un evento con la acción *Ingresar*, el recurso *Sesión*, el correo escrito, la IP y el resultado *Denegado*.
-- **CA-7** Dado un usuario sin sedes asignadas, cuando valida sus datos, entonces ve "Su cuenta no tiene sedes asignadas" y no entra.
+- **CA-7** Dado un usuario sin sedes asignadas, cuando valida sus datos, entonces ve "Su cuenta no tiene sedes asignadas", no entra y el auditor ve un evento *Denegado* con el correo, la IP y sin sede.
 - **CA-8** Dado el correo vacío, cuando el usuario elige *Ingresar*, entonces ve "Escriba su correo y su contraseña" y no se intenta ingresar.
 - **CA-9** Dado que el sistema no responde, cuando el usuario elige *Ingresar*, entonces ve "No se pudo iniciar sesión. Intente de nuevo." y el correo sigue escrito.
 - **CA-10** Dado un usuario que inició sesión, cuando el auditor revisa la auditoría, entonces ve un evento con su nombre, la acción *Ingresar*, el recurso *Sesión*, el propósito *No aplica*, el resultado *Permitido* y la sede elegida.
-- **CA-11** Dados los datos simulados, cuando se prueban los 3 roles, entonces hay 3 usuarios, uno por rol, cada uno con al menos una sede asignada (RNF-04).
+- **CA-11** Dados los datos simulados, cuando se prueban los 3 roles, entonces hay un usuario por rol con al menos una sede asignada y una cuenta sin sedes asignadas para A3 (RNF-04).
 - **CA-12** Dado un usuario de cada rol, cuando confirma la sede, entonces el médico ve que se le pide el propósito para abrir *Pacientes con alta reciente*, el administrativo ve el *Tablero de indicadores* y el auditor ve la *Auditoría de accesos*.
 - **CA-13** Dado un usuario que validó su correo y su contraseña, cuando sale sin confirmar la sede, entonces no entra a la app y el auditor no ve un evento *Permitido* de su ingreso.
 
@@ -81,7 +81,7 @@ El médico, el administrativo y el auditor entran a la app con su correo institu
 
 ## Preguntas abiertas
 
-- ¿El usuario sin sedes asignadas debe generar un evento de acceso?
+Ninguna.
 
 ## Historial
 
@@ -91,3 +91,5 @@ El médico, el administrativo y el auditor entran a la app con su correo institu
 - 0.3.0 · 2026-11-06 · Se define la pantalla inicial de cada rol (CA-12) y se aprueban los textos de los mensajes. Se cierran 2 preguntas abiertas.
 - 0.4.0 · 2026-11-06 · El ingreso exitoso se registra solo al abrirse la sesión (A6, CA-13), y la spec cita RF-37, como RF-14 0.6.0.
 - 0.4.1 · 2026-11-06 · El evento se crea antes de ejecutar la acción, y si no se puede crear la acción no se hace, como RF-14 0.6.1 y AD-07 0.6.1.
+- 0.4.2 · 2026-11-08 · El usuario sin sedes asignadas deja un evento Denegado, sin sede y con el correo y la IP, y no suma al bloqueo. Se cierra esa pregunta abierta.
+- 0.4.3 · 2026-11-08 · A3 aclara que el ingreso sin sedes ni suma ni reinicia el conteo; CA-11 cuenta la cuenta sin sedes de prueba.

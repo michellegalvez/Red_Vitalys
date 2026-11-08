@@ -221,8 +221,8 @@ regla "AGENTS.md describe lo que el usuario puede hacer" \
 regla "la red tiene una cadena de laboratorios clínicos propia" \
   '../AGENTS.md::cadena de laboratorios' 'prd.md::cadena de laboratorios clínicos propia' \
   'requisitos.md::al menos 2 laboratorios clínicos'
-regla "el riesgo de reingreso se abre desde la lista de pacientes con alta reciente, no desde la historia" \
-  'prd.md::Abrir el riesgo de reingreso de un paciente de la lista' 'prd.md::Abrir la historia unificada de un paciente\.$' \
+regla "la historia unificada muestra el riesgo de reingreso y se abre desde la búsqueda o la lista" \
+  'prd.md::Abrir la historia unificada de un paciente, desde la búsqueda o desde la lista de pacientes con alta reciente' \
   'specs/F-07-*.md::lista de pacientes con alta reciente' 'specs/F-02-*.md::El riesgo de reingreso y su explicación'
 regla "los laboratorios no tienen indicadores" \
   'prd.md::Los laboratorios no tienen indicadores' 'requisitos.md::Los laboratorios no tienen indicadores' \
@@ -239,7 +239,6 @@ retirada() {
   done < <(grep -nE "$patron" "${docs3[@]}" "${specs[@]}" ../AGENTS.md /dev/null)
 }
 retirada 'laboratorio central|centros ambulatorios y un laboratorio' "la red tiene una cadena de laboratorios"
-retirada 'historia unificada de un paciente con su riesgo' "el riesgo se abre desde la lista, no desde la historia"
 retirada '[Cc]uenta bloqueada|bloquea la cuenta|bloqueo de la cuenta' "el bloqueo es del inicio de sesión en el dispositivo"
 retirada 'por defecto \*Seguimiento de reingreso\*' "no hay propósito elegido por defecto"
 retirada 'Registrar una atención le da al médico relación con ese paciente \(F-05\)\.$' "una atención con Urgencia no da relación"

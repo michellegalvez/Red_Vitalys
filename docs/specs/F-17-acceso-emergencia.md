@@ -1,8 +1,8 @@
 ---
 id: F-17
 titulo: Acceso de emergencia
-version: 0.2.3
-fecha: 2026-11-06
+version: 0.2.7
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-20]
@@ -19,23 +19,23 @@ El médico puede ver la historia de un paciente, o registrarle una atención, cu
 
 1. El médico elige un paciente con el que no tiene relación (F-05).
 2. En la declaración del propósito (F-16) elige *Urgencia* y confirma.
-3. El sistema crea un evento *Consultar* sobre *Historia clínica* con propósito *Urgencia* y resultado *Permitido*. Si no puede crearlo, no muestra la historia (F-20).
+3. El sistema crea los eventos *Consultar* sobre *Historia clínica* y sobre *Riesgo de reingreso* (F-02) con propósito *Urgencia* y resultado *Permitido*. Si no puede crearlos, no muestra la historia (F-20).
 4. El sistema permite el acceso y muestra la historia (F-02).
 5. La historia muestra el aviso "Acceso de emergencia: queda registrado y el auditor lo revisará".
 
 ## Flujos alternos
 
-- **A1 · Con relación:** si el médico tiene relación y declara *Urgencia*, el acceso se permite y también queda marcado como emergencia, porque la marca depende del propósito.
+- **A1 · Con relación:** *Urgencia* es para el médico sin relación. Si un médico con relación la declara para ver la historia, el acceso se permite y queda marcado como emergencia, porque la marca depende del propósito. Al registrar una atención con relación, *Urgencia* también se permite y queda marcado como emergencia (F-04).
 - **A2 · Otro rol:** *Urgencia* solo es para el médico. Si un administrativo o un auditor intenta usarla, se rechaza y queda un evento *Denegado* (F-18).
 - **A3 · Sin *Urgencia*:** sin relación y con otro propósito, el acceso se rechaza (F-05).
-- **A4 · Registrar una atención:** el médico sin relación elige *Registrar atención* (F-04) y declara *Urgencia*. La atención se registra y el evento queda con la acción *Registrar*, el recurso *Atención* y el propósito *Urgencia*, marcado como emergencia.
+- **A4 · Registrar una atención:** el médico sin relación elige *Registrar atención* (F-04) y declara *Urgencia*. La atención se registra y el evento queda con la acción *Registrar*, el recurso *Atención* y el propósito *Urgencia*, marcado como emergencia. Al guardar, el médico ve "Acceso de emergencia: queda registrado y el auditor lo revisará".
 
 ## Reglas
 
 - Solo el médico puede declarar *Urgencia*.
-- Un evento es de emergencia si su propósito es *Urgencia*.
+- Un evento es de emergencia si su propósito es *Urgencia* y su resultado es *Permitido*.
 - El acceso de emergencia se permite sin pedir una justificación escrita.
-- El acceso de emergencia aplica a la historia clínica, al riesgo de reingreso y al registro de una atención.
+- El acceso de emergencia aplica a la historia clínica, al riesgo de reingreso, al registro de una atención y a la apertura de la lista de pacientes con alta reciente (F-06); este último solo queda en el filtro *Emergencia*, sin el aviso.
 - Una atención registrada con *Urgencia* no le da al médico relación con el paciente (F-05).
 - Los eventos de emergencia aparecen en el filtro *Emergencia* de la auditoría (F-21).
 - El médico no puede quitar la marca de emergencia.
@@ -59,11 +59,12 @@ El médico puede ver la historia de un paciente, o registrarle una atención, cu
 - **CA-2** Dado el acceso del criterio anterior, cuando el auditor revisa la auditoría, entonces ve un evento con la acción *Consultar*, el recurso *Historia clínica*, ese paciente, el propósito *Urgencia* y el resultado *Permitido*.
 - **CA-3** Dado el evento anterior, cuando el auditor elige el filtro *Emergencia*, entonces lo ve en la lista.
 - **CA-4** Dado un médico con relación con el paciente, cuando declara *Urgencia*, entonces ve la historia y el evento queda en el filtro *Emergencia*.
-- **CA-5** Dado un médico sin relación, cuando declara *Atención del paciente*, entonces no ve la historia y queda un evento *Denegado* que no aparece en el filtro *Emergencia*.
+- **CA-5** Dado un médico sin relación, cuando declara *Atención del paciente*, entonces no ve la historia y quedan los eventos *Denegado* de la historia y del riesgo, que no aparecen en el filtro *Emergencia*.
 - **CA-6** Dado que el sistema recibe la consulta de un administrativo con el propósito *Urgencia*, cuando la procesa, entonces no se muestra la información del paciente y queda un evento con el resultado *Denegado*.
 - **CA-7** Dado un médico, cuando abre la historia con *Urgencia*, entonces no se le pide ninguna justificación.
 - **CA-8** Dados los datos simulados, cuando el auditor elige *Emergencia*, entonces ve al menos 1 evento (RNF-04).
 - **CA-9** Dada la Dra. Camila Martínez sin relación con un paciente, cuando registra una atención declarando *Urgencia*, entonces la atención se registra y el auditor ve un evento con la acción *Registrar*, el recurso *Atención*, el propósito *Urgencia* y el resultado *Permitido*, que aparece en el filtro *Emergencia*.
+- **CA-10** Dado un médico, con o sin relación con el paciente, cuando guarda una atención declarando *Urgencia*, entonces ve "Acceso de emergencia: queda registrado y el auditor lo revisará".
 
 ## Fuera de alcance
 
@@ -85,3 +86,7 @@ El médico puede ver la historia de un paciente, o registrarle una atención, cu
 - 0.2.1 · 2026-11-06 · Una atención registrada con *Urgencia* no da relación, como RF-25 0.6.0.
 - 0.2.2 · 2026-11-06 · El evento se crea antes de ejecutar la acción, y si no se puede crear la acción no se hace, como RF-14 0.6.1 y AD-07 0.6.1.
 - 0.2.3 · 2026-11-06 · Formato: línea en blanco antes de los encabezados y lista de criterios sin cortes.
+- 0.2.4 · 2026-11-08 · Coherencia con el PRD, RF-20 y F-04: Urgencia es para el caso sin relación; con relación solo se admite al ver la historia.
+- 0.2.5 · 2026-11-08 · Coherencia con F-02: abrir la historia crea dos eventos, el de la historia y el del riesgo.
+- 0.2.6 · 2026-11-08 · Un evento es de emergencia con propósito Urgencia y resultado Permitido; Urgencia con relación también se permite al registrar; al guardar una atención con Urgencia el médico ve el aviso de emergencia (CA-10).
+- 0.2.7 · 2026-11-08 · La apertura de la lista con Urgencia también es de emergencia (F-06 CA-15) y el aviso al guardar vale con o sin relación.

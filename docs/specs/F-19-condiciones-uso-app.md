@@ -1,8 +1,8 @@
 ---
 id: F-19
 titulo: Condiciones de uso de la app
-version: 0.2.0
-fecha: 2026-11-06
+version: 0.2.1
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RNF-01, RNF-03, RNF-05, RNF-07]
@@ -55,7 +55,7 @@ Esta spec no describe una función con su propio flujo. Reúne las condiciones q
 
 ## Criterios de aceptación
 
-- **CA-1** Dado un computador con Chrome o Edge en su versión actual, cuando el usuario abre la app e inicia sesión, entonces recorre las pantallas de su rol sin que falte ninguna.
+- **CA-1** Dado un computador con Chrome o Edge en su versión actual, cuando el usuario abre la app e inicia sesión, entonces recorre las pantallas de su rol sin que falte ninguna: el médico, la lista de pacientes con alta reciente, la búsqueda, la historia, el registro de una atención, el tablero y su perfil; el administrativo, el tablero, la búsqueda con los datos básicos, el registro de una medición y su perfil; el auditor, la auditoría, el tablero y su perfil.
 - **CA-2** Dado un celular con Android 10 o superior y la app instalada, cuando el usuario inicia sesión, entonces recorre las mismas pantallas de su rol que en el computador.
 - **CA-3** Dado un dispositivo sin conexión a internet en la entrega 2, cuando el usuario recorre las pantallas de su rol, entonces todas muestran sus datos.
 - **CA-4** Dado cualquiera de los 3 roles, cuando recorre las pantallas que su rol permite, entonces todos los textos, mensajes y opciones están en español.
@@ -83,3 +83,4 @@ Esta spec no describe una función con su propio flujo. Reúne las condiciones q
 
 - 0.1.0 · 2026-11-06 · Primera versión.
 - 0.2.0 · 2026-11-06 · Navegadores: Chrome y Edge en su versión actual. Android 10 o superior. Se cierran 2 preguntas abiertas.
+- 0.2.1 · 2026-11-08 · CA-1 lista las pantallas de cada rol, como la tabla de F-22.

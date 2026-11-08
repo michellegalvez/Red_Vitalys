@@ -1,8 +1,8 @@
 ---
 id: F-16
 titulo: Declaración del propósito de consulta
-version: 0.3.3
-fecha: 2026-11-06
+version: 0.3.6
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-19]
@@ -25,7 +25,7 @@ El usuario dice para qué va a consultar la información de un paciente o regist
 ## Flujos alternos
 
 - **A1 · Sin elegir:** si el usuario confirma sin elegir un propósito, se ve "Elija el propósito de la consulta" y no se sigue.
-- **A2 · Cancelar:** si el usuario cancela, vuelve a donde estaba y no se consulta nada ni se crea un evento.
+- **A2 · Cancelar:** si el usuario cancela, vuelve a donde estaba y no se consulta nada ni se crea un evento. Si el propósito lo pidió la lista de pacientes al iniciar sesión, el médico queda en el *Tablero de indicadores*, que no muestra pacientes.
 - **A3 · Propósito no permitido para el rol:** si el sistema recibe un propósito que el rol del usuario no permite, la consulta se rechaza y queda un evento *Denegado* (F-18).
 
 ## Reglas
@@ -36,7 +36,7 @@ El usuario dice para qué va a consultar la información de un paciente o regist
 - También se declara al registrar una atención: *Atención del paciente*, o *Urgencia* si el médico no tiene relación con el paciente (F-04).
 - El registro de una medición no pide propósito. Su evento queda con *No aplica* (F-12).
 - Los propósitos son 5: *Atención del paciente*, *Consulta de historia clínica*, *Seguimiento de reingreso*, *Revisión de calidad* y *Urgencia*.
-- El médico ve los 5. El administrativo solo *Revisión de calidad*. El auditor no declara ninguno, porque no consulta pacientes.
+- El médico ve los 5 al consultar a un paciente o abrir la lista; al registrar una atención solo ve *Atención del paciente* y *Urgencia* (F-04). El administrativo solo *Revisión de calidad*. El auditor no declara ninguno, porque no consulta pacientes.
 - El propósito *Urgencia* se trata en F-17.
 - Sin propósito no se muestra ninguna información del paciente.
 - Los datos son simulados.
@@ -62,6 +62,8 @@ El usuario dice para qué va a consultar la información de un paciente o regist
 - **CA-6** Dado un médico que declara *Seguimiento de reingreso*, cuando consulta la historia de un paciente, entonces en la auditoría queda el evento con ese propósito.
 - **CA-7** Dado que el sistema recibe la consulta de un administrativo con el propósito *Urgencia*, cuando la procesa, entonces no se muestra la información del paciente y queda un evento con el resultado *Denegado*.
 - **CA-8** Dado un médico, cuando entra a la lista de pacientes con alta reciente, entonces ve los 5 propósitos, ninguno elegido, antes de ver la lista.
+- **CA-9** Dado un médico que acaba de iniciar sesión y recibe el propósito de la lista de pacientes, cuando elige *Cancelar*, entonces queda en el *Tablero de indicadores*, sin ver ningún paciente y sin que se cree un evento.
+- **CA-10** Dado un médico que pide registrar una atención, cuando el sistema le pide el propósito, entonces solo ve *Atención del paciente* y *Urgencia*, ninguno elegido.
 
 ## Fuera de alcance
 
@@ -80,3 +82,6 @@ El usuario dice para qué va a consultar la información de un paciente o regist
 - 0.3.1 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
 - 0.3.2 · 2026-11-06 · Redacción: el *Objetivo* incluye el registro de una atención, como las *Reglas* y RF-19 0.5.0.
 - 0.3.3 · 2026-11-06 · CA-3 y CA-5 tienen la forma Dado / cuando / entonces.
+- 0.3.4 · 2026-11-08 · Se define a dónde vuelve el médico si cancela el propósito de la lista justo después de iniciar sesión.
+- 0.3.5 · 2026-11-08 · Nuevo criterio para cancelar el propósito de la lista justo después de iniciar sesión (A2).
+- 0.3.6 · 2026-11-08 · Al registrar una atención el médico solo ve dos propósitos (regla y CA nuevo).

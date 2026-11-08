@@ -1,8 +1,8 @@
 ---
 id: F-14
 titulo: Bloqueo del inicio de sesión por intentos fallidos
-version: 0.2.1
-fecha: 2026-11-06
+version: 0.2.3
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-36]
@@ -32,6 +32,7 @@ Después de 5 intentos fallidos seguidos en un dispositivo, el sistema bloquea e
 ## Reglas
 
 - El límite es de 5 intentos fallidos seguidos en el mismo dispositivo, con cualquier correo.
+- Un ingreso con las credenciales correctas y sin sedes asignadas (F-13) no cuenta como intento fallido y tampoco reinicia el conteo. Validar las credenciales y abandonar antes de elegir la sede tampoco lo reinicia: solo lo reinicia un ingreso que termina con la sede elegida.
 - Un dispositivo es el navegador o el celular desde el que se intenta ingresar.
 - El bloqueo dura 15 minutos desde el quinto fallo.
 - El inicio de sesión se desbloquea solo. Nadie puede desbloquearlo antes, ni el auditor ni un administrativo.
@@ -64,6 +65,7 @@ Después de 5 intentos fallidos seguidos en un dispositivo, el sistema bloquea e
 - **CA-7** Dado un dispositivo bloqueado, cuando alguien intenta ingresar, entonces el auditor ve un evento *Denegado* con el correo escrito y la IP.
 - **CA-8** Dado un dispositivo bloqueado, cuando un administrativo o un auditor busca la forma de desbloquearlo, entonces no la encuentra en ninguna parte de la app.
 - **CA-9** Dados 4 intentos fallidos seguidos en un dispositivo, cuando el usuario elige *Ingresar* con la contraseña vacía, entonces ve "Escriba su correo y su contraseña", el inicio de sesión no se bloquea y el auditor no ve un evento de ese intento.
+- **CA-10** Dados 4 intentos fallidos seguidos, cuando un usuario sin sedes asignadas escribe sus credenciales correctas, entonces ve "Su cuenta no tiene sedes asignadas" y el siguiente fallo cuenta como el quinto.
 
 ## Fuera de alcance
 
@@ -82,3 +84,5 @@ Después de 5 intentos fallidos seguidos en un dispositivo, el sistema bloquea e
 - 0.1.1 · 2026-11-06 · Redacción: se quita el nombre de un servicio de las reglas.
 - 0.2.0 · 2026-11-06 · El bloqueo pasa a ser del inicio de sesión en el dispositivo, para cualquier correo, con un mensaje fijo que no revela qué correos existen (RF-36 0.4.0). Se cierran 3 preguntas abiertas.
 - 0.2.1 · 2026-11-06 · Un intento con el correo o la contraseña vacíos no cuenta ni crea un evento (regla y CA-9), como F-13.
+- 0.2.2 · 2026-11-08 · El ingreso de una cuenta sin sedes no suma al conteo ni lo reinicia (regla y CA-10).
+- 0.2.3 · 2026-11-08 · Validar las credenciales y abandonar antes de elegir la sede no reinicia el conteo.

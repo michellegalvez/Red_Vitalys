@@ -1,8 +1,8 @@
 ---
 documento: prd
 proyecto: Red Vitalys
-version: 0.7.1
-fecha: 2026-11-06
+version: 0.7.6
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 ---
@@ -27,9 +27,9 @@ El problema afecta en este orden al personal clínico, a la Dirección Médica y
 
 Cada usuario entra con su correo institucional y su contraseña. Después de 5 intentos fallidos seguidos, el inicio de sesión se bloquea 15 minutos en ese dispositivo para cualquier correo, y una sesión sin uso se cierra a los 15 minutos.
 
-El acceso depende del rol, de la sede desde la que se ingresa y del propósito que se declara en cada consulta, y cada acción queda registrada. Cada usuario tiene asignadas una o más sedes y solo puede ingresar desde una de ellas. La sede de ingreso queda en la sesión, se ve en el perfil y aparece en cada registro de auditoría.
+El acceso depende del rol, de la sede desde la que se ingresa y del propósito que se declara en cada consulta. Cada ingreso, cada acceso a la información de un paciente, cada registro de una medición y cada acción denegada quedan registrados (O-04). Cada usuario tiene asignadas una o más sedes y solo puede ingresar desde una de ellas. La sede de ingreso queda en la sesión, se ve en el perfil y aparece en cada registro de auditoría, salvo en el inicio de sesión fallido, que todavía no tiene sesión.
 
-- **Médico**: abre la app en cada atención para ver la historia unificada del paciente con la información de todas las sedes, saber si tiene riesgo alto de volver a hospitalizarse y por qué, y registrar la atención. Es el único rol que ve la historia clínica completa y el riesgo de reingreso, y el único que registra atenciones. Puede buscar pacientes de cualquier sede de la red y ver su historia cuando tiene relación con ellos: registró una atención suya declarando *Atención del paciente* o lo dieron de alta en una de sus sedes asignadas. Con un paciente con el que no tiene relación solo puede ver la historia o registrar una atención declarando *Urgencia*, y una atención registrada con *Urgencia* no le da relación. Al registrar una atención declara el propósito (*Atención del paciente* si tiene relación) y se le propone la sede de la sesión, pero puede elegir otra.
+- **Médico**: abre la app en cada atención para ver la historia unificada del paciente con la información de todas las sedes, saber si tiene riesgo alto de volver a hospitalizarse y por qué, y registrar la atención. Es el único rol que ve la historia clínica completa y el riesgo de reingreso, y el único que registra atenciones. Puede buscar pacientes de cualquier sede de la red y ver su historia cuando tiene relación con ellos: registró una atención suya declarando *Atención del paciente* o lo dieron de alta en una de sus sedes asignadas en los últimos 30 días. Con un paciente con el que no tiene relación solo puede ver la historia o registrar una atención declarando *Urgencia*, y una atención registrada con *Urgencia* no le da relación, ni por la atención ni por el alta que lleve. Al registrar una atención declara el propósito (*Atención del paciente* si tiene relación) y se le propone la sede de la sesión, pero puede elegir otra.
 - **Administrativo** (incluye a la Dirección Médica): busca pacientes y consulta sus datos básicos, sin historia clínica ni riesgo de reingreso. Compara los indicadores de calidad entre sedes y registra las mediciones de cualquier sede cuando cierra el periodo de medición, que es mensual. Digita el valor ya calculado por la sede; la app no lo calcula.
 - **Auditor**: revisa quién accedió a qué información, cuándo, con qué propósito y con qué resultado, en revisiones periódicas y cada vez que hay accesos denegados o de emergencia. Es el único rol que ve la auditoría de accesos, no consulta información de pacientes y no puede modificar información clínica ni administrativa.
 
@@ -37,7 +37,7 @@ Los tres roles ven el tablero de indicadores, ven su perfil con lo que tienen pe
 
 ### Propósitos de acceso
 
-En cada consulta a la información de un paciente, al abrir la lista de pacientes con alta reciente y al registrar una atención, el usuario declara uno de estos propósitos: *Atención del paciente*, *Consulta de historia clínica*, *Seguimiento de reingreso*, *Revisión de calidad* o *Urgencia*. El médico puede declarar cualquiera de los 5. El administrativo solo *Revisión de calidad*. El auditor ninguno, porque no consulta pacientes. El inicio de sesión queda registrado con el propósito *No aplica*.
+En cada consulta a la información de un paciente, al abrir la lista de pacientes con alta reciente y al registrar una atención, el usuario declara uno de estos propósitos: *Atención del paciente*, *Consulta de historia clínica*, *Seguimiento de reingreso*, *Revisión de calidad* o *Urgencia*. El médico puede declarar cualquiera de los 5. El administrativo solo *Revisión de calidad*. El auditor ninguno, porque no consulta pacientes. Al registrar una atención solo se ofrecen *Atención del paciente* y *Urgencia*. El inicio de sesión, el registro de una medición y las acciones que el rol no permite y no tienen propósito quedan registrados con el propósito *No aplica*.
 
 **Urgencia** es el acceso de emergencia. Se usa cuando un médico necesita la historia de un paciente con el que no tiene relación, o registrarle una atención. El acceso se permite, pero queda marcado como emergencia para que el auditor lo revise.
 
@@ -52,7 +52,7 @@ Los indicadores de calidad son 4. El reingreso hospitalario a 30 días solo apli
 - **O-01** · **Ver al paciente unificado.** El médico ve en un solo lugar la información de un paciente de todas las sedes, aunque cada sede lo tenga registrado con un identificador distinto. *Se cumple si*, al buscar a un paciente por nombre o documento, el médico ve en una sola consulta sus datos, sus identificadores en cada sistema de origen y sus atenciones de al menos 2 sedes distintas.
 - **O-02** · **Anticipar el reingreso.** El médico sabe qué pacientes dados de alta tienen riesgo alto de volver a hospitalizarse en 30 días y entiende por qué. *Se cumple si* el médico ve a los pacientes con alta en los últimos 30 días ordenados de mayor a menor riesgo, los que tienen riesgo de 70 o más aparecen con una alerta y, al abrir uno, ve los factores que suben o bajan su riesgo y cuántos puntos aporta cada uno.
 - **O-03** · **Comparar la calidad entre sedes.** La Dirección Médica compara los 4 indicadores de calidad entre sedes y ve cuáles están peor que el promedio de la red. *Se cumple si* cualquiera de los 3 roles ve el valor del último periodo de los 4 indicadores (reingreso a 30 días, tiempo de espera, adherencia a protocolos clínicos y eventos adversos evitables), su cambio frente al periodo anterior y cada sede, en los indicadores que le aplican, marcada como mejor, peor o igual al promedio de la red.
-- **O-04** · **Rastrear cada acceso.** Cada acceso a la información de un paciente queda registrado y el auditor lo puede revisar. *Se cumple si* el 100 % de los inicios de sesión, exitosos o fallidos, de las consultas y registros sobre información de un paciente, de los registros de mediciones, de las aperturas de la lista de pacientes con alta reciente y de las acciones denegadas quedan registrados con 7 datos: quién, cuándo, qué acción, sobre qué recurso, con qué propósito, con qué resultado (permitido o denegado) y desde qué sede. El único evento sin sede es el inicio de sesión fallido, porque todavía no hay sesión, y lleva en su lugar la IP. La búsqueda de pacientes, que solo muestra nombre y documento, no se registra. Además, el auditor tiene que poder filtrar los accesos denegados y los de emergencia, y ningún registro se puede editar ni borrar.
+- **O-04** · **Rastrear cada acceso.** Cada acceso a la información de un paciente queda registrado y el auditor lo puede revisar. *Se cumple si* el 100 % de los inicios de sesión, exitosos o fallidos, de las consultas y registros sobre información de un paciente, de los registros de mediciones, de las aperturas de la lista de pacientes con alta reciente y de las acciones denegadas quedan registrados con 7 datos: quién, cuándo, qué acción, sobre qué recurso, con qué propósito, con qué resultado (permitido o denegado) y desde qué sede. El único evento sin sede es el inicio de sesión fallido, porque todavía no hay sesión, y lleva en su lugar la IP. La búsqueda de pacientes, que solo muestra nombre y documento, no se registra, salvo que el rol la rechace: entonces queda como acción denegada. Un intento de ingreso con el correo o la contraseña vacíos y una medición o una atención que la validación rechaza no llegan a ejecutarse y no son eventos. Además, el auditor tiene que poder filtrar los accesos denegados y los de emergencia, y ningún registro se puede editar ni borrar.
 - **O-05** · **Acceso según rol, sede y propósito.** Cada usuario solo puede hacer lo que su rol permite y sabe qué es. *Se cumple si* cada uno de los 3 roles (médico, administrativo y auditor) solo puede hacer lo que su rol permite, ve en su perfil lo que tiene permitido y lo que no, y todo intento de hacer algo no permitido se rechaza y queda registrado como denegado.
 
 ## Alcance
@@ -65,8 +65,7 @@ Los 5 objetivos funcionando con datos simulados y con los 3 roles, en un recorri
 - Bloquear el inicio de sesión tras 5 intentos fallidos y cerrar la sesión tras 15 minutos sin uso.
 - Buscar pacientes y ver sus datos básicos.
 - Ver a los pacientes con alta reciente, ordenados por riesgo de reingreso y con alerta los de riesgo alto.
-- Abrir la historia unificada de un paciente.
-- Abrir el riesgo de reingreso de un paciente de la lista, con la explicación de qué factores lo suben o bajan.
+- Abrir la historia unificada de un paciente, desde la búsqueda o desde la lista de pacientes con alta reciente, con su riesgo de reingreso y la explicación de qué factores lo suben o bajan.
 - Registrar una atención.
 - Ver el tablero de indicadores y el detalle de un indicador.
 - Registrar las mediciones de los indicadores de una sede.
@@ -116,3 +115,8 @@ Los 5 objetivos funcionando con datos simulados y con los 3 roles, en un recorri
 - 0.6.1 · 2026-11-06 · Redacción: la frase del médico sobre el propósito y la sede de una atención.
 - 0.7.0 · 2026-11-06 · Problema: la red tiene una cadena de laboratorios clínicos propia, no un laboratorio. Los laboratorios no tienen indicadores. Nueva pregunta abierta sobre cuántos laboratorios tiene la cadena.
 - 0.7.1 · 2026-11-06 · Alcance: la historia unificada y el riesgo de reingreso son dos líneas, como F-02 y F-07, y la lista dice que muestra a los pacientes con alta reciente ordenados por riesgo.
+- 0.7.2 · 2026-11-08 · Coherencia con RF-14, RF-25, F-01, F-05, F-08, F-18, F-20, F-22 y F-23: se registra lo que lista O-04 (no "cada acción"), el ingreso fallido no lleva sede, la relación por alta es de los últimos 30 días y la búsqueda rechazada queda como denegada.
+- 0.7.3 · 2026-11-08 · El propósito No aplica cubre también la medición y los rechazos sin propósito; el intento de ingreso con campos vacíos y la medición rechazada por validación no son eventos (O-04).
+- 0.7.4 · 2026-11-08 · La atención rechazada por validación tampoco es evento (O-04).
+- 0.7.5 · 2026-11-08 · Una atención con Urgencia no da relación, tampoco por el alta que lleve.
+- 0.7.6 · 2026-11-08 · El alcance une la historia y el riesgo en una sola línea; la relación con Urgencia sale de O-04 y queda en Usuarios; al registrar una atención solo hay dos propósitos.

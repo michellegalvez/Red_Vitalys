@@ -1,8 +1,8 @@
 ---
 id: F-18
 titulo: Control de acceso por rol
-version: 0.2.3
-fecha: 2026-11-06
+version: 0.2.5
+fecha: 2026-11-08
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-34, RF-21]
@@ -51,7 +51,7 @@ El sistema permite a cada rol solo lo que su rol permite, rechaza lo demás y de
 
 - Propósitos por rol: el médico los 5, el administrativo solo *Revisión de calidad* y el auditor ninguno.
 - Las pantallas pueden ocultar las opciones que el rol no tiene, pero el rechazo lo decide el sistema, no la pantalla (AD-06).
-- Toda acción rechazada crea un evento *Denegado* con el usuario, la acción, el recurso, el propósito y la sede, sea o no sobre un paciente.
+- Toda acción rechazada de un usuario con sesión crea un evento *Denegado* con el usuario, la acción, el recurso, el propósito (*No aplica* si no declaró ninguno) y la sede, sea o no sobre un paciente. Las pantallas no ofrecen las acciones que el rol no tiene; si la orden llega al sistema por otro camino, se rechaza igual y queda el evento. El inicio de sesión fallido, sin sesión ni sede, es de F-20.
 - El usuario no puede cambiar su rol desde la app.
 - Los datos son simulados.
 
@@ -100,3 +100,5 @@ Ninguna.
 - 0.2.1 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
 - 0.2.2 · 2026-11-06 · A3 incluye el registro de una atención sin relación, como RF-20 0.5.0.
 - 0.2.3 · 2026-11-06 · El evento se crea antes de ejecutar la acción, y si no se puede crear la acción no se hace, como RF-14 0.6.1 y AD-07 0.6.1.
+- 0.2.4 · 2026-11-08 · Coherencia con F-20: la regla de los eventos denegados es para usuarios con sesión; el inicio de sesión fallido no lleva sede.
+- 0.2.5 · 2026-11-08 · Un rechazo sin propósito declarado lleva No aplica, y las pantallas no ofrecen las acciones que el rol no tiene.

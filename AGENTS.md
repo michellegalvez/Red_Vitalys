@@ -15,7 +15,7 @@ La app es el frontend para la Dirección Médica y el personal clínico. Con ell
 - Ver su perfil y lo que puede hacer según su rol (médico, administrativo, auditor).
 - Revisar la auditoría de accesos: quién accedió, cuándo, a qué recurso, con qué resultado y con qué propósito.
 
-El acceso depende del rol, de la sede desde la que se ingresa y del propósito declarado en cada consulta, y cada acción queda registrada.
+El acceso depende del rol, de la sede desde la que se ingresa y del propósito declarado en cada consulta, y cada ingreso, consulta o registro sobre un paciente, medición y acción denegada queda registrado.
 
 Equipo: Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco y Samuel Cardoso Martinez.
 Materia: Seminario en Ingeniería de Software · Universidad Icesi.
