@@ -5,8 +5,10 @@ import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/pages/acceso_page.dart';
+import 'package:red_vitalys/pages/auditoria_page.dart';
 import 'package:red_vitalys/pages/consulta_page.dart';
 import 'package:red_vitalys/pages/inicio_page.dart';
+import 'package:red_vitalys/pages/perfil_page.dart';
 import 'package:red_vitalys/pages/pendiente_page.dart';
 import 'package:red_vitalys/pages/proposito_lista_page.dart';
 import 'package:red_vitalys/pages/seguimiento_page.dart';
@@ -84,6 +86,11 @@ class _AppScreenState extends State<AppScreen> {
   // Filtros de Pacientes en seguimiento.
   String _busqueda = '';
 
+  // Auditoría de accesos (F-20, F-21). Los eventos solo se agregan con
+  // [_registrarEvento]: nunca se editan ni se borran (AD-08).
+  late final List<EventoAuditoria> _eventos = [..._datos.eventos];
+  FiltroAuditoria _filtroAuditoria = FiltroAuditoria.todos;
+
   @override
   void dispose() {
     _temporizadorInactividad?.cancel();
@@ -111,7 +118,8 @@ class _AppScreenState extends State<AppScreen> {
     }
     // Se valida con lo que había al pulsar Ingresar; después del await no se
     // vuelve a leer el campo.
-    final usuarioEscrito = _datos.usuarioPorCorreo(_correo.text);
+    final correoEscrito = _correo.text.trim();
+    final usuarioEscrito = _datos.usuarioPorCorreo(correoEscrito);
     final resultado = evaluarIngreso(
       correo: _correo.text,
       contrasena: _contrasena.text,
@@ -136,6 +144,18 @@ class _AppScreenState extends State<AppScreen> {
 
     setState(() {
       _ingresando = false;
+      if (resultado.cuentaComoFallo ||
+          resultado == ResultadoIngreso.bloqueado) {
+        // Inicio de sesión fallido o intento durante el bloqueo (F-14 A3,
+        // F-20 A4): con el correo escrito, la IP y sin sede.
+        _registrarEvento(
+          accion: AccionAuditoria.ingresar,
+          recurso: RecursoAuditoria.sesion,
+          resultado: ResultadoAuditoria.denegado,
+          correoIntento: correoEscrito,
+          ip: _datos.ipPrototipo,
+        );
+      }
       if (resultado.cuentaComoFallo) {
         _fallosSeguidos++;
         _contrasena.clear();
@@ -175,6 +195,15 @@ class _AppScreenState extends State<AppScreen> {
       return;
     }
     setState(() {
+      // El ingreso se registra al confirmar la sede, antes de abrir la
+      // sesión, porque lleva la sede (F-13 paso 5, F-20 A3).
+      _registrarEvento(
+        usuario: usuario,
+        sedeId: sede,
+        accion: AccionAuditoria.ingresar,
+        recurso: RecursoAuditoria.sesion,
+        resultado: ResultadoAuditoria.permitido,
+      );
       _fallosSeguidos = 0;
       _mensajeError = null;
       _errorSede = null;
@@ -214,6 +243,7 @@ class _AppScreenState extends State<AppScreen> {
       _consulta = null;
       _verPerfil = false;
       _listaDeclarada = false;
+      _filtroAuditoria = FiltroAuditoria.todos;
       _correo.clear();
       _contrasena.clear();
       _mostrarContrasena = false;
@@ -228,6 +258,38 @@ class _AppScreenState extends State<AppScreen> {
     _temporizadorInactividad = Timer(
       limiteInactividad,
       () => _cerrarSesion(porInactividad: true),
+    );
+  }
+
+  /// Agrega un evento de acceso con la hora de los datos simulados, la
+  /// misma que el diálogo muestra en *Quedará registrado* (F-20). Es la
+  /// única forma de cambiar [_eventos], y solo agrega. Llamar dentro de
+  /// `setState`.
+  void _registrarEvento({
+    required AccionAuditoria accion,
+    required RecursoAuditoria recurso,
+    required ResultadoAuditoria resultado,
+    Usuario? usuario,
+    String? sedeId,
+    String? correoIntento,
+    PacienteEnSeguimiento? paciente,
+    Proposito? proposito,
+    String? ip,
+  }) {
+    _eventos.add(
+      EventoAuditoria(
+        id: 'e${_eventos.length + 1}',
+        usuarioId: usuario?.id,
+        correoIntento: correoIntento,
+        pacienteId: paciente?.id,
+        fechaHora: _datos.hoy,
+        accion: accion,
+        recurso: recurso,
+        resultado: resultado,
+        proposito: proposito,
+        sedeId: sedeId,
+        ip: ip,
+      ),
     );
   }
 
@@ -246,6 +308,8 @@ class _AppScreenState extends State<AppScreen> {
   /// Cambia de sección. Llamar dentro de `setState`.
   void _irA(Seccion seccion) {
     _seccion = seccion;
+    // Al abrir la auditoría el filtro es *Todos* (F-21).
+    if (seccion == Seccion.auditoria) _filtroAuditoria = FiltroAuditoria.todos;
     if (!seccion.muestraPacientes) {
       _listaDeclarada = false;
       _solicitud = null;
@@ -288,18 +352,41 @@ class _AppScreenState extends State<AppScreen> {
     setState(() {
       _solicitud = null;
       if (paciente == null) {
+        // Abrir la lista de pacientes con alta reciente (F-06 paso 3).
+        _registrarEvento(
+          usuario: usuario,
+          sedeId: _sedeSesion,
+          accion: AccionAuditoria.consultar,
+          recurso: RecursoAuditoria.pacientesAltaReciente,
+          resultado: ResultadoAuditoria.permitido,
+          proposito: elegido,
+        );
         _listaDeclarada = true;
         return;
       }
+      final resultado = evaluarConsulta(
+        usuario: usuario,
+        paciente: paciente,
+        proposito: elegido,
+        hoy: _datos.hoy,
+      );
+      // Abrir a un paciente, se permita o se deniegue (F-02, F-17, F-18).
+      // Con *Urgencia* permitida queda en el filtro Emergencia.
+      _registrarEvento(
+        usuario: usuario,
+        sedeId: _sedeSesion,
+        accion: AccionAuditoria.consultar,
+        recurso: RecursoAuditoria.historiaClinica,
+        resultado: resultado == ResultadoConsulta.permitido
+            ? ResultadoAuditoria.permitido
+            : ResultadoAuditoria.denegado,
+        paciente: paciente,
+        proposito: elegido,
+      );
       _consulta = (
         paciente: paciente,
         proposito: elegido,
-        resultado: evaluarConsulta(
-          usuario: usuario,
-          paciente: paciente,
-          proposito: elegido,
-          hoy: _datos.hoy,
-        ),
+        resultado: resultado,
       );
     });
   }
@@ -474,8 +561,6 @@ class _AppScreenState extends State<AppScreen> {
   Widget _aplicacion(Usuario usuario) {
     final escritorio = MediaQuery.sizeOf(context).width >= anchoEscritorio;
     final secciones = seccionesDe(usuario.rol);
-    final indice = secciones.indexOf(_seccion).clamp(0, secciones.length - 1);
-    final destinos = [for (final s in secciones) s.destino];
     final sede = _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
     final solicitud = _solicitud;
 
@@ -493,26 +578,11 @@ class _AppScreenState extends State<AppScreen> {
                     excluding: solicitud != null,
                     child: ExcludeFocus(
                       excluding: solicitud != null,
-                      child: Scaffold(
-                        appBar: BarraSuperior(
-                          iniciales: usuario.iniciales,
-                          nombreUsuario: usuario.nombre,
-                          sede: sede.nombreCorto,
-                          detalleUsuario:
-                              '${usuario.rol.nombre} · ${sede.nombreCorto}',
-                          destinos: destinos,
-                          indiceActual: indice,
-                          onDestino: (i) => _elegirSeccion(secciones[i]),
-                          onPerfil: () => setState(() => _verPerfil = true),
-                          onSalir: _cerrarSesion,
-                        ),
-                        bottomNavigationBar: escritorio
-                            ? null
-                            : BarraInferior(
-                                destinos: destinos,
-                                indiceActual: indice,
-                                onDestino: (i) => _elegirSeccion(secciones[i]),
-                              ),
+                      child: _marco(
+                        usuario: usuario,
+                        sede: sede,
+                        escritorio: escritorio,
+                        onDestino: (i) => _elegirSeccion(secciones[i]),
                         body: _contenido(usuario, sede),
                       ),
                     ),
@@ -525,6 +595,41 @@ class _AppScreenState extends State<AppScreen> {
                 ],
               ],
             ),
+    );
+  }
+
+  /// La app con su barra superior y, en celular, la barra inferior. La
+  /// usan las secciones y el perfil (F-22), que se ve con las mismas barras.
+  Widget _marco({
+    required Usuario usuario,
+    required Sede sede,
+    required bool escritorio,
+    required ValueChanged<int> onDestino,
+    required Widget body,
+  }) {
+    final secciones = seccionesDe(usuario.rol);
+    final indice = secciones.indexOf(_seccion).clamp(0, secciones.length - 1);
+    final destinos = [for (final s in secciones) s.destino];
+    return Scaffold(
+      appBar: BarraSuperior(
+        iniciales: usuario.iniciales,
+        nombreUsuario: usuario.nombre,
+        sede: sede.nombreCorto,
+        detalleUsuario: '${usuario.rol.nombre} · ${sede.nombreCorto}',
+        destinos: destinos,
+        indiceActual: indice,
+        onDestino: onDestino,
+        onPerfil: () => setState(() => _verPerfil = true),
+        onSalir: _cerrarSesion,
+      ),
+      bottomNavigationBar: escritorio
+          ? null
+          : BarraInferior(
+              destinos: destinos,
+              indiceActual: indice,
+              onDestino: onDestino,
+            ),
+      body: body,
     );
   }
 
@@ -550,14 +655,7 @@ class _AppScreenState extends State<AppScreen> {
         descripcion: 'Las mediciones del mes de los 4 indicadores de una sede.',
         icono: Icons.edit_note_rounded,
       ),
-      Seccion.auditoria => const PendientePage(
-        sobretitulo: 'Control de accesos',
-        titulo: 'Auditoría de accesos',
-        descripcion:
-            'Quién accedió, cuándo, a qué recurso, con qué resultado y con '
-            'qué propósito.',
-        icono: Icons.fact_check_outlined,
-      ),
+      Seccion.auditoria => _auditoria(),
     };
   }
 
@@ -645,28 +743,53 @@ class _AppScreenState extends State<AppScreen> {
     );
   }
 
+  /// Auditoría de accesos (F-21). Solo el auditor tiene esta sección
+  /// (F-18): los demás roles no la ven en su navegación.
+  Widget _auditoria() {
+    return AuditoriaPage(
+      eventos: eventosFiltrados(_eventos, _filtroAuditoria),
+      filtro: _filtroAuditoria,
+      nombresUsuarios: {for (final u in _datos.usuarios) u.id: u.nombre},
+      nombresPacientes: {for (final p in _datos.pacientes) p.id: p.nombre},
+      nombresSedes: {for (final s in _datos.sedes) s.id: s.nombre},
+      onElegirFiltro: (f) => setState(() => _filtroAuditoria = f),
+    );
+  }
+
+  /// Perfil (F-22) con las mismas barras de la app. Tocar un destino cierra
+  /// el perfil y va a esa sección; *Cerrar sesión* es el de F-23.
   Widget _perfil() {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          tooltip: 'Volver',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => setState(() => _verPerfil = false),
-        ),
-        title: const Text(
-          'Mi perfil',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-      body: const PendientePage(
-        sobretitulo: 'Su cuenta',
-        titulo: 'Mi perfil',
-        descripcion:
-            'Sus datos, la sede de la sesión y lo que su rol puede '
-            'hacer.',
-        icono: Icons.person_outline_rounded,
+    final usuario = _usuario;
+    if (usuario == null) return const SizedBox.shrink();
+    final sede = _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
+    final secciones = seccionesDe(usuario.rol);
+    return _marco(
+      usuario: usuario,
+      sede: sede,
+      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
+      onDestino: (i) => setState(() {
+        _verPerfil = false;
+        _irA(secciones[i]);
+      }),
+      body: PerfilPage(
+        datos: [
+          (etiqueta: 'Nombre', valor: usuario.nombre),
+          (etiqueta: 'Correo', valor: usuario.correo),
+          (etiqueta: 'Rol', valor: usuario.rol.nombre),
+          (etiqueta: 'Sede de esta sesión', valor: sede.nombre),
+          (
+            etiqueta: 'Sedes asignadas',
+            valor: [
+              for (final id in usuario.sedesAsignadas) _datos.sede(id).nombre,
+            ].join('\n'),
+          ),
+        ],
+        permisos: [
+          for (final a in AccionPermitida.values)
+            (accion: a.nombre, permitido: rolPermite(usuario.rol, a)),
+        ],
+        propositos: [for (final p in propositosDe(usuario.rol)) p.nombreCorto],
+        onCerrarSesion: _cerrarSesion,
       ),
     );
   }

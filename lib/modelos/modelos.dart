@@ -149,3 +149,109 @@ extension PropositoTexto on Proposito {
   /// Nombre corto, sin la aclaración entre paréntesis.
   String get nombreCorto => this == Proposito.urgencia ? 'Urgencia' : nombre;
 }
+
+/// Las 3 acciones de un evento de acceso (F-20).
+enum AccionAuditoria { ingresar, consultar, registrar }
+
+extension AccionAuditoriaTexto on AccionAuditoria {
+  String get nombre => switch (this) {
+    AccionAuditoria.ingresar => 'Ingresar',
+    AccionAuditoria.consultar => 'Consultar',
+    AccionAuditoria.registrar => 'Registrar',
+  };
+}
+
+/// Los recursos sobre los que se hace una acción, con los nombres de F-20.
+enum RecursoAuditoria {
+  sesion,
+  datosBasicos,
+  historiaClinica,
+  riesgoReingreso,
+  atencion,
+  medicionIndicador,
+  pacientesAltaReciente,
+  auditoriaAccesos,
+}
+
+extension RecursoAuditoriaTexto on RecursoAuditoria {
+  String get nombre => switch (this) {
+    RecursoAuditoria.sesion => 'Sesión',
+    RecursoAuditoria.datosBasicos => 'Datos básicos',
+    RecursoAuditoria.historiaClinica => 'Historia clínica',
+    RecursoAuditoria.riesgoReingreso => 'Riesgo de reingreso',
+    RecursoAuditoria.atencion => 'Atención',
+    RecursoAuditoria.medicionIndicador => 'Medición de indicador',
+    RecursoAuditoria.pacientesAltaReciente => 'Pacientes con alta reciente',
+    RecursoAuditoria.auditoriaAccesos => 'Auditoría de accesos',
+  };
+}
+
+enum ResultadoAuditoria { permitido, denegado }
+
+extension ResultadoAuditoriaTexto on ResultadoAuditoria {
+  String get nombre => switch (this) {
+    ResultadoAuditoria.permitido => 'Permitido',
+    ResultadoAuditoria.denegado => 'Denegado',
+  };
+}
+
+/// Un evento de acceso (EVENTO_AUDITORIA del MER, más la sede de F-20).
+///
+/// Solo se crean: ningún evento se edita ni se borra (AD-08), por eso todos
+/// sus campos son finales y no hay forma de cambiarlos.
+class EventoAuditoria {
+  const EventoAuditoria({
+    required this.id,
+    required this.fechaHora,
+    required this.accion,
+    required this.recurso,
+    required this.resultado,
+    this.usuarioId,
+    this.correoIntento,
+    this.pacienteId,
+    this.proposito,
+    this.sedeId,
+    this.ip,
+  });
+
+  final String id;
+
+  /// Quien hizo la acción. Vacío en un inicio de sesión fallido.
+  final String? usuarioId;
+
+  /// El correo escrito en un inicio de sesión fallido (F-20 A4).
+  final String? correoIntento;
+
+  /// Vacío en *Ingresar*, en las mediciones, en la lista de pacientes con
+  /// alta reciente y en la auditoría de accesos.
+  final String? pacienteId;
+  final DateTime fechaHora;
+  final AccionAuditoria accion;
+  final RecursoAuditoria recurso;
+  final ResultadoAuditoria resultado;
+
+  /// Vacío significa *No aplica*: inicio de sesión y medición.
+  final Proposito? proposito;
+
+  /// La sede de la sesión. Vacía en un inicio de sesión fallido.
+  final String? sedeId;
+
+  /// Solo en los inicios de sesión fallidos.
+  final String? ip;
+
+  /// Es de emergencia si se declaró *Urgencia* (F-17).
+  bool get esEmergencia => proposito == Proposito.urgencia;
+
+  String get propositoTexto => proposito?.nombreCorto ?? 'No aplica';
+}
+
+/// Los 3 filtros de la auditoría, excluyentes (F-21).
+enum FiltroAuditoria { todos, denegados, emergencia }
+
+extension FiltroAuditoriaTexto on FiltroAuditoria {
+  String get nombre => switch (this) {
+    FiltroAuditoria.todos => 'Todos',
+    FiltroAuditoria.denegados => 'Denegados',
+    FiltroAuditoria.emergencia => 'Emergencia',
+  };
+}

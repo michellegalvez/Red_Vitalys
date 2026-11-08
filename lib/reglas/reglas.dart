@@ -164,3 +164,71 @@ ResultadoConsulta evaluarConsulta({
       ? ResultadoConsulta.permitido
       : ResultadoConsulta.rechazoRelacion;
 }
+
+// -----------------------------------------------------------------------
+// Tabla de permisos (F-18) y auditoría de accesos (F-20, F-21)
+// -----------------------------------------------------------------------
+
+/// Las 7 acciones de la tabla de permisos de F-18, en su orden. El perfil
+/// (F-22) se arma con esta misma tabla (AD-06).
+enum AccionPermitida {
+  buscarPaciente,
+  verHistoria,
+  registrarAtencion,
+  verTablero,
+  registrarMedicion,
+  verAuditoria,
+  verPerfil,
+}
+
+extension AccionPermitidaTexto on AccionPermitida {
+  String get nombre => switch (this) {
+    AccionPermitida.buscarPaciente => 'Buscar paciente y ver sus datos básicos',
+    AccionPermitida.verHistoria =>
+      'Ver la historia clínica y el riesgo de reingreso',
+    AccionPermitida.registrarAtencion => 'Registrar una atención',
+    AccionPermitida.verTablero =>
+      'Ver el tablero y el detalle de los indicadores',
+    AccionPermitida.registrarMedicion => 'Registrar una medición',
+    AccionPermitida.verAuditoria => 'Ver la auditoría de accesos',
+    AccionPermitida.verPerfil => 'Ver el perfil y cerrar sesión',
+  };
+}
+
+/// Si el rol tiene la acción en la tabla de F-18. Lo que no está, se
+/// rechaza.
+bool rolPermite(Rol rol, AccionPermitida accion) => switch (accion) {
+  AccionPermitida.buscarPaciente => rol != Rol.auditor,
+  AccionPermitida.verHistoria => rol == Rol.medico,
+  AccionPermitida.registrarAtencion => rol == Rol.medico,
+  AccionPermitida.verTablero => true,
+  AccionPermitida.registrarMedicion => rol == Rol.administrativo,
+  AccionPermitida.verAuditoria => rol == Rol.auditor,
+  AccionPermitida.verPerfil => true,
+};
+
+/// Mensaje de la auditoría cuando el filtro no tiene eventos (F-21 A4).
+const String mensajeSinEventos = 'No hay eventos con este filtro';
+
+/// Los eventos que cumplen el filtro, del más reciente al más antiguo
+/// (F-21). Con la misma fecha y hora va primero el que se agregó último.
+List<EventoAuditoria> eventosFiltrados(
+  List<EventoAuditoria> eventos,
+  FiltroAuditoria filtro,
+) {
+  final conOrden = [
+    for (var i = 0; i < eventos.length; i++)
+      if (switch (filtro) {
+        FiltroAuditoria.todos => true,
+        FiltroAuditoria.denegados =>
+          eventos[i].resultado == ResultadoAuditoria.denegado,
+        FiltroAuditoria.emergencia => eventos[i].esEmergencia,
+      })
+        (indice: i, evento: eventos[i]),
+  ];
+  conOrden.sort((a, b) {
+    final porFecha = b.evento.fechaHora.compareTo(a.evento.fechaHora);
+    return porFecha != 0 ? porFecha : b.indice.compareTo(a.indice);
+  });
+  return List.unmodifiable([for (final e in conOrden) e.evento]);
+}

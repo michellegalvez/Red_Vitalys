@@ -14,6 +14,8 @@ class DatosSimulados {
     required this.contrasenaPrototipo,
     required this.indicadoresQueEmpeoraron,
     required this.totalIndicadores,
+    required this.eventos,
+    required this.ipPrototipo,
   });
 
   /// La fecha de hoy fija de los datos simulados (RNF-04).
@@ -28,6 +30,12 @@ class DatosSimulados {
   /// Resumen para el inicio del médico. El tablero lo arma otro integrante.
   final int indicadoresQueEmpeoraron;
   final int totalIndicadores;
+
+  /// Eventos de acceso que ya había al abrir la app (F-20, F-21).
+  final List<EventoAuditoria> eventos;
+
+  /// IP simulada de los inicios de sesión fallidos (F-20 A4, AD-15).
+  final String ipPrototipo;
 
   Sede sede(String id) => sedes.firstWhere((s) => s.id == id);
 
@@ -44,6 +52,7 @@ class DatosSimulados {
     contrasenaPrototipo: 'vitalys2026',
     indicadoresQueEmpeoraron: 0,
     totalIndicadores: 4,
+    ipPrototipo: '192.168.10.24',
     sedes: const [
       Sede(
         id: 's1',
@@ -143,6 +152,96 @@ class DatosSimulados {
         correo: 'tomas.herrera@vitalys.co',
         rol: Rol.medico,
         sedesAsignadas: [],
+      ),
+    ],
+    // Los 8 eventos de la auditoría del Figma (RNF-04: 2 denegados y 1 de
+    // emergencia). La sede es la primera sede asignada de cada usuario.
+    eventos: [
+      EventoAuditoria(
+        id: 'e1',
+        usuarioId: 'u2',
+        fechaHora: DateTime(2026, 10, 30, 9, 47),
+        accion: AccionAuditoria.consultar,
+        recurso: RecursoAuditoria.riesgoReingreso,
+        pacienteId: 'p2',
+        proposito: Proposito.revisionCalidad,
+        resultado: ResultadoAuditoria.denegado,
+        sedeId: 's2',
+      ),
+      EventoAuditoria(
+        id: 'e2',
+        usuarioId: 'u2',
+        fechaHora: DateTime(2026, 10, 30, 9, 44),
+        accion: AccionAuditoria.consultar,
+        recurso: RecursoAuditoria.datosBasicos,
+        pacienteId: 'p4',
+        proposito: Proposito.revisionCalidad,
+        resultado: ResultadoAuditoria.permitido,
+        sedeId: 's2',
+      ),
+      EventoAuditoria(
+        id: 'e3',
+        usuarioId: 'u1',
+        fechaHora: DateTime(2026, 10, 30, 9, 31),
+        accion: AccionAuditoria.consultar,
+        recurso: RecursoAuditoria.historiaClinica,
+        pacienteId: 'p1',
+        proposito: Proposito.consultaHistoria,
+        resultado: ResultadoAuditoria.permitido,
+        sedeId: 's1',
+      ),
+      EventoAuditoria(
+        id: 'e4',
+        usuarioId: 'u1',
+        fechaHora: DateTime(2026, 10, 30, 9, 12),
+        accion: AccionAuditoria.consultar,
+        recurso: RecursoAuditoria.historiaClinica,
+        pacienteId: 'p2',
+        proposito: Proposito.seguimientoReingreso,
+        resultado: ResultadoAuditoria.permitido,
+        sedeId: 's1',
+      ),
+      EventoAuditoria(
+        id: 'e5',
+        usuarioId: 'u1',
+        fechaHora: DateTime(2026, 10, 29, 16, 5),
+        accion: AccionAuditoria.registrar,
+        recurso: RecursoAuditoria.atencion,
+        pacienteId: 'p3',
+        proposito: Proposito.atencionPaciente,
+        resultado: ResultadoAuditoria.permitido,
+        sedeId: 's1',
+      ),
+      EventoAuditoria(
+        id: 'e6',
+        usuarioId: 'u3',
+        fechaHora: DateTime(2026, 10, 29, 11, 20),
+        accion: AccionAuditoria.ingresar,
+        recurso: RecursoAuditoria.sesion,
+        resultado: ResultadoAuditoria.permitido,
+        sedeId: 's1',
+      ),
+      EventoAuditoria(
+        id: 'e7',
+        usuarioId: 'u1',
+        fechaHora: DateTime(2026, 10, 28, 15, 48),
+        accion: AccionAuditoria.consultar,
+        recurso: RecursoAuditoria.historiaClinica,
+        pacienteId: 'p5',
+        proposito: Proposito.urgencia,
+        resultado: ResultadoAuditoria.permitido,
+        sedeId: 's1',
+      ),
+      EventoAuditoria(
+        id: 'e8',
+        usuarioId: 'u3',
+        fechaHora: DateTime(2026, 10, 28, 10, 2),
+        accion: AccionAuditoria.consultar,
+        recurso: RecursoAuditoria.historiaClinica,
+        pacienteId: 'p1',
+        proposito: Proposito.revisionCalidad,
+        resultado: ResultadoAuditoria.denegado,
+        sedeId: 's1',
       ),
     ],
     // La Dra. Camila tiene relación con p1 (le registró una atención), con
