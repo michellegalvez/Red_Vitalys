@@ -43,6 +43,19 @@ DateTime? leerFechaHoraCampo(String texto) {
   return coincide && n[4] < 60 ? f : null;
 }
 
+/// "8,4": un decimal con coma (RNF-05).
+String formatoValor(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
+
+/// "oct 2026": el mes de una medición.
+String formatoPeriodo(DateTime periodo) =>
+    '${_meses[periodo.month - 1]} ${periodo.year}';
+
+/// "Oct": el mes en el eje de una gráfica.
+String mesCorto(DateTime periodo) {
+  final mes = _meses[periodo.month - 1];
+  return mes[0].toUpperCase() + mes.substring(1);
+}
+
 /// "15 d", o "Mismo día" cuando la estancia fue de 0 días.
 String formatoEstancia(int dias) => dias == 0 ? 'Mismo día' : '$dias d';
 

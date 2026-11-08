@@ -1,3 +1,5 @@
+import 'package:red_vitalys/datos/indicadores_simulados.dart';
+import 'package:red_vitalys/modelos/indicadores.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 
 /// Datos simulados del prototipo (RNF-02, RNF-03, RNF-04). Ninguno es real.
@@ -12,8 +14,7 @@ class DatosSimulados {
     required this.usuarios,
     required this.pacientes,
     required this.contrasenaPrototipo,
-    required this.indicadoresQueEmpeoraron,
-    required this.totalIndicadores,
+    required this.mediciones,
     required this.eventos,
     required this.ipPrototipo,
   });
@@ -27,9 +28,8 @@ class DatosSimulados {
   /// Contraseña única del prototipo, sin servidor.
   final String contrasenaPrototipo;
 
-  /// Resumen para el inicio del médico. El tablero lo arma otro integrante.
-  final int indicadoresQueEmpeoraron;
-  final int totalIndicadores;
+  /// Mediciones de los indicadores de los últimos 6 meses (F-08 a F-12).
+  final List<Medicion> mediciones;
 
   /// Eventos de acceso que ya había al abrir la app (F-20, F-21).
   final List<EventoAuditoria> eventos;
@@ -47,11 +47,14 @@ class DatosSimulados {
     return null;
   }
 
+  /// La fecha de hoy fija de los datos simulados, el 6 de noviembre de 2026
+  /// (RNF-04): el último periodo cerrado es octubre.
+  static final DateTime _hoy = DateTime(2026, 11, 6, 10, 42);
+
   static final DatosSimulados porDefecto = DatosSimulados(
-    hoy: DateTime(2026, 10, 30, 10, 42),
+    hoy: _hoy,
     contrasenaPrototipo: 'vitalys2026',
-    indicadoresQueEmpeoraron: 0,
-    totalIndicadores: 4,
+    mediciones: medicionesSimuladas(_hoy),
     ipPrototipo: '192.168.10.24',
     sedes: const [
       Sede(
@@ -376,6 +379,64 @@ class DatosSimulados {
         fechaAlta: DateTime(2026, 9, 22),
         diasEstancia: 9,
         riesgo: 88,
+      ),
+      // Pacientes con alta de hace más de 30 días: no salen en la lista de
+      // altas recientes, pero sí en la búsqueda (F-01).
+      PacienteEnSeguimiento(
+        id: 'p10',
+        nombre: 'Ricardo Alberto Henao Zuluaga',
+        iniciales: 'RH',
+        edad: 69,
+        sexo: 'M',
+        tipoDocumento: 'CC',
+        numeroDocumento: '70589234',
+        sedeAltaId: 's3',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 9, 20),
+        diasEstancia: 8,
+        riesgo: 54,
+      ),
+      PacienteEnSeguimiento(
+        id: 'p11',
+        nombre: 'Gloria Patricia Mejía Londoño',
+        iniciales: 'GM',
+        edad: 72,
+        sexo: 'F',
+        tipoDocumento: 'CC',
+        numeroDocumento: '43217655',
+        sedeAltaId: 's4',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 8, 30),
+        diasEstancia: 12,
+        riesgo: 66,
+      ),
+      PacienteEnSeguimiento(
+        id: 'p12',
+        nombre: 'Andrés Felipe Cárdenas Rueda',
+        iniciales: 'AC',
+        edad: 45,
+        sexo: 'M',
+        tipoDocumento: 'CC',
+        numeroDocumento: '1098765432',
+        sedeAltaId: 's6',
+        tipoAtencion: TipoAtencion.urgencias,
+        fechaAlta: DateTime(2026, 10, 2),
+        diasEstancia: 0,
+        riesgo: 31,
+      ),
+      PacienteEnSeguimiento(
+        id: 'p13',
+        nombre: 'Daniela Sofía Pineda Ocampo',
+        iniciales: 'DP',
+        edad: 29,
+        sexo: 'F',
+        tipoDocumento: 'CC',
+        numeroDocumento: '1144092211',
+        sedeAltaId: 's1',
+        tipoAtencion: TipoAtencion.hospitalizacion,
+        fechaAlta: DateTime(2026, 7, 15),
+        diasEstancia: 4,
+        riesgo: 18,
       ),
     ],
   );

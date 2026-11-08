@@ -22,8 +22,7 @@ final datosSinEventos = DatosSimulados(
   usuarios: datos.usuarios,
   pacientes: datos.pacientes,
   contrasenaPrototipo: datos.contrasenaPrototipo,
-  indicadoresQueEmpeoraron: datos.indicadoresQueEmpeoraron,
-  totalIndicadores: datos.totalIndicadores,
+  mediciones: datos.mediciones,
   eventos: const [],
   ipPrototipo: datos.ipPrototipo,
 );
@@ -201,7 +200,7 @@ void main() {
       // Los 8 del Figma más el ingreso de Marcela (F-20 A3).
       await t.ensureVisible(find.text('9 eventos'));
       expect(find.text('9 eventos'), findsOneWidget);
-      expect(find.text('30 oct 2026 · 10:42'), findsOneWidget);
+      expect(find.text('6 nov 2026 · 10:42'), findsOneWidget);
       expect(find.text('30 oct 2026 · 09:47'), findsOneWidget);
       expect(find.text('28 oct 2026 · 10:02'), findsOneWidget);
       await cerrarApp(t);

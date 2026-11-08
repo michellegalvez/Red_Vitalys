@@ -10,9 +10,21 @@ import 'package:red_vitalys/widgets/aviso.dart';
 import 'package:red_vitalys/widgets/boton.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
 
+/// Lo que se hace al declarar el propósito: abrir la historia clínica del
+/// médico (F-02), registrar una atención (F-04) o ver los datos básicos del
+/// administrativo (F-03). Cambia los textos y el botón del pop-up.
+enum AccionDialogo { abrirHistoria, registrarAtencion, verDatosBasicos }
+
 /// El paciente que se va a abrir al declarar el propósito.
 class DestinoPaciente {
-  const DestinoPaciente({required this.paciente, required this.sedeAlta});
+  const DestinoPaciente({
+    required this.paciente,
+    required this.sedeAlta,
+    this.mostrarRiesgo = true,
+  });
+
+  /// El administrativo no ve el riesgo de reingreso (F-03).
+  final bool mostrarRiesgo;
 
   final PacienteEnSeguimiento paciente;
   final String sedeAlta;
@@ -112,7 +124,7 @@ class DialogoProposito extends StatelessWidget {
     required this.elegido,
     required this.error,
     required this.quedaraRegistrado,
-    this.paraRegistro = false,
+    this.accion = AccionDialogo.abrirHistoria,
     required this.onElegir,
     required this.onConfirmar,
     required this.onCancelar,
@@ -127,8 +139,8 @@ class DialogoProposito extends StatelessWidget {
   /// "Dra. Camila Martínez · Cali Norte · 30 oct 2026 · 10:42".
   final String quedaraRegistrado;
 
-  /// Verdadero al registrar una atención (F-04): cambia los textos del pop-up.
-  final bool paraRegistro;
+  /// Lo que se hace al confirmar: cambia los textos y el botón del pop-up.
+  final AccionDialogo accion;
   final ValueChanged<Proposito> onElegir;
   final VoidCallback onConfirmar;
   final VoidCallback onCancelar;
@@ -198,7 +210,7 @@ class DialogoProposito extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _Encabezado(paraRegistro: paraRegistro),
+                        _Encabezado(accion: accion),
                         const SizedBox(height: 22),
                         _Contexto(destino: destino),
                         const SizedBox(height: 14),
@@ -225,7 +237,7 @@ class DialogoProposito extends StatelessWidget {
                       ),
                     ),
                     _Pie(
-                      paraRegistro: paraRegistro,
+                      accion: accion,
                       onConfirmar: onConfirmar,
                       onCancelar: onCancelar,
                       padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
@@ -262,7 +274,7 @@ class DialogoProposito extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: _Encabezado(paraRegistro: paraRegistro),
+                  child: _Encabezado(accion: accion),
                 ),
                 Flexible(
                   child: SingleChildScrollView(
@@ -285,7 +297,7 @@ class DialogoProposito extends StatelessWidget {
                   ),
                 ),
                 _Pie(
-                  paraRegistro: paraRegistro,
+                  accion: accion,
                   onConfirmar: onConfirmar,
                   onCancelar: onCancelar,
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
@@ -306,9 +318,14 @@ class DialogoProposito extends StatelessWidget {
         Semantics(
           header: true,
           child: Text(
-            paraRegistro
-                ? '¿Con qué propósito va a registrar la atención?'
-                : '¿Para qué va a abrir a este paciente?',
+            switch (accion) {
+              AccionDialogo.registrarAtencion =>
+                '¿Con qué propósito va a registrar la atención?',
+              AccionDialogo.verDatosBasicos =>
+                '¿Para qué va a ver los datos de este paciente?',
+              AccionDialogo.abrirHistoria =>
+                '¿Para qué va a abrir a este paciente?',
+            },
             style: TextStyle(
               fontSize: compacto ? 16 : 19,
               fontWeight: FontWeight.w800,
@@ -357,13 +374,13 @@ class DialogoProposito extends StatelessWidget {
 /// Botones del diálogo, fijos al pie.
 class _Pie extends StatelessWidget {
   const _Pie({
-    required this.paraRegistro,
+    required this.accion,
     required this.onConfirmar,
     required this.onCancelar,
     required this.padding,
   });
 
-  final bool paraRegistro;
+  final AccionDialogo accion;
   final VoidCallback onConfirmar;
   final VoidCallback onCancelar;
   final EdgeInsets padding;
@@ -387,12 +404,16 @@ class _Pie extends StatelessWidget {
           const SizedBox(width: 12),
           Flexible(
             child: BotonVitalys(
-              texto: paraRegistro
-                  ? 'Registrar atención'
-                  : 'Abrir historia clínica',
-              icono: paraRegistro
-                  ? Icons.edit_note_rounded
-                  : Icons.folder_open_rounded,
+              texto: switch (accion) {
+                AccionDialogo.registrarAtencion => 'Registrar atención',
+                AccionDialogo.verDatosBasicos => 'Ver datos básicos',
+                AccionDialogo.abrirHistoria => 'Abrir historia clínica',
+              },
+              icono: switch (accion) {
+                AccionDialogo.registrarAtencion => Icons.edit_note_rounded,
+                AccionDialogo.verDatosBasicos => Icons.badge_outlined,
+                AccionDialogo.abrirHistoria => Icons.folder_open_rounded,
+              },
               onPressed: onConfirmar,
             ),
           ),
@@ -403,9 +424,9 @@ class _Pie extends StatelessWidget {
 }
 
 class _Encabezado extends StatelessWidget {
-  const _Encabezado({required this.paraRegistro});
+  const _Encabezado({required this.accion});
 
-  final bool paraRegistro;
+  final AccionDialogo accion;
 
   @override
   Widget build(BuildContext context) {
@@ -434,9 +455,12 @@ class _Encabezado extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                paraRegistro
-                    ? 'ANTES DE REGISTRAR UNA ATENCIÓN'
-                    : 'ANTES DE ABRIR LA HISTORIA',
+                switch (accion) {
+                  AccionDialogo.registrarAtencion =>
+                    'ANTES DE REGISTRAR UNA ATENCIÓN',
+                  AccionDialogo.verDatosBasicos => 'ANTES DE VER LOS DATOS',
+                  AccionDialogo.abrirHistoria => 'ANTES DE ABRIR LA HISTORIA',
+                },
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -502,7 +526,8 @@ class _Contexto extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        AnilloRiesgo(riesgo: paciente.riesgo, tamano: 50),
+        if (destino.mostrarRiesgo)
+          AnilloRiesgo(riesgo: paciente.riesgo, tamano: 50),
       ],
     );
     return Container(

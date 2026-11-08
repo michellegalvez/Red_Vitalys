@@ -22,7 +22,7 @@ Materia: Seminario en Ingeniería de Software · Universidad Icesi.
 
 ## Estructura actual de lib/
 
-Prototipo navegable solo de front-end (Entrega 2): datos simulados en memoria, sin backend ni paquetes externos. Integra las pantallas de todo el equipo en una sola app: acceso en dos pasos, inicio del médico, pacientes en seguimiento, declaración del propósito, historia clínica con el riesgo y sus factores, registro de una atención, acceso denegado, tablero y detalle de indicadores, auditoría de accesos y perfil. Solo *Registrar medición* (F-12) sigue como marcador.
+Prototipo navegable solo de front-end (Entrega 2): datos simulados en memoria, sin backend ni paquetes externos. Integra las pantallas de todo el equipo en una sola app y cubre los 37 requisitos funcionales: acceso en dos pasos, inicio del médico, pacientes en seguimiento, búsqueda de pacientes, declaración del propósito, historia clínica con el riesgo y sus factores, registro de una atención, datos básicos del administrativo, acceso denegado, tablero y detalle de indicadores, registro de una medición, auditoría de accesos y perfil.
 
 ```
 lib/
@@ -30,8 +30,10 @@ lib/
 ├── tema/                # colores, tema y breakpoint (900 px, contenido máx. 1200)
 ├── modelos/             # modelos.dart (sedes, usuarios, pacientes, propósitos, auditoría)
 │                        # historia.dart (historia clínica, atenciones y factores del riesgo)
-├── datos/               # datos simulados: los del Figma, riesgo entero, eventos e historias
-├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos
+│                        # indicadores.dart (indicadores y mediciones)
+├── datos/               # datos simulados: pacientes, eventos, historias y mediciones (hoy: 6 nov 2026)
+├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
+│                        # indicadores (promedio, marca, cambio y validar una medición) y búsqueda
 ├── formato/             # fechas, horas y búsqueda sin tildes (RNF-05)
 ├── widgets/             # componentes de la galería, cada uno una sola vez
 ├── pages/               # Pages: solo muestran y avisan con callbacks

@@ -235,7 +235,7 @@ void main() {
     ) async {
       await abrirApp(t);
       await entrarComoMedico(t);
-      expect(find.text('30 OCT 2026 · 10:42'), findsOneWidget);
+      expect(find.text('6 NOV 2026 · 10:42'), findsOneWidget);
       expect(find.text('Buenos días, Dra. Camila'), findsOneWidget);
       expect(find.text('Pacientes con alerta'), findsOneWidget);
       expect(find.text('Riesgo de reingreso desde 70'), findsOneWidget);

@@ -148,6 +148,21 @@ extension ResultadoConsultaTexto on ResultadoConsulta {
   };
 }
 
+/// Decide si se permiten ver los datos básicos de un paciente (F-03).
+///
+/// El administrativo solo puede declarar *Revisión de calidad*; el auditor no
+/// consulta pacientes. El médico los ve dentro de la historia (F-02).
+ResultadoConsulta evaluarDatosBasicos({
+  required Usuario usuario,
+  required Proposito proposito,
+}) {
+  if (usuario.rol == Rol.auditor) return ResultadoConsulta.rechazoRol;
+  if (!propositosDe(usuario.rol).contains(proposito)) {
+    return ResultadoConsulta.rechazoProposito;
+  }
+  return ResultadoConsulta.permitido;
+}
+
 /// Decide si se permite abrir la historia de un paciente (F-05, F-17, F-18).
 ResultadoConsulta evaluarConsulta({
   required Usuario usuario,

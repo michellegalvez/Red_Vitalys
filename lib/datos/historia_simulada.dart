@@ -20,6 +20,10 @@ const _direcciones = <String, String>{
   'p7': 'Cra 37 # 10-22, Medellín',
   'p8': 'Cl 5 # 38-14, Cali',
   'p9': 'Av 3N # 45-09, Cali',
+  'p10': 'Cl 72 # 10-34, Bogotá',
+  'p11': 'Cra 70 # 1-141, Medellín',
+  'p12': 'Cl 36 # 27-18, Bucaramanga',
+  'p13': 'Cra 100 # 11-90, Cali',
 };
 
 /// Motivo y diagnóstico de la hospitalización de cada paciente.
@@ -39,6 +43,10 @@ const _motivos = <String, (String, String)>{
   'p7': ('Apendicitis aguda', 'K35.8 Apendicitis aguda'),
   'p8': ('Bronquiolitis', 'J21.9 Bronquiolitis aguda'),
   'p9': ('Fractura de cadera', 'S72.0 Fractura del cuello del fémur'),
+  'p10': ('Cirugía de rodilla', 'M17.1 Gonartrosis primaria'),
+  'p11': ('Colecistitis aguda', 'K81.0 Colecistitis aguda'),
+  'p12': ('Trauma por caída', 'S06.0 Conmoción cerebral'),
+  'p13': ('Parto por cesárea', 'O82 Parto por cesárea'),
 };
 
 const _medicos = [

@@ -5,18 +5,23 @@ import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/datos/historia_simulada.dart';
 import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/historia.dart';
+import 'package:red_vitalys/modelos/indicadores.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/pages/acceso_page.dart';
 import 'package:red_vitalys/pages/auditoria_page.dart';
+import 'package:red_vitalys/pages/buscar_pacientes_page.dart';
+import 'package:red_vitalys/pages/datos_basicos_page.dart';
 import 'package:red_vitalys/pages/consulta_page.dart';
 import 'package:red_vitalys/pages/indicadores_page.dart';
 import 'package:red_vitalys/pages/inicio_page.dart';
 import 'package:red_vitalys/pages/paciente_page.dart';
 import 'package:red_vitalys/pages/perfil_page.dart';
-import 'package:red_vitalys/pages/pendiente_page.dart';
 import 'package:red_vitalys/pages/proposito_lista_page.dart';
 import 'package:red_vitalys/pages/registrar_atencion_page.dart';
+import 'package:red_vitalys/pages/registrar_medicion_page.dart';
 import 'package:red_vitalys/pages/seguimiento_page.dart';
+import 'package:red_vitalys/reglas/busqueda.dart';
+import 'package:red_vitalys/reglas/indicadores.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/screens/secciones.dart';
 import 'package:red_vitalys/tema/tema.dart';
@@ -42,6 +47,9 @@ class _Solicitud {
 
 /// Un paciente abierto, con el propósito declarado.
 typedef _Historia = ({PacienteEnSeguimiento paciente, Proposito proposito});
+
+/// Los datos básicos de un paciente que abrió el administrativo (F-03).
+typedef _DatosBasicos = ({PacienteEnSeguimiento paciente, Proposito proposito});
 
 /// Un registro de atención en curso, con el propósito declarado.
 typedef _Registro = ({PacienteEnSeguimiento paciente, Proposito proposito});
@@ -102,12 +110,22 @@ class _AppScreenState extends State<AppScreen> {
   _Registro? _registro;
   _Denegado? _denegado;
   bool _verPerfil = false;
-  bool _verIndicador = false;
+  IdIndicador? _indicadorAbierto;
+  _DatosBasicos? _datosBasicos;
+
+  /// La sede de la tendencia en el detalle de un indicador. `null` es *Toda
+  /// la red* (F-09).
+  String? _sedeTendencia;
+  String _busquedaPaciente = '';
 
   // Pacientes y atenciones registradas en esta sesión. Viven aquí, en la
   // Screen anfitriona; las Pages solo las muestran.
   late List<PacienteEnSeguimiento> _pacientes = [..._datos.pacientes];
   Map<String, List<Encounter>> _atenciones = {};
+
+  // Mediciones de los indicadores. Las que registra el administrativo se
+  // agregan aquí y el tablero se recalcula (F-12).
+  late List<Medicion> _mediciones = [..._datos.mediciones];
 
   // Filtros de Pacientes en seguimiento.
   String _busqueda = '';
@@ -404,6 +422,28 @@ class _AppScreenState extends State<AppScreen> {
         _listaDeclarada = true;
         return;
       }
+      if (usuario.rol == Rol.administrativo) {
+        // El administrativo no ve la historia: solo los datos básicos (F-03).
+        final r = evaluarDatosBasicos(usuario: usuario, proposito: elegido);
+        final ok = r == ResultadoConsulta.permitido;
+        _registrarEvento(
+          usuario: usuario,
+          sedeId: _sedeSesion,
+          accion: AccionAuditoria.consultar,
+          recurso: RecursoAuditoria.datosBasicos,
+          resultado: ok
+              ? ResultadoAuditoria.permitido
+              : ResultadoAuditoria.denegado,
+          paciente: paciente,
+          proposito: elegido,
+        );
+        if (ok) {
+          _datosBasicos = (paciente: paciente, proposito: elegido);
+        } else {
+          _denegado = (paciente: paciente, resultado: r, alRegistrar: false);
+        }
+        return;
+      }
       final resultado = evaluarConsulta(
         usuario: usuario,
         paciente: paciente,
@@ -477,7 +517,9 @@ class _AppScreenState extends State<AppScreen> {
     _registro = null;
     _denegado = null;
     _verPerfil = false;
-    _verIndicador = false;
+    _indicadorAbierto = null;
+    _sedeTendencia = null;
+    _datosBasicos = null;
   }
 
   void _cerrarHistoria() => setState(() {
@@ -496,6 +538,47 @@ class _AppScreenState extends State<AppScreen> {
     } else {
       _abrirPaciente(d.paciente, elegido: Proposito.urgencia);
     }
+  }
+
+  /// Valida una medición con las reglas de F-12. Devuelve el mensaje de
+  /// rechazo o `null` si se puede guardar.
+  String? _validarMedicion(NuevaMedicion m) {
+    return validarMedicion(
+      indicador: indicadorDe(m.indicador),
+      sede: _datos.sede(m.sedeId),
+      periodo: m.periodo,
+      valorTexto: m.valorTexto,
+      hoy: _datos.hoy,
+      existentes: _mediciones,
+    );
+  }
+
+  /// Guarda la medición: entra al tablero y a las mediciones recientes, y
+  /// deja su evento sin paciente y con propósito *No aplica* (F-12, F-20).
+  void _guardarMedicion(NuevaMedicion nueva) {
+    final usuario = _usuario;
+    final valor = leerValor(nueva.valorTexto);
+    if (usuario == null || valor == null) return;
+    setState(() {
+      _mediciones = [
+        ..._mediciones,
+        Medicion(
+          indicador: nueva.indicador,
+          sedeId: nueva.sedeId,
+          periodo: nueva.periodo,
+          valor: redondear1(valor),
+          registradaPor: usuario.nombre,
+          registradaEn: _datos.hoy,
+        ),
+      ];
+      _registrarEvento(
+        usuario: usuario,
+        sedeId: _sedeSesion,
+        accion: AccionAuditoria.registrar,
+        recurso: RecursoAuditoria.medicionIndicador,
+        resultado: ResultadoAuditoria.permitido,
+      );
+    });
   }
 
   /// Guarda la atención que llenó el médico: queda primera en la historia,
@@ -631,10 +714,15 @@ class _AppScreenState extends State<AppScreen> {
                             key: const ValueKey('app'),
                             child: _aplicacion(usuario),
                           ),
-                          if (_verIndicador)
+                          if (_indicadorAbierto case final indicador?)
                             MaterialPage<void>(
                               key: const ValueKey('indicador'),
-                              child: _detalleIndicador(usuario),
+                              child: _detalleIndicador(usuario, indicador),
+                            ),
+                          if (_datosBasicos case final datos?)
+                            MaterialPage<void>(
+                              key: ValueKey('datos-${datos.paciente.id}'),
+                              child: _paginaDatosBasicos(usuario, datos),
                             ),
                           if (_historia case final historia?)
                             MaterialPage<void>(
@@ -668,12 +756,17 @@ class _AppScreenState extends State<AppScreen> {
                         final id = clave.value;
                         if (id.startsWith('historia')) {
                           _cerrarHistoria();
+                        } else if (id.startsWith('datos')) {
+                          setState(() => _datosBasicos = null);
                         } else if (id.startsWith('registro')) {
                           setState(() => _registro = null);
                         } else if (id.startsWith('denegado')) {
                           _cerrarDenegado();
                         } else if (id == 'indicador') {
-                          setState(() => _verIndicador = false);
+                          setState(() {
+                            _indicadorAbierto = null;
+                            _sedeTendencia = null;
+                          });
                         } else if (id == 'perfil') {
                           setState(() => _verPerfil = false);
                         }
@@ -699,7 +792,8 @@ class _AppScreenState extends State<AppScreen> {
   bool get _atrasPendiente {
     if (_usuario == null) return _paso == PasoAcceso.sede;
     return _verPerfil ||
-        _verIndicador ||
+        _indicadorAbierto != null ||
+        _datosBasicos != null ||
         _historia != null ||
         _registro != null ||
         _denegado != null ||
@@ -836,15 +930,9 @@ class _AppScreenState extends State<AppScreen> {
     return switch (_seccion) {
       Seccion.inicio => _inicio(usuario, sede),
       Seccion.pacientes => _seguimiento(),
-      Seccion.indicadores => IndicadoresPage(
-        onAbrirDetalle: () => setState(() => _verIndicador = true),
-      ),
-      Seccion.mediciones => const PendientePage(
-        sobretitulo: 'Calidad de la red',
-        titulo: 'Registrar medición mensual',
-        descripcion: 'Las mediciones del mes de los 4 indicadores de una sede.',
-        icono: Icons.edit_note_rounded,
-      ),
+      Seccion.indicadores => _tablero(),
+      Seccion.buscar => _buscar(usuario),
+      Seccion.mediciones => _registrarMedicion(),
       Seccion.auditoria => _auditoria(),
     };
   }
@@ -860,8 +948,10 @@ class _AppScreenState extends State<AppScreen> {
       saludo: '${saludoSegunHora(_datos.hoy)}, ${usuario.saludo}',
       totalConAlerta: conAlertaLista.length,
       totalEnSeguimiento: altas.length,
-      indicadoresQueEmpeoraron: _datos.indicadoresQueEmpeoraron,
-      totalIndicadores: _datos.totalIndicadores,
+      indicadoresQueEmpeoraron: indicadoresQueEmpeoraron(
+        resumenes(_mediciones, _datos.hoy),
+      ),
+      totalIndicadores: indicadores.length,
       prioridad: conAlertaLista,
       nombresSedes: _nombresSedes,
       onVerConAlerta: _verPacientes,
@@ -922,8 +1012,13 @@ class _AppScreenState extends State<AppScreen> {
       destino: DestinoPaciente(
         paciente: paciente,
         sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
+        mostrarRiesgo: usuario.rol != Rol.administrativo,
       ),
-      paraRegistro: solicitud.registrar,
+      accion: solicitud.registrar
+          ? AccionDialogo.registrarAtencion
+          : (usuario.rol == Rol.administrativo
+                ? AccionDialogo.verDatosBasicos
+                : AccionDialogo.abrirHistoria),
       // Al registrar solo sirven *Atención del paciente* y *Urgencia* (F-04).
       propositos: [
         for (final p in propositosDe(usuario.rol))
@@ -953,15 +1048,132 @@ class _AppScreenState extends State<AppScreen> {
   Sede _sedeDe(Usuario usuario) =>
       _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
 
+  /// Tablero de indicadores (F-08): el valor de la red de cada uno, su cambio
+  /// y las sedes donde actuar primero.
+  Widget _tablero() {
+    final destacado = indicadorDe(IdIndicador.reingreso);
+    final comparacion = comparacionDe(
+      _mediciones,
+      destacado,
+      _datos.sedes,
+      _datos.hoy,
+    );
+    return IndicadoresPage(
+      resumenes: resumenes(_mediciones, _datos.hoy),
+      destacado: destacado,
+      comparacionDestacada: comparacion,
+      promedioDestacado: valorRed(
+        _mediciones,
+        destacado.id,
+        ultimoPeriodo(_datos.hoy),
+      ),
+      onAbrirDetalle: (id) => setState(() {
+        _indicadorAbierto = id;
+        _sedeTendencia = null;
+      }),
+    );
+  }
+
   /// Detalle de un indicador (F-09, F-10, F-11) con las barras de la app.
-  Widget _detalleIndicador(Usuario usuario) {
+  Widget _detalleIndicador(Usuario usuario, IdIndicador id) {
+    final indicador = indicadorDe(id);
+    final sedes = [
+      for (final s in _datos.sedes)
+        if (aplica(indicador, s.tipo)) s,
+    ];
     return _marco(
       usuario: usuario,
       sede: _sedeDe(usuario),
       escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
       onDestino: _irASeccion(usuario),
       body: DetalleIndicadorPage(
-        onVolver: () => setState(() => _verIndicador = false),
+        indicador: indicador,
+        sedesDisponibles: sedes,
+        sedeTendencia: _sedeTendencia,
+        tendencia: tendenciaDe(
+          _mediciones,
+          id,
+          _datos.hoy,
+          sedeId: _sedeTendencia,
+        ),
+        comparacion: comparacionDe(
+          _mediciones,
+          indicador,
+          _datos.sedes,
+          _datos.hoy,
+        ),
+        promedio: valorRed(_mediciones, id, ultimoPeriodo(_datos.hoy)),
+        mediciones: medicionesRecientes(
+          _mediciones,
+          indicador,
+          _datos.sedes,
+          _datos.hoy,
+        ),
+        onElegirSede: (sedeId) => setState(() => _sedeTendencia = sedeId),
+        onVolver: () => setState(() {
+          _indicadorAbierto = null;
+          _sedeTendencia = null;
+        }),
+      ),
+    );
+  }
+
+  /// Registrar la medición mensual de un indicador (F-12).
+  Widget _registrarMedicion() {
+    final registradas = [
+      for (final m in _mediciones.reversed)
+        if (m.registradaPor != null)
+          (
+            indicador: indicadorDe(m.indicador),
+            sede: _datos.sede(m.sedeId).nombreCorto,
+            periodo: m.periodo,
+            valor: m.valor,
+          ),
+    ];
+    return RegistrarMedicionPage(
+      sedes: _datos.sedes,
+      hoy: _datos.hoy,
+      registradas: registradas,
+      validar: _validarMedicion,
+      onGuardar: _guardarMedicion,
+    );
+  }
+
+  /// Buscar pacientes por nombre o documento (F-01). Buscar no crea un evento:
+  /// solo muestra el nombre y el documento; el evento se crea al abrirlo.
+  Widget _buscar(Usuario usuario) {
+    final esMedico = usuario.rol == Rol.medico;
+    return BuscarPacientesPage(
+      busqueda: _busquedaPaciente,
+      resultados: buscarPacientes(_pacientes, _busquedaPaciente),
+      accionAlElegir: esMedico
+          ? 'Abrir la historia clínica'
+          : 'Ver los datos básicos',
+      onBuscar: (texto) => setState(() => _busquedaPaciente = texto),
+      onElegir: _abrirPaciente,
+    );
+  }
+
+  /// Datos básicos de un paciente para el administrativo (F-03).
+  Widget _paginaDatosBasicos(Usuario usuario, _DatosBasicos d) {
+    final paciente = _pacientes.firstWhere(
+      (p) => p.id == d.paciente.id,
+      orElse: () => d.paciente,
+    );
+    return _marco(
+      usuario: usuario,
+      sede: _sedeDe(usuario),
+      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
+      onDestino: _irASeccion(usuario),
+      body: DatosBasicosPage(
+        paciente: historiaDe(
+          paciente,
+          sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
+          hoy: _datos.hoy,
+        ),
+        propositoTexto: d.proposito.nombreCorto,
+        fechaConsulta: formatoFechaHora(_datos.hoy),
+        onVolver: () => setState(() => _datosBasicos = null),
       ),
     );
   }
