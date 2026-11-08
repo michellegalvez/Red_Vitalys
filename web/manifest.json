@@ -1,11 +1,11 @@
 {
-    "name": "red_vitalys",
-    "short_name": "red_vitalys",
+    "name": "Red Vitalys",
+    "short_name": "Red Vitalys",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F4F3FC",
+    "theme_color": "#4C48E8",
+    "description": "Historia clínica unificada, riesgo de reingreso e indicadores de calidad para la red de salud Red Vitalys (prototipo con datos simulados).",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

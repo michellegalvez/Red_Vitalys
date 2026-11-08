@@ -33,12 +33,18 @@ lib/
 │                        # indicadores.dart (indicadores y mediciones)
 ├── datos/               # datos simulados: pacientes, eventos, historias y mediciones (hoy: 6 nov 2026)
 ├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
-│                        # indicadores (promedio, marca, cambio y validar una medición) y búsqueda
+│                        # indicadores (promedio, marca, cambio y validar una medición), búsqueda
+│                        # y atencion.dart (validar una atención)
 ├── formato/             # fechas, horas y búsqueda sin tildes (RNF-05)
-├── widgets/             # componentes de la galería, cada uno una sola vez
+├── widgets/             # componentes de la galería, cada uno una sola vez: tarjeta.dart
+│                        # (TarjetaVitalys, ChipVitalys, EstadoVacio), campo_dato, barra_volver,
+│                        # foco (AnilloFoco), proposito(_partes) e indicadores/ (gráficas y tarjetas)
 ├── pages/               # Pages: solo muestran y avisan con callbacks
-└── screens/             # AppScreen: la Screen anfitriona con todo el estado (setState) y las rutas
+└── screens/             # app_screen.dart: la Screen anfitriona con todo el estado (setState);
+                         # app_screen_paginas.dart: cómo se arma cada Page y las rutas
 ```
+
+Ningún archivo de `lib/` pasa de 800 líneas. Antes de crear una tarjeta, chip, estado vacío o barra de volver, usa el de `widgets/`.
 
 Reglas del enunciado: el estado vive en la Screen anfitriona, las Pages no guardan datos de la app (solo lo que se está escribiendo en un formulario) y los componentes de la galería se construyen una sola vez en `widgets/`. Antes de subir cambios: `dart format lib test`, `flutter analyze` y `flutter test`.
 

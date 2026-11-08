@@ -1,6 +1,6 @@
 # Specs funcionales · Red Vitalys
 
-Actualizado: 2026-11-06
+Actualizado: 2026-11-08
 
 Las 23 specs cubren los 37 requisitos funcionales (RF-01 a RF-37) y 4 no funcionales (RNF-01, RNF-03, RNF-05 y RNF-07, en F-19).
 
@@ -30,5 +30,14 @@ Las 23 specs cubren los 37 requisitos funcionales (RF-01 a RF-37) y 4 no funcion
 
 ## Avance
 
-- Implementadas: 0 de 23.
-- Aprobadas: 0 de 23.
+- Implementadas en el prototipo de la Entrega 2 (front-end con datos simulados): 23 de 23 (F-01 a F-23).
+- Aprobadas: 0 de 23. Las specs siguen en borrador; implementar no las aprueba.
+
+### Excepciones del prototipo
+
+El prototipo no tiene backend, así que se aparta de las specs en estos puntos:
+
+- No hay estados de carga ni de error de red: los datos son locales, y no se muestran «Cargando…» ni «Reintentar».
+- El mensaje «No se pudo completar la acción» de F-20 no se simula, porque el registro de eventos en memoria no falla.
+- La fecha de «hoy» es fija: el 6 de noviembre de 2026.
+- El pop-up de propósito no muestra el riesgo antes de declarar el propósito.
