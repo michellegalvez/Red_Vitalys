@@ -19,7 +19,7 @@ Versiones de las specs: F-01 0.1.3 · F-02 0.1.4 · F-03 0.1.3 · F-04 0.3.1 · 
 - **Pureza funcional** (verde): 0.
 - **Formato** (amarillo): 1 defecto. **F-05** tiene los criterios en el orden CA-6, CA-9, CA-7, CA-8. El CA-9 se agregó al final de la ronda de relación y quedó antes del CA-7. Las demás 22 specs tienen los criterios y los flujos alternos en orden. Ningún historial repite una versión.
 - **Preguntas abiertas:** 31. Son las de las specs y ninguna cambia lo que ya está escrito. Subió de 30 por la pregunta nueva de F-07 sobre un paciente que ya no está en la lista.
-- **Avance de implementación:** las 23 specs siguen en borrador y 0 están aprobadas. El prototipo de la Entrega 2 (front-end con datos simulados) implementa las 23, con las excepciones listadas en el índice de specs.
+- **Avance de implementación:** todo en borrador. Hay 0 specs aprobadas o implementadas.
 - **Estabilidad:** ninguna spec ha subido de versión mayor.
 
 ## Verificación automática

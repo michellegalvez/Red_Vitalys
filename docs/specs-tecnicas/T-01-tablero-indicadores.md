@@ -13,20 +13,19 @@ depende_de: []
 
 ## Propósito y alcance
 
-Especifica la estructura de datos, el cálculo y la composición Flutter del tablero de la referencia de diseño (el PDF `Body.pdf` es externo y no está en el repositorio). Cubre RF-08, RF-09, RF-26 y RF-27. No cubre el registro de mediciones (RF-13), la autenticación, ni la implementación de la pantalla de detalle, que se define en T-02.
+Especifica la estructura de datos, el cálculo y la composición Flutter del tablero representado en `Body.pdf`. Cubre RF-08, RF-09, RF-26 y RF-27. No cubre el registro de mediciones (RF-13), la autenticación, ni la implementación de la pantalla de detalle, que se define en T-02.
 
 ## Estructura propuesta
 
-En el prototipo de la entrega 2 el código está repartido por capas en `lib/`:
+Organizar el código bajo `lib/features/indicators/`:
 
-- `lib/modelos/indicadores.dart`: definiciones de indicador, medición, periodo y resultados de resumen/comparación.
-- `lib/datos/indicadores_simulados.dart`: datos simulados en memoria que hacen de fuente.
-- `lib/reglas/indicadores.dart`: reglas puras con los cálculos compartidos (promedio, marca, cambio y validación de una medición).
-- `lib/pages/indicadores_page.dart`: la página del tablero; solo muestra y avisa con callbacks.
-- `lib/screens/app_screen.dart`: la Screen anfitriona, con el estado local y las rutas.
-- `lib/widgets/indicadores/`: tarjetas de resumen, lista de desempeño por sede y gráficos.
+- `models/`: definiciones de indicador, medición, periodo y resultados de resumen/comparación.
+- `data/`: contrato del repositorio y su implementación en memoria para la entrega 2.
+- `services/`: servicio de indicadores con los cálculos compartidos.
+- `screens/indicators_dashboard_screen.dart`: pantalla anfitriona y estado local.
+- `widgets/`: tarjetas de resumen, lista de desempeño por sede y gráficos.
 
-La página recibe los resultados ya calculados por las reglas. La selección de la fuente de datos se mantiene en un solo punto de composición de la app (AD-02, AD-03). No se recalculan promedios desde los widgets.
+La pantalla llama al servicio; el servicio consulta el repositorio. La selección de la fuente de datos se mantiene en un solo punto de composición de la app (AD-02, AD-03). No se consulta el repositorio ni se recalculan promedios desde widgets.
 
 ## Contrato de datos
 
@@ -50,7 +49,7 @@ El formateador compartido presenta decimales con coma, unidad y signo. El cambio
 
 ## Composición de la pantalla
 
-Mantener el orden de lectura del diseño de referencia (`Body.pdf`, externo):
+Mantener el orden de lectura de `Body.pdf`:
 
 1. Encabezado de la app y contexto «Calidad clínica · Toda la red».
 2. Título y descripción del tablero.
@@ -68,7 +67,7 @@ La tarjeta, la lista y el gráfico no guardan estado de cálculo propio. Si el u
 - A 360 px, ordenar las tarjetas y secciones verticalmente, permitir que nombres largos de sedes ocupen más de una línea y evitar desbordamiento horizontal de la página.
 - En 1280 px, usar el espacio disponible para distribuir tarjetas y secciones sin estirar las líneas de texto ni perder la relación entre etiquetas, valores y marcas.
 - Implementar adaptación con restricciones de ancho (`LayoutBuilder`/`ConstrainedBox`) y scroll vertical de página. No fijar un ancho mínimo superior al viewport.
-- «Igual al promedio» es la clasificación normativa. La leyenda del diseño de referencia dice «Cerca del promedio»; no crear una cuarta categoría ni cambiar la regla de RF-09.
+- «Igual al promedio» es la clasificación normativa. La leyenda del PDF dice «Cerca del promedio»; no crear una cuarta categoría ni cambiar la regla de RF-09.
 
 ## Estados y errores
 
@@ -94,8 +93,8 @@ Representar estos estados explícitamente en el estado local de la pantalla anfi
 
 ## Preguntas abiertas
 
-- Ninguna para esta especificación. La etiqueta de igualdad se resuelve según RF-09 aunque el diseño de referencia use «Cerca del promedio».
+- Ninguna para esta especificación. La etiqueta de igualdad se resuelve según RF-09 aunque el PDF use «Cerca del promedio».
 
 ## Historial
 
-- 0.1.0 · 2026-11-07 · Primera versión técnica basada en F-08, los requisitos y el diseño de referencia `Body.pdf` (externo).
+- 0.1.0 · 2026-11-07 · Primera versión técnica basada en F-08, los requisitos y `Body.pdf`.

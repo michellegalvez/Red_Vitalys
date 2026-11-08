@@ -13,15 +13,16 @@ depende_de: [T-01]
 
 ## Propósito y alcance
 
-Especifica la pantalla reutilizable de detalle de indicador representada por el caso de reingreso en el diseño de referencia `Body (1).pdf` (externo, no está en el repositorio). Cubre RF-10, RF-11 y RF-12: tendencia mensual, comparación del último periodo y mediciones recientes. El mismo componente debe funcionar para los cuatro indicadores, según su definición y tipo de sede aplicable.
+Especifica la pantalla reutilizable de detalle de indicador representada por el caso de reingreso en `Body (1).pdf`. Cubre RF-10, RF-11 y RF-12: tendencia mensual, comparación del último periodo y mediciones recientes. El mismo componente debe funcionar para los cuatro indicadores, según su definición y tipo de sede aplicable.
 
 ## Estructura propuesta
 
-Reutilizar los modelos, los datos simulados, las reglas y los formateadores definidos en T-01 (`lib/modelos/indicadores.dart`, `lib/datos/indicadores_simulados.dart`, `lib/reglas/indicadores.dart`, `lib/formato/formato.dart`). El detalle vive en `lib/pages/indicadores_page.dart`, con el estado de selección en `lib/screens/app_screen.dart`. Los componentes están en `lib/widgets/indicadores/`:
+Reutilizar los modelos, el repositorio, el servicio y los formateadores de `lib/features/indicators/` definidos en T-01. Añadir:
 
-- sección de tendencia: selector y gráfico de tendencia.
-- sección de comparación entre sedes: orden y barras de comparación.
-- tabla de mediciones recientes: tabla desplazable localmente.
+- `screens/indicator_detail_screen.dart`: recibe un identificador de indicador obligatorio; contiene el estado de selección y presentación.
+- `widgets/indicator_trend_section.dart`: selector y gráfico de tendencia.
+- `widgets/site_comparison_section.dart`: orden y barras de comparación.
+- `widgets/recent_measurements_table.dart`: tabla desplazable localmente.
 
 Al entrar desde el tablero se consulta al servicio por identificador. No duplicar reglas, mediciones de ejemplo ni cálculos dentro de la pantalla. Las sedes disponibles se obtienen de la definición del indicador; los laboratorios quedan excluidos.
 
@@ -67,7 +68,7 @@ Cada operación consulta el mismo repositorio y aplica los mismos cálculos comp
 - Dentro de un periodo, ordenar por nombre de sede.
 - Cada fila presenta sede, periodo, valor con unidad y marca frente al promedio de red de ese mismo periodo.
 - Mostrar el contador; si la colección está vacía, mostrar «No hay mediciones en los últimos 6 meses» y «0 mediciones».
-- En ancho móvil, conservar las columnas y permitir desplazamiento horizontal solo en el viewport de la tabla, como en el diseño de referencia y confirmado por el equipo. El scroll vertical pertenece a la página; la tabla no puede ensanchar el viewport ni provocar overflow horizontal global.
+- En ancho móvil, conservar las columnas y permitir desplazamiento horizontal solo en el viewport de la tabla, como en el PDF y confirmado por el equipo. El scroll vertical pertenece a la página; la tabla no puede ensanchar el viewport ni provocar overflow horizontal global.
 - En ancho de computador, mostrar las columnas dentro del ancho disponible sin recorte. Mantener encabezados visibles y asociar cada valor a su encabezado para lectura accesible.
 
 ## Composición y adaptación
@@ -116,4 +117,4 @@ El tablero abre el detalle enviando el identificador de indicador. El detalle co
 
 ## Historial
 
-- 0.1.0 · 2026-11-07 · Primera versión técnica basada en F-09, F-10, F-11, los requisitos y el diseño de referencia `Body (1).pdf` (externo).
+- 0.1.0 · 2026-11-07 · Primera versión técnica basada en F-09, F-10, F-11, los requisitos y `Body (1).pdf`.
