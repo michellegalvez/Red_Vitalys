@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:red_vitalys/datos/datos_simulados.dart';
+import 'package:red_vitalys/screens/app_screen.dart';
+import 'package:red_vitalys/tema/tema.dart';
 
-import 'features/indicators/indicator_screens.dart';
-
-void main() {
-  runApp(const RedVitalysApp());
-}
+void main() => runApp(const RedVitalysApp());
 
 class RedVitalysApp extends StatelessWidget {
   const RedVitalysApp({super.key});
@@ -14,16 +13,8 @@ class RedVitalysApp extends StatelessWidget {
     return MaterialApp(
       title: 'Red Vitalys',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFFAFAFE),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF5045EF),
-          surface: const Color(0xFFFAFAFE),
-        ),
-        fontFamily: 'Roboto',
-      ),
-      home: const IndicatorsDashboardScreen(),
+      theme: temaRedVitalys(),
+      home: AppScreen(datos: DatosSimulados.porDefecto),
     );
   }
 }
