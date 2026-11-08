@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/aviso.dart';
 import 'package:red_vitalys/widgets/boton.dart';
+import 'package:red_vitalys/widgets/carga.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
 import 'package:red_vitalys/widgets/perfil.dart';
 
@@ -21,6 +23,9 @@ class PerfilPage extends StatelessWidget {
     required this.permisos,
     required this.propositos,
     required this.onCerrarSesion,
+    this.simularFallas = false,
+    this.cerrandoSesion = false,
+    this.errorCierre,
   });
 
   final List<DatoPerfil> datos;
@@ -28,9 +33,24 @@ class PerfilPage extends StatelessWidget {
   final List<String> propositos;
   final VoidCallback onCerrarSesion;
 
+  /// Modo demo: muestra "Cargando perfil…" y su error con *Reintentar*.
+  final bool simularFallas;
+
+  /// Está cerrando la sesión (F-23): el botón queda deshabilitado.
+  final bool cerrandoSesion;
+
+  /// Por qué no se pudo cerrar la sesión, si falló (F-23).
+  final String? errorCierre;
+
   @override
   Widget build(BuildContext context) {
     final escritorio = MediaQuery.sizeOf(context).width >= anchoEscritorio;
+    final botonCerrar = BotonVitalys(
+      texto: cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar sesión',
+      icono: Icons.logout_rounded,
+      variante: VarianteBoton.secundario,
+      onPressed: cerrandoSesion ? null : onCerrarSesion,
+    );
     final cuenta = [
       TarjetaDatosPerfil(datos: datos),
       const SizedBox(height: 18),
@@ -43,15 +63,7 @@ class PerfilPage extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 18),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: BotonVitalys(
-          texto: 'Cerrar sesión',
-          icono: Icons.logout_rounded,
-          variante: VarianteBoton.secundario,
-          onPressed: onCerrarSesion,
-        ),
-      ),
+      Align(alignment: Alignment.centerLeft, child: botonCerrar),
     ];
     final rol = [
       const _Titulo('Qué puede hacer con su rol'),
@@ -66,10 +78,9 @@ class PerfilPage extends StatelessWidget {
       ),
     ];
 
-    return ContenidoPagina(
+    final contenido = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const EncabezadoPagina(sobretitulo: 'Su cuenta', titulo: 'Perfil'),
-        const SizedBox(height: 24),
         if (escritorio)
           // En computador: una sola columna angosta a la izquierda, con los
           // datos en 3 columnas (Figma, pantalla 9).
@@ -98,6 +109,23 @@ class PerfilPage extends StatelessWidget {
           const SizedBox(height: 24),
           ...cuenta.skip(2),
         ],
+      ],
+    );
+    return ContenidoPagina(
+      children: [
+        const EncabezadoPagina(sobretitulo: 'Su cuenta', titulo: 'Perfil'),
+        if (errorCierre != null) ...[
+          const SizedBox(height: 14),
+          Aviso(tipo: TipoAviso.errores, texto: errorCierre!),
+        ],
+        const SizedBox(height: 24),
+        CargaSimulada(
+          simular: simularFallas,
+          textoCargando: 'Cargando perfil…',
+          textoError: 'No se pudo cargar su perfil',
+          accionesEnError: [botonCerrar],
+          child: contenido,
+        ),
       ],
     );
   }

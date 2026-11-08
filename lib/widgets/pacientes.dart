@@ -75,7 +75,7 @@ class AnilloRiesgo extends StatelessWidget {
     return Semantics(
       label:
           'Riesgo $riesgo de 100'
-          '${alerta ? ', riesgo alto' : ', riesgo bajo'}',
+          '${alerta ? ', riesgo alto' : ''}',
       excludeSemantics: true,
       child: SizedBox.square(
         dimension: tamano,
@@ -133,7 +133,8 @@ class _AnilloPainter extends CustomPainter {
       old.fraccion != fraccion || old.color != color;
 }
 
-/// Texto junto al anillo: "RIESGO ALTO" en rojo o "RIESGO BAJO" en verde.
+/// Texto junto al anillo: "RIESGO ALTO" con 70 o más. Con menos no hay
+/// alerta y no se muestra ninguna etiqueta (F-06).
 class TextoAlerta extends StatelessWidget {
   const TextoAlerta({super.key, required this.riesgo});
 
@@ -141,20 +142,21 @@ class TextoAlerta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final alerta = conAlerta(riesgo);
-    return Text(
-      alerta ? 'RIESGO ALTO' : 'RIESGO BAJO',
+    if (!conAlerta(riesgo)) return const SizedBox.shrink();
+    return const Text(
+      'RIESGO ALTO',
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.8,
-        color: alerta ? ColoresVitalys.alertaTexto : ColoresVitalys.mentaTexto,
+        color: ColoresVitalys.alertaTexto,
       ),
     );
   }
 }
 
-/// Etiqueta de riesgo de la galería: "Riesgo alto 91" o "Riesgo bajo 23".
+/// Etiqueta de riesgo de la galería: "Riesgo alto 91" con alerta y solo
+/// "Riesgo 23" sin ella (F-06).
 class EtiquetaRiesgo extends StatelessWidget {
   const EtiquetaRiesgo({super.key, required this.riesgo});
 
@@ -173,7 +175,7 @@ class EtiquetaRiesgo extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        '${alerta ? 'Riesgo alto' : 'Riesgo bajo'}  $riesgo',
+        '${alerta ? 'Riesgo alto' : 'Riesgo'}  $riesgo',
         style: TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w800,
@@ -206,7 +208,7 @@ class TarjetaPaciente extends StatelessWidget {
       excludeSemantics: true,
       label:
           'Abrir a ${p.nombre}, ${p.edad} años. Riesgo ${p.riesgo} de 100, '
-          '${alerta ? 'riesgo alto' : 'riesgo bajo'}. $sedeAlta',
+          '${alerta ? 'riesgo alto. ' : ''}$sedeAlta',
       child: AnilloFoco(
         radio: BorderRadius.circular(24),
         child: DecoratedBox(

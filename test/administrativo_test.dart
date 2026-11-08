@@ -127,7 +127,8 @@ void main() {
       await entrarComoAdministrativo(t);
       await tocar(t, find.text('Eventos adversos evitables'));
       await elegir<String?>(t, 'Amb. Envigado');
-      expect(find.text('Sin medición: oct 2026'), findsOneWidget);
+      expect(find.text('Sin medición en oct 2026'), findsOneWidget);
+      expect(find.textContaining('Último periodo:'), findsNothing);
       await cerrarApp(t);
     });
 

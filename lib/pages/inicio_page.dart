@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/widgets/bloque_inicio.dart';
+import 'package:red_vitalys/widgets/carga.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
 import 'package:red_vitalys/widgets/tarjeta.dart';
@@ -22,6 +23,7 @@ class InicioPage extends StatelessWidget {
     required this.onVerTodos,
     required this.onVerIndicadores,
     required this.onAbrirPaciente,
+    this.simularFallas = false,
   });
 
   final String fecha;
@@ -39,6 +41,9 @@ class InicioPage extends StatelessWidget {
   final VoidCallback onVerTodos;
   final VoidCallback onVerIndicadores;
   final ValueChanged<PacienteEnSeguimiento> onAbrirPaciente;
+
+  /// Modo demo: muestra la carga y su error con *Reintentar*.
+  final bool simularFallas;
 
   @override
   Widget build(BuildContext context) {
@@ -98,22 +103,26 @@ class InicioPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        if (prioridad.isEmpty)
-          const EstadoVacio(
-            titulo: 'Hoy no hay pacientes con alerta.',
-            icono: Icons.check_circle_outline_rounded,
-          )
-        else
-          RejillaTarjetas(
-            children: [
-              for (var i = 0; i < prioridad.length; i++)
-                TarjetaPaciente(
-                  paciente: prioridad[i],
-                  sedeAlta: nombresSedes[prioridad[i].sedeAltaId] ?? '',
-                  onTap: () => onAbrirPaciente(prioridad[i]),
+        CargaSimulada(
+          simular: simularFallas,
+          textoCargando: 'Cargando pacientes…',
+          textoError: 'No se pudo cargar la lista',
+          child: prioridad.isEmpty
+              ? const EstadoVacio(
+                  titulo: 'Hoy no hay pacientes con alerta.',
+                  icono: Icons.check_circle_outline_rounded,
+                )
+              : RejillaTarjetas(
+                  children: [
+                    for (var i = 0; i < prioridad.length; i++)
+                      TarjetaPaciente(
+                        paciente: prioridad[i],
+                        sedeAlta: nombresSedes[prioridad[i].sedeAltaId] ?? '',
+                        onTap: () => onAbrirPaciente(prioridad[i]),
+                      ),
+                  ],
                 ),
-            ],
-          ),
+        ),
       ],
     );
   }

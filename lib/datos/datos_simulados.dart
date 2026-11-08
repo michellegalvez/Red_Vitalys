@@ -210,7 +210,7 @@ class DatosSimulados {
         fechaHora: DateTime(2026, 10, 29, 16, 5),
         accion: AccionAuditoria.registrar,
         recurso: RecursoAuditoria.atencion,
-        pacienteId: 'p3',
+        pacienteId: 'p2',
         proposito: Proposito.atencionPaciente,
         resultado: ResultadoAuditoria.permitido,
         sedeId: 's1',
@@ -242,7 +242,6 @@ class DatosSimulados {
         accion: AccionAuditoria.consultar,
         recurso: RecursoAuditoria.historiaClinica,
         pacienteId: 'p1',
-        proposito: Proposito.revisionCalidad,
         resultado: ResultadoAuditoria.denegado,
         sedeId: 's1',
       ),
@@ -365,7 +364,7 @@ class DatosSimulados {
         diasEstancia: 0,
         riesgo: 12,
       ),
-      // Alta hace 38 días: no sale en la lista aunque su riesgo sea alto.
+      // Alta hace 45 días: no sale en la lista aunque su riesgo sea alto.
       PacienteEnSeguimiento(
         id: 'p9',
         nombre: 'Rosa Elena Muñoz Patiño',

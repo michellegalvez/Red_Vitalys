@@ -103,7 +103,7 @@ class _PintorTendencia extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (valores.isEmpty) return;
     final alturaRotulos = rotulos.isEmpty ? 0.0 : 22.0;
-    final izquierda = rotulos.isEmpty ? 1.0 : 32.0;
+    final izquierda = rotulos.isEmpty ? 1.0 : 40.0;
     final derecha = rotulos.isEmpty ? 1.0 : 6.0;
     final arriba = rotulos.isEmpty ? 2.0 : 10.0;
     final abajo = size.height - alturaRotulos;
@@ -128,9 +128,9 @@ class _PintorTendencia extends CustomPainter {
         );
       }
       for (final item in [
-        (0.0, maximoEje.toStringAsFixed(0)),
-        (.5, ((maximoEje + minimoEje) / 2).toStringAsFixed(0)),
-        (1.0, minimoEje.toStringAsFixed(0)),
+        (0.0, formatoValor(maximoEje)),
+        (.5, formatoValor((maximoEje + minimoEje) / 2)),
+        (1.0, formatoValor(minimoEje)),
       ]) {
         _texto(
           canvas,

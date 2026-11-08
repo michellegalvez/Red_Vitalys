@@ -258,8 +258,10 @@ class EventoAuditoria {
   /// Solo en los inicios de sesión fallidos.
   final String? ip;
 
-  /// Es de emergencia si se declaró *Urgencia* (F-17).
-  bool get esEmergencia => proposito == Proposito.urgencia;
+  /// Es de emergencia si se declaró *Urgencia* y el acceso se permitió (F-17).
+  bool get esEmergencia =>
+      proposito == Proposito.urgencia &&
+      resultado == ResultadoAuditoria.permitido;
 
   String get propositoTexto => proposito?.nombreCorto ?? 'No aplica';
 }

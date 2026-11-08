@@ -61,35 +61,57 @@ class TablaEventos extends StatelessWidget {
       );
     }
     if (MediaQuery.sizeOf(context).width < anchoEscritorio) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final f in filas)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: TarjetaEvento(fila: f),
-            ),
-        ],
-      );
+      return _ListaTarjetas(filas: filas);
     }
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(TarjetaVitalys.radioTarjeta),
-        boxShadow: [
-          BoxShadow(
-            color: ColoresVitalys.tinta.withValues(alpha: 0.07),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    return LayoutBuilder(
+      builder: (context, c) {
+        final minimos = _TablaCompleta.anchosMinimos(context, filas);
+        final total = minimos.fold<double>(0, (a, m) => a + m);
+        // Si la tabla no cabe no se desliza hacia los lados: se muestran las
+        // tarjetas de evento (RNF-07, F-19 CA-9).
+        if (c.maxWidth < total) return _ListaTarjetas(filas: filas);
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(TarjetaVitalys.radioTarjeta),
+            boxShadow: [
+              BoxShadow(
+                color: ColoresVitalys.tinta.withValues(alpha: 0.07),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: TarjetaVitalys(
-        relleno: EdgeInsets.zero,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(TarjetaVitalys.radioTarjeta - 1),
-          child: _TablaCompleta(filas: filas),
-        ),
-      ),
+          child: TarjetaVitalys(
+            relleno: EdgeInsets.zero,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(
+                TarjetaVitalys.radioTarjeta - 1,
+              ),
+              child: _TablaCompleta(filas: filas, minimos: minimos),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ListaTarjetas extends StatelessWidget {
+  const _ListaTarjetas({required this.filas});
+
+  final List<FilaEvento> filas;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final f in filas)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: TarjetaEvento(fila: f),
+          ),
+      ],
     );
   }
 }
@@ -111,20 +133,25 @@ class TarjetaEvento extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                e.fechaHora,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: ColoresVitalys.tinta,
-                ),
-              ),
-              ChipVitalys(
+          Text(
+            e.fechaHora,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: ColoresVitalys.tinta,
+            ),
+          ),
+          const SizedBox(height: 6),
+          DatoEnLinea(etiqueta: 'Usuario', valor: e.usuario, sinPartir: true),
+          DatoEnLinea(etiqueta: 'Acción', valor: e.accion),
+          DatoEnLinea(etiqueta: 'Recurso', valor: e.recurso),
+          DatoEnLinea(etiqueta: 'Paciente', valor: e.paciente),
+          DatoEnLinea(etiqueta: 'Propósito', valor: e.proposito),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ChipVitalys(
                 texto: e.resultado.nombre,
                 icono: permitido
                     ? Icons.check_rounded
@@ -137,14 +164,8 @@ class TarjetaEvento extends StatelessWidget {
                     ? ColoresVitalys.mentaTexto
                     : ColoresVitalys.alertaTexto,
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 6),
-          DatoEnLinea(etiqueta: 'Usuario', valor: e.usuario, sinPartir: true),
-          DatoEnLinea(etiqueta: 'Acción', valor: e.accion),
-          DatoEnLinea(etiqueta: 'Recurso', valor: e.recurso),
-          DatoEnLinea(etiqueta: 'Paciente', valor: e.paciente),
-          DatoEnLinea(etiqueta: 'Propósito', valor: e.proposito),
           DatoEnLinea(etiqueta: 'Sede', valor: e.sede),
           if (e.ip != '—')
             DatoEnLinea(etiqueta: 'IP', valor: e.ip, sinPartir: true),
@@ -189,11 +210,14 @@ class _Medidor {
 /// Ninguna palabra se parte: cada columna mide lo que necesita su palabra
 /// más larga (la fecha y la pastilla de resultado, completas), y el espacio
 /// que sobra se reparte según el peso de la columna. Si la ventana no
-/// alcanza para todas, la tabla se desliza hacia los lados.
+/// alcanza para todas, [TablaEventos] muestra las tarjetas de evento.
 class _TablaCompleta extends StatelessWidget {
-  const _TablaCompleta({required this.filas});
+  const _TablaCompleta({required this.filas, required this.minimos});
 
   final List<FilaEvento> filas;
+
+  /// Ancho mínimo de cada columna ([minimos]).
+  final List<double> minimos;
 
   static const double _relleno = 10;
 
@@ -223,17 +247,20 @@ class _TablaCompleta extends StatelessWidget {
 
   /// Ancho mínimo de cada columna, con su relleno, medido con la fuente y
   /// la escala de texto de la pantalla.
-  List<double> _minimos(BuildContext context) {
+  static List<double> anchosMinimos(
+    BuildContext context,
+    List<FilaEvento> filas,
+  ) {
     final medidor = _Medidor(context);
     final ancho = medidor.ancho;
     final palabraMasLarga = medidor.palabraMasLarga;
 
-    final minimos = [
+    final anchos = [
       for (final c in _columnasCompletas)
         palabraMasLarga(c.titulo.toUpperCase(), _estiloTitulo),
     ];
     void ajustar(int i, double medida) {
-      if (medida > minimos[i]) minimos[i] = medida;
+      if (medida > anchos[i]) anchos[i] = medida;
     }
 
     for (final e in filas) {
@@ -255,27 +282,20 @@ class _TablaCompleta extends StatelessWidget {
       ajustar(6, _marcoPastilla + ancho(e.resultado.nombre, _estiloPastilla));
       ajustar(7, palabraMasLarga(e.sede, _estiloCelda));
     }
-    return [for (final m in minimos) m + _relleno * 2];
+    return [for (final m in anchos) m + _relleno * 2];
   }
 
   @override
   Widget build(BuildContext context) {
-    final minimos = _minimos(context);
     final totalMinimo = minimos.fold<double>(_relleno * 2, (a, m) => a + m);
     final pesoTotal = _columnasCompletas.fold<int>(0, (a, c) => a + c.peso);
     return LayoutBuilder(
       builder: (context, c) {
-        if (c.maxWidth >= totalMinimo) {
-          final sobra = c.maxWidth - totalMinimo;
-          return _cuerpo([
-            for (var i = 0; i < minimos.length; i++)
-              minimos[i] + sobra * _columnasCompletas[i].peso / pesoTotal,
-          ]);
-        }
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(width: totalMinimo, child: _cuerpo(minimos)),
-        );
+        final sobra = (c.maxWidth - totalMinimo).clamp(0.0, double.infinity);
+        return _cuerpo([
+          for (var i = 0; i < minimos.length; i++)
+            minimos[i] + sobra * _columnasCompletas[i].peso / pesoTotal,
+        ]);
       },
     );
   }

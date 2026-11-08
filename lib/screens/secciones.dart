@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
+import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
 
 /// Las secciones de la app a las que se llega desde la navegación.
@@ -29,6 +30,25 @@ extension SeccionDestino on Seccion {
   bool get muestraPacientes =>
       this == Seccion.inicio || this == Seccion.pacientes;
 }
+
+/// El recurso que se consulta al entrar a cada sección, para el evento
+/// *Denegado* cuando el rol no la tiene (F-18, F-20).
+RecursoAuditoria recursoDeSeccion(Seccion seccion) => switch (seccion) {
+  Seccion.inicio || Seccion.pacientes => RecursoAuditoria.pacientesAltaReciente,
+  Seccion.buscar => RecursoAuditoria.datosBasicos,
+  Seccion.indicadores => RecursoAuditoria.medicionIndicador,
+  Seccion.mediciones => RecursoAuditoria.medicionIndicador,
+  Seccion.auditoria => RecursoAuditoria.auditoriaAccesos,
+};
+
+/// La acción de la tabla de permisos (F-18) que pide cada sección.
+AccionPermitida accionDeSeccion(Seccion seccion) => switch (seccion) {
+  Seccion.inicio || Seccion.pacientes => AccionPermitida.verHistoria,
+  Seccion.buscar => AccionPermitida.buscarPaciente,
+  Seccion.indicadores => AccionPermitida.verTablero,
+  Seccion.mediciones => AccionPermitida.registrarMedicion,
+  Seccion.auditoria => AccionPermitida.verAuditoria,
+};
 
 /// Secciones de cada rol, según la tabla de permisos (F-18). La primera es
 /// la pantalla inicial del rol (RF-37).

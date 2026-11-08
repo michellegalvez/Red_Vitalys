@@ -9,6 +9,7 @@ library;
 import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
+import 'package:red_vitalys/reglas/atencion.dart';
 
 /// Teléfono de contacto de cada paciente (F-03). Ninguno es real.
 const _telefonos = <String, String>{
@@ -32,28 +33,31 @@ const _telefonos = <String, String>{
 String _sedeControl(String sedeAlta) =>
     sedeAlta == 'Amb. Cali Sur' ? 'Amb. Envigado' : 'Amb. Cali Sur';
 
-/// Motivo y diagnóstico de la hospitalización de cada paciente.
-const _motivos = <String, (String, String)>{
-  'p1': (
-    'Insuficiencia cardíaca descompensada',
-    'I50.9 Insuficiencia cardíaca no especificada',
-  ),
-  'p2': (
-    'Neumonía adquirida en la comunidad',
-    'J18.9 Neumonía no especificada',
-  ),
-  'p3': ('EPOC reagudizado', 'J44.1 EPOC con exacerbación aguda'),
-  'p4': ('Crisis hipertensiva', 'I16.9 Crisis hipertensiva'),
-  'p5': ('Infección urinaria complicada', 'N39.0 Infección de vías urinarias'),
-  'p6': ('Diabetes descompensada', 'E11.65 Diabetes con hiperglucemia'),
-  'p7': ('Apendicitis aguda', 'K35.8 Apendicitis aguda'),
-  'p8': ('Bronquiolitis', 'J21.9 Bronquiolitis aguda'),
-  'p9': ('Fractura de cadera', 'S72.0 Fractura del cuello del fémur'),
-  'p10': ('Cirugía de rodilla', 'M17.1 Gonartrosis primaria'),
-  'p11': ('Colecistitis aguda', 'K81.0 Colecistitis aguda'),
-  'p12': ('Trauma por caída', 'S06.0 Conmoción cerebral'),
-  'p13': ('Parto por cesárea', 'O82 Parto por cesárea'),
+/// Dirección de residencia de cada paciente (F-02). Ninguna es real.
+const _direcciones = <String, String>{
+  'p1': 'Cra 24 # 5-60, Cali',
+  'p2': 'Cl 70 # 11-25, Bogotá',
+  'p3': 'Cra 43A # 1-50, Medellín',
+  'p4': 'Cl 84 # 52-10, Barranquilla',
+  'p5': 'Cra 33 # 48-12, Bucaramanga',
+  'p6': 'Cl 5 # 38-40, Cali',
+  'p7': 'Cra 15 # 93-20, Bogotá',
+  'p8': 'Cl 10 # 42-18, Cali',
+  'p9': 'Cra 7 # 60-35, Bogotá',
+  'p10': 'Cl 9 Sur # 43-15, Envigado',
+  'p11': 'Cra 52 # 76-30, Barranquilla',
+  'p12': 'Cl 36 # 27-44, Bucaramanga',
+  'p13': 'Cra 80 # 33-12, Medellín',
 };
+
+/// Destino al alta de la hospitalización de cada paciente, para que no todos
+/// sean iguales.
+const _destinos = [
+  'Domicilio',
+  'Atención domiciliaria',
+  'Domicilio',
+  'Traslado a otra institución',
+];
 
 const _medicos = [
   'Dra. Camila Martínez',
@@ -105,29 +109,23 @@ List<Encounter> _atenciones(
   String sedeAlta,
   List<Encounter> nuevas,
 ) {
-  final (motivo, diagnostico) =
-      _motivos[p.id] ?? ('Atención médica', 'Sin diagnóstico registrado');
   final numero = int.tryParse(p.id.replaceAll(RegExp(r'\D'), '')) ?? 0;
   // La historia de Jorge es la del diseño: la atendió la Dra. Camila.
   final medico = p.id == 'p1'
       ? _medicos.first
       : _medicos[numero % _medicos.length];
   final alta = _dia(p.fechaAlta);
-  // Las atenciones llevan hora (F-02); las simuladas son de media mañana.
-  Duration manana(int minutos) => Duration(hours: 9, minutes: minutos);
   final base = <Encounter>[
     Encounter(
       id: 'enc-${p.id}-1',
       type: _tipoDe(p.tipoAtencion),
       status: EncounterStatus.finalizada,
       facilityName: sedeAlta,
-      startDate: alta.subtract(Duration(days: p.diasEstancia)).add(manana(30)),
-      endDate: alta.add(manana(30)),
+      startDate: alta.subtract(Duration(days: p.diasEstancia)),
+      endDate: alta,
       lengthOfStayDays: p.diasEstancia,
-      dischargeDestination: 'Domicilio',
+      dischargeDestination: p.id == 'p1' ? 'Domicilio' : _destinos[numero % 4],
       doctorName: medico,
-      reason: motivo,
-      diagnosis: diagnostico,
     ),
     if (p.id == 'p1') ...[
       Encounter(
@@ -135,26 +133,22 @@ List<Encounter> _atenciones(
         type: EncounterType.urgencias,
         status: EncounterStatus.finalizada,
         facilityName: 'Bogotá Usaquén',
-        startDate: DateTime(2026, 5, 2, 14, 10),
-        endDate: DateTime(2026, 5, 2, 15, 5),
+        startDate: DateTime(2026, 5, 2),
+        endDate: DateTime(2026, 5, 2),
         lengthOfStayDays: 0,
         dischargeDestination: 'Domicilio',
         doctorName: 'Dra. Camila Martínez',
-        reason: 'Disnea súbita',
-        diagnosis: 'R06.0 Disnea',
       ),
       Encounter(
         id: 'enc-p1-3',
         type: EncounterType.urgencias,
         status: EncounterStatus.finalizada,
         facilityName: 'Amb. Cali Sur',
-        startDate: DateTime(2026, 1, 18, 8, 45),
-        endDate: DateTime(2026, 1, 18, 9, 30),
+        startDate: DateTime(2026, 1, 18),
+        endDate: DateTime(2026, 1, 18),
         lengthOfStayDays: 0,
         dischargeDestination: 'Domicilio',
         doctorName: 'Dra. Camila Martínez',
-        reason: 'Control urgente de hipertensión',
-        diagnosis: 'I10 Hipertensión esencial',
       ),
     ] else
       Encounter(
@@ -162,21 +156,14 @@ List<Encounter> _atenciones(
         type: EncounterType.consultaExterna,
         status: EncounterStatus.finalizada,
         facilityName: _sedeControl(sedeAlta),
-        startDate: alta
-            .subtract(Duration(days: p.diasEstancia + 75))
-            .add(manana(0)),
-        endDate: alta
-            .subtract(Duration(days: p.diasEstancia + 75))
-            .add(manana(40)),
+        startDate: alta.subtract(Duration(days: p.diasEstancia + 75)),
+        endDate: alta.subtract(Duration(days: p.diasEstancia + 75)),
         lengthOfStayDays: 0,
         dischargeDestination: 'Domicilio',
         doctorName: medico,
-        reason: 'Control programado',
-        diagnosis: 'Z00.0 Examen médico general',
       ),
   ];
-  return [...nuevas, ...base]
-    ..sort((a, b) => b.startDate.compareTo(a.startDate));
+  return ordenarAtenciones([...nuevas, ...base]);
 }
 
 /// La historia clínica unificada de [p] (F-02, F-03, F-07).
@@ -199,6 +186,7 @@ Patient historiaDe(
     documentNumber: p.numeroDocumento,
     birthDate: DateTime(hoy.year - p.edad, 6, 2),
     phone: _telefonos[p.id] ?? 'No registrado',
+    address: _direcciones[p.id] ?? 'No registrada',
     systemIdentifiers: [
       SystemIdentifier(
         systemName: 'HCE $sedeAlta',

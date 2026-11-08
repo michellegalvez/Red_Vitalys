@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/datos/historia_simulada.dart';
+import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/indicadores.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/atencion.dart';
@@ -19,6 +20,7 @@ import 'integracion_test.dart'
         celular,
         entrarComoMedica,
         escritorio,
+        llenarAtencion,
         pedirRegistro,
         tocar;
 
@@ -107,23 +109,30 @@ void main() {
       expect(validar('8,55'), isNotNull);
     });
 
-    test('validarAtencion pide motivo y diagnóstico y revisa la fecha', () {
-      ({String? error, DateTime? fecha}) validar({
-        String motivo = 'Dolor',
-        String diagnostico = 'R07.4',
-        String fecha = '30/10/2026 10:42',
+    test('validarAtencion pide tipo y fecha de inicio y revisa las fechas', () {
+      ValidacionAtencion validar({
+        EncounterType? tipo = EncounterType.hospitalizacion,
+        String inicio = '29/09/2026',
+        String alta = '',
       }) => validarAtencion(
-        motivo: motivo,
-        diagnostico: diagnostico,
-        fechaTexto: fecha,
+        tipo: tipo,
+        inicioTexto: inicio,
+        altaTexto: alta,
         ahora: _hoy,
       );
-      expect(validar().error, isNull);
-      expect(validar().fecha, DateTime(2026, 10, 30, 10, 42));
-      expect(validar(motivo: '  ').error, mensajeCompleteAtencion);
-      expect(validar(fecha: '01/12/2026 10:00').error, mensajeFechaFutura);
-      expect(validar(fecha: '01/01/1800 10:00').error, mensajeFechaAntigua);
-      expect(validar(motivo: 'x' * 201).error, mensajeMotivoLargo);
+      expect(validar().sirve, isTrue);
+      expect(validar().inicio, DateTime(2026, 9, 29));
+      expect(validar().alta, isNull);
+      expect(validar(tipo: null, inicio: '').faltantes, [
+        mensajeElijaTipoAtencion,
+        mensajeIndiqueFechaInicio,
+      ]);
+      expect(validar(inicio: '07/11/2026').errorInicio, mensajeFechaFutura);
+      expect(validar(alta: '07/11/2026').errorAlta, mensajeFechaFutura);
+      expect(validar(inicio: '01/01/1800').errorInicio, mensajeFechaAntigua);
+      expect(validar(inicio: 'ayer').errorInicio, mensajeFechaInvalida);
+      expect(validar(alta: '28/09/2026').errorAlta, mensajeAltaAnterior);
+      expect(validar(alta: '29/09/2026').sirve, isTrue);
     });
   });
 
@@ -200,8 +209,19 @@ void main() {
         );
         expect(t.takeException(), isNull);
         await pedirRegistro(t, 'Atención del paciente');
-        await tocar(t, find.widgetWithText(BotonVitalys, 'Registrar atención'));
-        expect(find.text(mensajeCompleteAtencion), findsOneWidget);
+        await tocar(t, find.widgetWithText(BotonVitalys, 'Guardar atención'));
+        expect(
+          find.text('Revise estos 2 datos para continuar'),
+          findsOneWidget,
+        );
+        await llenarAtencion(
+          t,
+          tipo: null,
+          inicio: '31/12/2026',
+          alta: '01/01/2026',
+        );
+        await tocar(t, find.widgetWithText(BotonVitalys, 'Guardar atención'));
+        expect(find.text(mensajeFechaFutura), findsOneWidget);
         expect(t.takeException(), isNull);
         await cerrarApp(t);
       });

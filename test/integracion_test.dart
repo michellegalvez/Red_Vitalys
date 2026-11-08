@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/datos/historia_simulada.dart';
-import 'package:red_vitalys/formato/formato.dart';
-import 'package:red_vitalys/pages/registrar_atencion_page.dart';
+import 'package:red_vitalys/reglas/atencion.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
 import 'package:red_vitalys/tema/tema.dart';
@@ -68,16 +67,17 @@ Future<void> pedirRegistro(WidgetTester t, String proposito) async {
   await tocar(t, find.widgetWithText(BotonVitalys, 'Registrar atención').last);
 }
 
+/// Llena el formulario de la atención: elige el [tipo] y escribe las fechas.
 Future<void> llenarAtencion(
   WidgetTester t, {
-  String motivo = 'Dolor torácico leve',
-  String diagnostico = 'R07.4 Dolor torácico',
-  String? fecha,
+  String? tipo = 'Consulta externa',
+  String? inicio = '06/11/2026',
+  String? alta,
 }) async {
+  if (tipo != null) await tocar(t, find.text(tipo));
   final campos = find.byType(TextField);
-  if (fecha != null) await t.enterText(campos.at(0), fecha);
-  await t.enterText(campos.at(1), motivo);
-  await t.enterText(campos.at(2), diagnostico);
+  if (inicio != null) await t.enterText(campos.at(0), inicio);
+  if (alta != null) await t.enterText(campos.at(1), alta);
   await t.pump();
 }
 
@@ -152,10 +152,8 @@ void main() {
         'Seguimiento de reingreso',
       );
       expect(find.text('3 registros'), findsOneWidget);
-      expect(
-        find.textContaining('Insuficiencia cardíaca descompensada'),
-        findsOneWidget,
-      );
+      expect(find.text('29 sep 2026 – 14 oct 2026'), findsOneWidget);
+      expect(find.text('Hospitalización'), findsOneWidget);
       expect(find.text('HCE Bogotá Usaquén'), findsWidgets);
       await t.pumpWidget(const SizedBox());
     });
@@ -189,7 +187,7 @@ void main() {
       await t.pumpWidget(const SizedBox());
     });
 
-    testWidgets('valida el motivo, el diagnóstico y la fecha', (t) async {
+    testWidgets('valida el tipo y las fechas', (t) async {
       await entrarComoMedica(t);
       await abrirPaciente(
         t,
@@ -198,15 +196,15 @@ void main() {
       );
       await pedirRegistro(t, 'Atención del paciente');
 
-      await tocar(t, find.widgetWithText(BotonVitalys, 'Registrar atención'));
-      expect(find.text(mensajeCompleteAtencion), findsOneWidget);
+      await tocar(t, find.widgetWithText(BotonVitalys, 'Guardar atención'));
+      expect(find.text('Revise estos 2 datos para continuar'), findsOneWidget);
 
-      await llenarAtencion(t, fecha: '31/12/2026 10:00');
-      await tocar(t, find.widgetWithText(BotonVitalys, 'Registrar atención'));
+      await llenarAtencion(t, inicio: '31/12/2026');
+      await tocar(t, find.widgetWithText(BotonVitalys, 'Guardar atención'));
       expect(find.text(mensajeFechaFutura), findsOneWidget);
 
-      await llenarAtencion(t, fecha: 'ayer');
-      await tocar(t, find.widgetWithText(BotonVitalys, 'Registrar atención'));
+      await llenarAtencion(t, tipo: null, inicio: 'ayer');
+      await tocar(t, find.widgetWithText(BotonVitalys, 'Guardar atención'));
       expect(find.text(mensajeFechaInvalida), findsOneWidget);
       await t.pumpWidget(const SizedBox());
     });
@@ -222,21 +220,17 @@ void main() {
 
       await pedirRegistro(t, 'Atención del paciente');
       await llenarAtencion(t);
-      await tocar(t, find.widgetWithText(BotonVitalys, 'Registrar atención'));
+      await tocar(t, find.widgetWithText(BotonVitalys, 'Guardar atención'));
       await t.pump(const Duration(milliseconds: 500));
       await t.pumpAndSettle();
 
       expect(find.text('3 registros'), findsOneWidget);
-      expect(find.textContaining('Dolor torácico leve'), findsOneWidget);
       expect(
         find.text('Atención registrada en la historia unificada'),
         findsOneWidget,
       );
       // La nueva va primero, antes de la hospitalización del alta.
-      expect(
-        arriba(t, 'Dolor torácico leve'),
-        lessThan(arriba(t, 'Neumonía adquirida en la comunidad')),
-      );
+      expect(arriba(t, '6 nov 2026'), lessThan(arriba(t, 'Hospitalización')));
       await t.pumpWidget(const SizedBox());
     });
 
@@ -266,10 +260,20 @@ void main() {
         find.widgetWithText(BotonVitalys, 'Registrar atención').last,
       );
       await llenarAtencion(t);
-      await tocar(t, find.widgetWithText(BotonVitalys, 'Registrar atención'));
+      await tocar(t, find.widgetWithText(BotonVitalys, 'Guardar atención'));
       await t.pump(const Duration(milliseconds: 500));
       await t.pumpAndSettle();
-      expect(find.textContaining('Dolor torácico leve'), findsOneWidget);
+      // Con *Urgencia* se avisa que queda registrado (F-17 CA-10).
+      expect(
+        find.textContaining(
+          'Acceso de emergencia: queda registrado y el auditor lo revisará',
+        ),
+        findsWidgets,
+      );
+      expect(
+        find.textContaining('Atención registrada en la historia unificada'),
+        findsOneWidget,
+      );
 
       // Registrar con Urgencia no da relación (F-05, CA-12 de F-04).
       await atras(t);
@@ -308,7 +312,7 @@ void main() {
       );
       await pedirRegistro(t, 'Atención del paciente');
       await llenarAtencion(t);
-      await tocar(t, find.widgetWithText(BotonVitalys, 'Registrar atención'));
+      await tocar(t, find.widgetWithText(BotonVitalys, 'Guardar atención'));
       await t.pump(const Duration(milliseconds: 500));
       await t.pumpAndSettle();
       // El aviso de confirmación desaparece solo a los pocos segundos.
@@ -357,18 +361,18 @@ void main() {
     });
 
     test('la fecha del formulario se lee y se escribe igual', () {
-      final f = DateTime(2026, 10, 30, 10, 42);
-      expect(formatoFechaHoraCampo(f), '30/10/2026 10:42');
-      expect(leerFechaHoraCampo('30/10/2026 10:42'), f);
-      expect(leerFechaHoraCampo(' 5/1/2026 9:05 '), DateTime(2026, 1, 5, 9, 5));
+      expect(leerFechaCampo('30/10/2026'), DateTime(2026, 10, 30));
+      expect(leerFechaCampo('30 oct 2026'), DateTime(2026, 10, 30));
+      expect(leerFechaCampo('1 sep 2026'), DateTime(2026, 9, 1));
+      expect(leerFechaCampo('30 xyz 2026'), isNull);
+      expect(leerFechaCampo(' 5/1/2026 '), DateTime(2026, 1, 5));
     });
 
     test('rechaza fechas que no existen o mal escritas', () {
-      expect(leerFechaHoraCampo('31/02/2026 10:00'), isNull);
-      expect(leerFechaHoraCampo('30/10/2026 25:00'), isNull);
-      expect(leerFechaHoraCampo('30/10/2026 10:75'), isNull);
-      expect(leerFechaHoraCampo('ayer'), isNull);
-      expect(leerFechaHoraCampo(''), isNull);
+      expect(leerFechaCampo('31/02/2026'), isNull);
+      expect(leerFechaCampo('30/13/2026'), isNull);
+      expect(leerFechaCampo('ayer'), isNull);
+      expect(leerFechaCampo(''), isNull);
     });
   });
 }

@@ -4,14 +4,15 @@ import 'package:red_vitalys/modelos/indicadores.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/indicadores.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/carga.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/indicadores/barras_por_sede.dart';
 import 'package:red_vitalys/widgets/indicadores/estilo_marca.dart';
 import 'package:red_vitalys/widgets/indicadores/grafica_tendencia.dart';
 import 'package:red_vitalys/widgets/indicadores/resumen_sede.dart';
-import 'package:red_vitalys/widgets/indicadores/selector_indicador.dart';
 import 'package:red_vitalys/widgets/indicadores/tabla_mediciones.dart';
 import 'package:red_vitalys/widgets/indicadores/tarjeta_indicador.dart';
+import 'package:red_vitalys/widgets/indicadores/valores_mensuales.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
 import 'package:red_vitalys/widgets/tarjeta.dart';
 
@@ -29,53 +30,37 @@ Widget _titulo(BuildContext context, String texto) => Semantics(
 );
 
 /// Tablero de indicadores de calidad (F-08): el valor de la red de cada
-/// indicador, su cambio frente al mes previo y las sedes donde actuar primero.
-/// Solo muestra y avisa: abrir el detalle lo decide la Screen anfitriona.
+/// indicador, su cambio frente al mes previo y, por cada indicador, sus sedes
+/// con valor y marca, de la peor a la mejor. Solo muestra y avisa: abrir el
+/// detalle lo decide la Screen anfitriona.
 class IndicadoresPage extends StatelessWidget {
   const IndicadoresPage({
     super.key,
     required this.resumenes,
-    required this.destacado,
-    required this.comparacionDestacada,
-    required this.promedioDestacado,
+    required this.sedesPorIndicador,
+    required this.promedios,
     required this.periodo,
-    required this.onElegirDestacado,
     required this.onAbrirDetalle,
+    this.simularFallas = false,
   });
 
   final List<ResumenIndicador> resumenes;
 
-  /// El indicador que se explica abajo, con las sedes frente al promedio.
-  final Indicador destacado;
+  /// Las sedes de cada indicador, de la peor a la mejor.
+  final Map<IdIndicador, List<FilaSede>> sedesPorIndicador;
 
-  /// Las sedes del indicador destacado, de la mejor a la peor.
-  final List<FilaSede> comparacionDestacada;
-  final double? promedioDestacado;
+  /// El valor de la red de cada indicador en [periodo].
+  final Map<IdIndicador, double?> promedios;
 
   /// El último mes cerrado, al que corresponden los valores.
   final DateTime periodo;
-  final ValueChanged<IdIndicador> onElegirDestacado;
   final ValueChanged<IdIndicador> onAbrirDetalle;
 
-  String get _descripcionSedes {
-    final base =
-        '${destacado.nombre} por sede en el último periodo '
-        '(${formatoPeriodo(periodo)})';
-    final media = promedioDestacado;
-    final frente = media == null
-        ? ''
-        : ', frente al promedio de la red '
-              '(${formatoValor(media)} ${destacado.unidad})';
-    return '$base$frente. ${textoDireccion(destacado.direccion)}.';
-  }
+  /// El modo de demo *Simular fallas de red*.
+  final bool simularFallas;
 
   @override
   Widget build(BuildContext context) {
-    final dePeorAMejor = comparacionDestacada.reversed.toList();
-    final ordenadas = [
-      ...dePeorAMejor.where((f) => f.valor != null),
-      ...dePeorAMejor.where((f) => f.valor == null),
-    ];
     return ContenidoPagina(
       children: [
         const EncabezadoPagina(
@@ -86,6 +71,20 @@ class IndicadoresPage extends StatelessWidget {
               'calculados con las mediciones de cada sede.',
         ),
         const SizedBox(height: 24),
+        CargaSimulada(
+          simular: simularFallas,
+          textoCargando: 'Cargando indicadores…',
+          textoError: 'No se pudo cargar el tablero',
+          child: _cuerpo(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _cuerpo(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         LayoutBuilder(
           builder: (context, c) {
             final columnas = c.maxWidth >= _anchoCuatroColumnas
@@ -116,71 +115,103 @@ class IndicadoresPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _titulo(context, 'Dónde actuar primero'),
-              const SizedBox(height: 12),
-              SelectorIndicador(
-                indicadores: [for (final r in resumenes) r.indicador],
-                seleccionado: destacado.id,
-                onElegir: onElegirDestacado,
-              ),
-              const SizedBox(height: 12),
-              Text(_descripcionSedes, style: _estiloSecundario),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => onAbrirDetalle(destacado.id),
-                  iconAlignment: IconAlignment.end,
-                  icon: const Icon(Icons.arrow_forward, size: 16),
-                  label: const Text('Ver detalle'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: ColoresVitalys.primario,
-                    minimumSize: const Size(48, 44),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              LayoutBuilder(
-                builder: (context, c) {
-                  final ancha = c.maxWidth >= _anchoDosColumnas;
-                  final ancho = ancha ? (c.maxWidth - 20) / 2 : c.maxWidth;
-                  return Wrap(
-                    spacing: 20,
-                    runSpacing: 10,
-                    children: [
-                      for (final fila in ordenadas)
-                        SizedBox(
-                          width: ancho,
-                          child: ResumenSede(fila: fila),
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-        TarjetaVitalys(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _titulo(context, '${destacado.nombre} por sede, de peor a mejor'),
-              const SizedBox(height: 5),
-              const Text(
-                'La línea punteada marca el promedio de la red.',
+              const SizedBox(height: 6),
+              Text(
+                'Sedes de cada indicador en ${formatoPeriodo(periodo)}, '
+                'de la peor a la mejor frente al promedio de la red.',
                 style: _estiloSecundario,
               ),
-              const SizedBox(height: 18),
-              BarrasPorSede(
-                filas: ordenadas,
-                promedio: promedioDestacado,
-                unidad: destacado.unidad,
-              ),
-              const SizedBox(height: 16),
-              const LeyendaDesempeno(),
+              for (final r in resumenes)
+                _BloqueIndicador(
+                  indicador: r.indicador,
+                  filas: sedesPorIndicador[r.indicador.id] ?? const [],
+                  promedio: promedios[r.indicador.id],
+                  onAbrirDetalle: onAbrirDetalle,
+                ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Las sedes de un indicador, de la peor a la mejor; las que no tienen
+/// medición, al final.
+class _BloqueIndicador extends StatelessWidget {
+  const _BloqueIndicador({
+    required this.indicador,
+    required this.filas,
+    required this.promedio,
+    required this.onAbrirDetalle,
+  });
+
+  final Indicador indicador;
+  final List<FilaSede> filas;
+  final double? promedio;
+  final ValueChanged<IdIndicador> onAbrirDetalle;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = promedio == null
+        ? mensajeSinMedicion
+        : '${formatoValor(promedio!)} ${indicador.unidad}';
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(
+              indicador.nombre,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Promedio de la red: $media · '
+            '${textoDireccion(indicador.direccion)}',
+            style: _estiloSecundario,
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => onAbrirDetalle(indicador.id),
+              iconAlignment: IconAlignment.end,
+              icon: const Icon(Icons.arrow_forward, size: 16),
+              label: const Text('Ver detalle'),
+              style: TextButton.styleFrom(
+                foregroundColor: ColoresVitalys.primario,
+                minimumSize: const Size(48, 44),
+              ),
+            ),
+          ),
+          if (filas.every((f) => f.valor == null))
+            const Text(mensajeSinMediciones, style: _estiloSecundario)
+          else
+            LayoutBuilder(
+              builder: (context, c) {
+                final ancha = c.maxWidth >= _anchoDosColumnas;
+                final ancho = ancha ? (c.maxWidth - 20) / 2 : c.maxWidth;
+                return Wrap(
+                  spacing: 20,
+                  runSpacing: 10,
+                  children: [
+                    for (final fila in filas)
+                      SizedBox(
+                        width: ancho,
+                        child: ResumenSede(
+                          fila: fila,
+                          unidad: indicador.unidad,
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 }
@@ -200,6 +231,7 @@ class DetalleIndicadorPage extends StatelessWidget {
     required this.mediciones,
     required this.onElegirSede,
     required this.onVolver,
+    this.simularFallas = false,
   });
 
   final Indicador indicador;
@@ -218,22 +250,18 @@ class DetalleIndicadorPage extends StatelessWidget {
   final ValueChanged<String?> onElegirSede;
   final VoidCallback onVolver;
 
+  /// El modo de demo *Simular fallas de red*.
+  final bool simularFallas;
+
   @override
   Widget build(BuildContext context) {
-    final conDato = tendencia.where((p) => p.valor != null).toList();
-    final ultimo = conDato.isEmpty ? null : conDato.last.valor;
-    final sinMedicion = [
-      for (final p in tendencia)
-        if (p.valor == null) formatoPeriodo(p.periodo),
-    ];
-    final hayComparables = comparacion.any((f) => f.valor != null);
     final tema = Theme.of(context).textTheme;
     return ContenidoPagina(
       children: [
         _MigasDePan(nombre: indicador.nombre, onVolver: onVolver),
         const SizedBox(height: 18),
         Text(
-          '${indicador.categoria} · ${indicador.unidad}',
+          '${indicador.categoria.toUpperCase()} · ${indicador.unidad}',
           style: const TextStyle(
             color: ColoresVitalys.primario,
             fontSize: 12.5,
@@ -263,14 +291,6 @@ class DetalleIndicadorPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _titulo(context, 'Tendencia mensual'),
-              const SizedBox(height: 4),
-              Text(
-                ultimo == null
-                    ? 'Sin mediciones en los últimos $mesesVisibles meses'
-                    : 'Último periodo: ${formatoValor(ultimo)} '
-                          '${indicador.unidad}',
-                style: _estiloSecundario,
-              ),
               const SizedBox(height: 12),
               SizedBox(
                 width: 260,
@@ -284,37 +304,13 @@ class DetalleIndicadorPage extends StatelessWidget {
                   onChanged: onElegirSede,
                 ),
               ),
-              const SizedBox(height: 18),
-              if (conDato.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text(
-                    'No hay mediciones en los últimos 6 meses',
-                    style: _estiloSecundario,
-                  ),
-                )
-              else ...[
-                SizedBox(
-                  height: 205,
-                  width: double.infinity,
-                  child: GraficaTendencia(
-                    valores: [for (final p in tendencia) p.valor],
-                    rotulos: [for (final p in tendencia) mesCorto(p.periodo)],
-                    unidad: indicador.unidad,
-                    relleno: true,
-                  ),
-                ),
-                if (sinMedicion.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Sin medición: ${sinMedicion.join(', ')}',
-                    style: const TextStyle(
-                      color: ColoresVitalys.textoSecundario,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ],
+              const SizedBox(height: 14),
+              CargaSimulada(
+                simular: simularFallas,
+                textoCargando: 'Cargando tendencia…',
+                textoError: 'No se pudo cargar la tendencia',
+                child: _tendencia(),
+              ),
             ],
           ),
         ),
@@ -325,40 +321,124 @@ class DetalleIndicadorPage extends StatelessWidget {
             children: [
               _titulo(context, 'Comparación entre sedes'),
               const SizedBox(height: 7),
-              const Text(
-                'Último periodo · línea punteada: promedio de la red',
-                style: _estiloSecundario,
+              CargaSimulada(
+                simular: simularFallas,
+                textoCargando: 'Cargando comparación…',
+                textoError: 'No se pudo cargar la comparación',
+                child: _comparacion(),
               ),
-              const SizedBox(height: 16),
-              if (!hayComparables)
-                const Text(
-                  'No hay mediciones en el último periodo',
-                  style: _estiloSecundario,
-                )
-              else ...[
-                BarrasPorSede(
-                  filas: comparacion,
-                  promedio: promedio,
-                  unidad: indicador.unidad,
-                  compacta: true,
-                ),
-                const SizedBox(height: 14),
-                const LeyendaDesempeno(),
-              ],
             ],
           ),
         ),
         const SizedBox(height: 24),
         _titulo(context, 'Mediciones recientes'),
         const SizedBox(height: 6),
+        CargaSimulada(
+          simular: simularFallas,
+          textoCargando: 'Cargando mediciones…',
+          textoError: 'No se pudieron cargar las mediciones',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                mediciones.length == 1
+                    ? '1 medición'
+                    : '${mediciones.length} mediciones',
+                style: _estiloSecundario,
+              ),
+              const SizedBox(height: 10),
+              TablaMediciones(indicador: indicador, filas: mediciones),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// El último periodo cerrado y su valor; sin medición ese mes lo dice, y no
+  /// muestra el de un mes anterior (F-09).
+  String get _textoUltimoPeriodo {
+    if (tendencia.isEmpty || tendencia.every((p) => p.valor == null)) {
+      return 'Sin mediciones en los últimos $mesesVisibles meses';
+    }
+    final ultimo = tendencia.last;
+    final valor = ultimo.valor;
+    final periodoUltimo = formatoPeriodo(ultimo.periodo);
+    return valor == null
+        ? 'Sin medición en $periodoUltimo'
+        : 'Último periodo: ${formatoValor(valor)} ${indicador.unidad} '
+              '($periodoUltimo)';
+  }
+
+  Widget _tendencia() {
+    final hayDato = tendencia.any((p) => p.valor != null);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(_textoUltimoPeriodo, style: _estiloSecundario),
+        const SizedBox(height: 14),
+        if (!hayDato)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'No hay mediciones en los últimos 6 meses',
+              style: _estiloSecundario,
+            ),
+          )
+        else ...[
+          SizedBox(
+            height: 205,
+            width: double.infinity,
+            child: GraficaTendencia(
+              valores: [for (final p in tendencia) p.valor],
+              rotulos: [for (final p in tendencia) mesCorto(p.periodo)],
+              unidad: indicador.unidad,
+              relleno: true,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ValoresMensuales(puntos: tendencia, unidad: indicador.unidad),
+        ],
+      ],
+    );
+  }
+
+  Widget _comparacion() {
+    final hayComparables = comparacion.any((f) => f.valor != null);
+    final periodoTexto = tendencia.isEmpty
+        ? 'Último periodo'
+        : formatoPeriodo(tendencia.last.periodo);
+    final media = promedio == null
+        ? mensajeSinMedicion
+        : '${formatoValor(promedio!)} ${indicador.unidad}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Text(
-          mediciones.length == 1
-              ? '1 medición'
-              : '${mediciones.length} mediciones',
+          '$periodoTexto · Promedio de la red: $media',
           style: _estiloSecundario,
         ),
-        const SizedBox(height: 10),
-        TablaMediciones(indicador: indicador, filas: mediciones),
+        const SizedBox(height: 4),
+        const Text(
+          'La línea punteada marca el promedio de la red.',
+          style: _estiloSecundario,
+        ),
+        const SizedBox(height: 14),
+        if (!hayComparables)
+          const Text(
+            'No hay mediciones en el último periodo',
+            style: _estiloSecundario,
+          )
+        else ...[
+          BarrasPorSede(
+            filas: comparacion,
+            promedio: promedio,
+            unidad: indicador.unidad,
+            compacta: true,
+          ),
+          const SizedBox(height: 14),
+          const LeyendaDesempeno(),
+        ],
       ],
     );
   }

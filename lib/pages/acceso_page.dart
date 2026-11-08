@@ -24,7 +24,6 @@ class AccesoPage extends StatelessWidget {
     required this.paso,
     required this.correo,
     required this.contrasena,
-    required this.mostrarContrasena,
     required this.ingresando,
     required this.mensajeError,
     required this.avisoInactividad,
@@ -34,19 +33,19 @@ class AccesoPage extends StatelessWidget {
     required this.sedes,
     required this.sedeElegida,
     required this.errorSede,
-    required this.onAlternarContrasena,
     required this.onIngresar,
     required this.onElegirPerfil,
     required this.onElegirSede,
     required this.onConfirmarSede,
     required this.onVolver,
+    this.simularFallas = false,
+    this.onSimularFallas,
   });
 
   final PasoAcceso paso;
 
   final TextEditingController correo;
   final TextEditingController contrasena;
-  final bool mostrarContrasena;
   final bool ingresando;
   final String? mensajeError;
   final String? avisoInactividad;
@@ -61,12 +60,15 @@ class AccesoPage extends StatelessWidget {
   final String? sedeElegida;
   final String? errorSede;
 
-  final VoidCallback onAlternarContrasena;
   final VoidCallback onIngresar;
   final ValueChanged<String> onElegirPerfil;
   final ValueChanged<String?> onElegirSede;
   final VoidCallback onConfirmarSede;
   final VoidCallback onVolver;
+
+  /// Interruptor de demo *Simular fallas de red*.
+  final bool simularFallas;
+  final ValueChanged<bool>? onSimularFallas;
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +157,8 @@ class AccesoPage extends StatelessWidget {
               contrasena: contrasenaPrototipo,
               perfiles: perfiles,
               onElegir: onElegirPerfil,
+              simularFallas: simularFallas,
+              onSimularFallas: onSimularFallas,
             ),
           ],
         ],
@@ -192,25 +196,14 @@ class AccesoPage extends StatelessWidget {
       CampoTexto(
         etiqueta: 'Contraseña',
         controller: contrasena,
-        oculto: !mostrarContrasena,
+        // La contraseña no se muestra mientras se escribe (F-13).
+        oculto: true,
         autofillHints: const [AutofillHints.password],
         autocorregir: false,
         textInputAction: TextInputAction.done,
         maxLength: 128,
         soloLectura: ingresando,
         onSubmitted: (_) => onIngresar(),
-        sufijo: IconButton(
-          tooltip: mostrarContrasena
-              ? 'Ocultar contraseña'
-              : 'Mostrar contraseña',
-          onPressed: onAlternarContrasena,
-          icon: Icon(
-            mostrarContrasena
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined,
-            color: ColoresVitalys.textoSecundario,
-          ),
-        ),
       ),
       const SizedBox(height: 24),
       BotonVitalys(
@@ -312,11 +305,15 @@ class _AyudaPrototipo extends StatelessWidget {
     required this.contrasena,
     required this.perfiles,
     required this.onElegir,
+    required this.simularFallas,
+    required this.onSimularFallas,
   });
 
   final String contrasena;
   final List<PerfilPrototipo> perfiles;
   final ValueChanged<String> onElegir;
+  final bool simularFallas;
+  final ValueChanged<bool>? onSimularFallas;
 
   @override
   Widget build(BuildContext context) {
@@ -367,6 +364,25 @@ class _AyudaPrototipo extends StatelessWidget {
                 ),
             ],
           ),
+          const SizedBox(height: 12),
+          Material(
+            type: MaterialType.transparency,
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: const Text(
+                'Simular fallas de red',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+              subtitle: const Text(
+                'Para la demo: cada pantalla muestra su carga y falla una vez; '
+                'Reintentar la carga.',
+                style: TextStyle(fontSize: 12.5),
+              ),
+              value: simularFallas,
+              onChanged: onSimularFallas,
+            ),
+          ),
         ],
       ),
     );
@@ -407,7 +423,7 @@ class _PanelVisual extends StatelessWidget {
       ),
     );
     final descripcion = Text(
-      'Seis clínicas, cuarenta centros ambulatorios y un laboratorio, con un '
+      'Seis clínicas, cuarenta centros ambulatorios y una cadena de laboratorios, con un '
       'solo paciente, un solo índice y cada acceso auditado.',
       style: TextStyle(
         fontSize: escritorio ? 18 : 14.5,
@@ -484,7 +500,7 @@ class _Beneficios extends StatelessWidget {
         ),
         _Beneficio(
           icono: Icons.apartment_rounded,
-          texto: 'Indicadores de las 46 sedes',
+          texto: 'Indicadores por sede',
         ),
         _Beneficio(
           icono: Icons.verified_user_outlined,

@@ -4,6 +4,7 @@ import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/auditoria.dart';
+import 'package:red_vitalys/widgets/carga.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
 
@@ -21,6 +22,7 @@ class AuditoriaPage extends StatelessWidget {
     required this.nombresPacientes,
     required this.nombresSedes,
     required this.onElegirFiltro,
+    this.simularFallas = false,
   });
 
   final List<EventoAuditoria> eventos;
@@ -32,6 +34,9 @@ class AuditoriaPage extends StatelessWidget {
   final Map<String, String> nombresSedes;
 
   final ValueChanged<FiltroAuditoria> onElegirFiltro;
+
+  /// Modo demo: muestra la carga y su error con *Reintentar*.
+  final bool simularFallas;
 
   FilaEvento _fila(EventoAuditoria e) {
     final usuarioId = e.usuarioId;
@@ -46,7 +51,7 @@ class AuditoriaPage extends StatelessWidget {
       recurso: e.recurso.nombre,
       paciente: pacienteId != null ? nombresPacientes[pacienteId] ?? '—' : '—',
       proposito: e.propositoTexto,
-      propositoCompleto: e.proposito?.nombre ?? e.propositoTexto,
+      propositoCompleto: e.propositoTexto,
       emergencia: e.esEmergencia,
       resultado: e.resultado,
       sede: sedeId != null ? nombresSedes[sedeId] ?? '—' : '—',
@@ -101,19 +106,29 @@ class AuditoriaPage extends StatelessWidget {
           filtros,
         ],
         SizedBox(height: escritorio ? 36 : 22),
-        TablaEventos(
-          filas: [for (final e in eventos) _fila(e)],
-          mensajeVacio: mensajeSinEventos,
-        ),
-        const SizedBox(height: 22),
-        Semantics(
-          liveRegion: true,
-          child: Text(
-            cantidad == 1 ? '1 evento' : '$cantidad eventos',
-            style: TextStyle(
-              fontSize: escritorio ? 15 : 13,
-              color: ColoresVitalys.textoSecundario,
-            ),
+        CargaSimulada(
+          simular: simularFallas,
+          textoCargando: 'Cargando eventos…',
+          textoError: 'No se pudieron cargar los eventos',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TablaEventos(
+                filas: [for (final e in eventos) _fila(e)],
+                mensajeVacio: mensajeSinEventos,
+              ),
+              const SizedBox(height: 22),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  cantidad == 1 ? '1 evento' : '$cantidad eventos',
+                  style: TextStyle(
+                    fontSize: escritorio ? 15 : 13,
+                    color: ColoresVitalys.textoSecundario,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

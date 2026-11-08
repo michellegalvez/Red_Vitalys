@@ -67,6 +67,9 @@ void main() {
       expect(textoCambio(reingreso, 8.3, 8.6), '−0,3 puntos');
       expect(textoCambio(adherencia, 86.9, 85.8), '+1,1 puntos');
       expect(textoCambio(indicadorDe(IdIndicador.espera), 30, 25), '+5 min');
+      expect(textoCambio(indicadorDe(IdIndicador.espera), 37, 32), '+5 min');
+      expect(textoCambio(reingreso, 8.6, 8.6), '0,0 puntos');
+      expect(textoCambio(reingreso, 8.04, 8.0), '0,0 puntos');
       expect(
         textoCambio(indicadorDe(IdIndicador.eventos), 2.1, 1.8),
         '+0,3 por 1.000',
@@ -79,6 +82,7 @@ void main() {
       expect(mejoro(adherencia, 90, 85), isTrue);
       expect(mejoro(adherencia, 80, 85), isFalse);
       expect(mejoro(reingreso, 8.6, 8.6), isNull);
+      expect(mejoro(reingreso, 8.04, 8.0), isNull);
     });
 
     test('el promedio de la red no cuenta las sedes sin medición', () {
@@ -178,22 +182,25 @@ void main() {
         hoy,
       );
       expect(filas, hasLength(6));
-      expect(filas.first.nombre, 'Bogotá Usaquén');
-      expect(filas.last.nombre, 'Cali Norte');
-      expect(filas.first.marca, MarcaSede.mejor);
-      expect(filas.last.marca, MarcaSede.peor);
+      expect(filas.first.nombre, 'Cali Norte');
+      expect(filas.last.nombre, 'Bogotá Usaquén');
+      expect(filas.first.marca, MarcaSede.peor);
+      expect(filas.last.marca, MarcaSede.mejor);
     });
 
-    test('en la adherencia va primero la sede con el valor más alto', () {
-      final filas = comparacionDe(
-        mediciones,
-        indicadorDe(IdIndicador.adherencia),
-        datos.sedes,
-        hoy,
-      );
-      expect(filas, hasLength(8));
-      expect(filas.first.valor, greaterThan(filas.last.valor!));
-    });
+    test(
+      'en la adherencia va primero la sede con el valor más bajo (la peor)',
+      () {
+        final filas = comparacionDe(
+          mediciones,
+          indicadorDe(IdIndicador.adherencia),
+          datos.sedes,
+          hoy,
+        );
+        expect(filas, hasLength(8));
+        expect(filas.first.valor, lessThan(filas.last.valor!));
+      },
+    );
 
     test('la sede sin medición va al final con Sin medición', () {
       final filas = comparacionDe(
@@ -333,9 +340,12 @@ void main() {
         validar(IdIndicador.eventos, 's8', octubre, 'abc'),
         mensajeValorVacio,
       );
+    });
+
+    test('un valor negativo es de rango y no de vacío (F-12 A1)', () {
       expect(
         validar(IdIndicador.eventos, 's8', octubre, '-1'),
-        mensajeValorVacio,
+        'El valor debe estar entre 0 y 1.000',
       );
     });
 

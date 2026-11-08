@@ -74,7 +74,7 @@ void main() {
     ) async {
       await abrirApp(t);
       expect(find.text('Ingrese a su sesión'), findsOneWidget);
-      expect(find.byTooltip('Mostrar contraseña'), findsOneWidget);
+      expect(find.byTooltip('Mostrar contraseña'), findsNothing);
       expect(find.text('Sede desde la que ingresa'), findsNothing);
 
       await validarCredenciales(t, correoCamila);
@@ -88,19 +88,16 @@ void main() {
     ) async {
       await abrirApp(t, tamano: escritorio);
       expect(find.text('Riesgo de reingreso explicado'), findsOneWidget);
-      expect(find.text('Indicadores de las 46 sedes'), findsOneWidget);
+      expect(find.text('Indicadores por sede'), findsOneWidget);
       expect(find.text('Cada acceso auditado'), findsOneWidget);
     });
 
-    testWidgets('el ojo muestra y oculta la contraseña', (t) async {
+    testWidgets('la contraseña no se muestra mientras se escribe', (t) async {
       await abrirApp(t);
       bool oculta() =>
           t.widget<TextField>(find.byType(TextField).at(1)).obscureText;
       expect(oculta(), isTrue);
-      await tocar(t, find.byTooltip('Mostrar contraseña'));
-      expect(oculta(), isFalse);
-      await tocar(t, find.byTooltip('Ocultar contraseña'));
-      expect(oculta(), isTrue);
+      expect(find.byTooltip('Mostrar contraseña'), findsNothing);
     });
 
     testWidgets('con los campos vacíos pide el correo y la contraseña', (
@@ -257,7 +254,7 @@ void main() {
       'muestra las 8 altas recientes, sin filtros de sede ni riesgo',
       (t) async {
         await abrirLista(t);
-        expect(find.text('Pacientes en seguimiento'), findsOneWidget);
+        expect(find.text('Pacientes con alta reciente'), findsOneWidget);
         expect(find.text('Buscar por nombre o documento'), findsOneWidget);
         expect(find.text('Sede: todas'), findsNothing);
         expect(find.text('Con alerta (4)'), findsNothing);
@@ -306,7 +303,7 @@ void main() {
       expect(find.text(mensajeElijaProposito), findsOneWidget);
 
       await tocar(t, find.text('Cancelar'));
-      expect(find.text('Pacientes en seguimiento'), findsOneWidget);
+      expect(find.text('Pacientes con alta reciente'), findsOneWidget);
       await cerrarApp(t);
     });
 
@@ -328,7 +325,7 @@ void main() {
       expect(find.text(avisoAccesoEmergencia), findsOneWidget);
 
       await tocar(t, find.textContaining('Pacientes  /'));
-      expect(find.text('Pacientes en seguimiento'), findsOneWidget);
+      expect(find.text('Pacientes con alta reciente'), findsOneWidget);
       await cerrarApp(t);
     });
 
@@ -349,7 +346,7 @@ void main() {
 
     testWidgets('en escritorio se ve sin desbordes', (t) async {
       await abrirLista(t, tamano: escritorio);
-      expect(find.text('Pacientes en seguimiento'), findsOneWidget);
+      expect(find.text('Pacientes con alta reciente'), findsOneWidget);
       expect(t.takeException(), isNull);
       await cerrarApp(t);
     });
@@ -382,7 +379,7 @@ void main() {
       expect(find.text('ANTES DE ABRIR LA HISTORIA'), findsOneWidget);
       await atras(t);
       expect(find.text('ANTES DE ABRIR LA HISTORIA'), findsNothing);
-      expect(find.text('Pacientes en seguimiento'), findsOneWidget);
+      expect(find.text('Pacientes con alta reciente'), findsOneWidget);
       expect(
         find.textContaining('Propósito: Consulta de historia clínica'),
         findsNothing,
@@ -415,7 +412,7 @@ void main() {
       expect(find.textContaining('Pacientes  /'), findsOneWidget);
       await atras(t);
       expect(find.textContaining('Pacientes  /'), findsNothing);
-      expect(find.text('Pacientes en seguimiento'), findsOneWidget);
+      expect(find.text('Pacientes con alta reciente'), findsOneWidget);
       await cerrarApp(t);
     });
   });

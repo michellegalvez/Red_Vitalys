@@ -6,9 +6,10 @@ import 'package:red_vitalys/widgets/indicadores/estilo_marca.dart';
 
 /// El valor de una sede con su marca frente al promedio de la red.
 class ResumenSede extends StatelessWidget {
-  const ResumenSede({super.key, required this.fila});
+  const ResumenSede({super.key, required this.fila, required this.unidad});
 
   final FilaSede fila;
+  final String unidad;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +30,9 @@ class ResumenSede extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            valor == null ? mensajeSinMedicion : formatoValor(valor),
+            valor == null
+                ? mensajeSinMedicion
+                : '${formatoValor(valor)} $unidad',
             style: TextStyle(
               color: estilo.colorTexto,
               fontSize: valor == null ? 14 : 18,

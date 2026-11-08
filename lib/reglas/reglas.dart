@@ -4,6 +4,7 @@
 /// usan para decidir qué mostrar. El control de acceso real llega después.
 library;
 
+import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 
 /// Umbral de la alerta de riesgo (RF-06, AD-10).
@@ -21,13 +22,13 @@ const int diasAltaReciente = 30;
 const int minimoCaracteresBusqueda = 3;
 
 /// Mensajes del inicio de sesión (F-13, F-14).
-const String mensajeDatosIncorrectos = 'Correo o contraseña incorrectos.';
-const String mensajeCamposVacios = 'Escriba su correo y su contraseña.';
+const String mensajeDatosIncorrectos = 'Correo o contraseña incorrectos';
+const String mensajeCamposVacios = 'Escriba su correo y su contraseña';
 const String mensajeBloqueo =
     'Demasiados intentos fallidos. Intente de nuevo en 15 minutos.';
-const String mensajeSinSedes = 'Su cuenta no tiene sedes asignadas.';
+const String mensajeSinSedes = 'Su cuenta no tiene sedes asignadas';
 const String mensajeElijaSede = 'Elija la sede desde la que ingresa.';
-const String mensajeInactividad = 'Su sesión se cerró por inactividad.';
+const String mensajeInactividad = 'Su sesión se cerró por inactividad';
 
 /// Mensajes de rechazo según la causa (F-18).
 const String rechazoRol = 'Su rol no permite esta acción.';
@@ -37,11 +38,11 @@ const String rechazoRelacion =
     'Urgencia.';
 
 /// Mensajes del propósito (F-16) y del acceso de emergencia (F-17).
-const String mensajeElijaProposito = 'Elija el propósito de la consulta.';
+const String mensajeElijaProposito = 'Elija el propósito de la consulta';
 const String avisoDeclarandoUrgencia =
     'Está declarando un acceso de emergencia.';
 const String avisoAccesoEmergencia =
-    'Acceso de emergencia: queda registrado y el auditor lo revisará.';
+    'Acceso de emergencia: queda registrado y el auditor lo revisará';
 
 /// Mensaje de la lista sin altas recientes (F-06).
 const String mensajeSinAltas =
@@ -56,7 +57,8 @@ int _diasDesde(DateTime fecha, DateTime hoy) => DateTime(
 ).difference(DateTime(fecha.year, fecha.month, fecha.day)).inDays;
 
 /// Pacientes con alta en los últimos 30 días, del mayor al menor riesgo;
-/// con el mismo riesgo va primero el alta más reciente (F-06).
+/// con el mismo riesgo va primero el alta más reciente y, si coincide, el nombre
+/// que va antes en el alfabeto (F-06).
 List<PacienteEnSeguimiento> pacientesConAltaReciente(
   List<PacienteEnSeguimiento> pacientes,
   DateTime hoy,
@@ -67,7 +69,11 @@ List<PacienteEnSeguimiento> pacientesConAltaReciente(
   ];
   recientes.sort((a, b) {
     final porRiesgo = b.riesgo.compareTo(a.riesgo);
-    return porRiesgo != 0 ? porRiesgo : b.fechaAlta.compareTo(a.fechaAlta);
+    if (porRiesgo != 0) return porRiesgo;
+    final porAlta = b.fechaAlta.compareTo(a.fechaAlta);
+    if (porAlta != 0) return porAlta;
+    // Mismo riesgo y misma alta: por orden alfabético del nombre (F-06).
+    return normalizarTexto(a.nombre).compareTo(normalizarTexto(b.nombre));
   });
   return List.unmodifiable(recientes);
 }

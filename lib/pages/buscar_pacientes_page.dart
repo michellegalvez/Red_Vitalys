@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/busqueda.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/carga.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
@@ -18,6 +19,7 @@ class BuscarPacientesPage extends StatelessWidget {
     required this.accionAlElegir,
     required this.onBuscar,
     required this.onElegir,
+    this.simularFallas = false,
   });
 
   final String busqueda;
@@ -30,6 +32,9 @@ class BuscarPacientesPage extends StatelessWidget {
   final String accionAlElegir;
   final ValueChanged<String> onBuscar;
   final ValueChanged<PacienteEnSeguimiento> onElegir;
+
+  /// Modo demo: muestra la carga y su error con *Reintentar*.
+  final bool simularFallas;
 
   @override
   Widget build(BuildContext context) {
@@ -61,46 +66,61 @@ class BuscarPacientesPage extends StatelessWidget {
         const SizedBox(height: 18),
         if (!buscando && !corto)
           const _Pista()
-        else if (buscando) ...[
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              resultados.length == 1
-                  ? '1 paciente'
-                  : '${resultados.length} pacientes',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: ColoresVitalys.textoSecundario,
+        else if (buscando)
+          // La carga se repite cada vez que cambia el texto buscado.
+          CargaSimulada(
+            key: ValueKey(texto),
+            simular: simularFallas,
+            textoCargando: 'Buscando…',
+            textoError: 'No se pudo buscar. Intente de nuevo.',
+            child: _resultados(),
+          ),
+      ],
+    );
+  }
+
+  Widget _resultados() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          liveRegion: true,
+          child: Text(
+            resultados.length == 1
+                ? '1 paciente'
+                : '${resultados.length} pacientes',
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: ColoresVitalys.textoSecundario,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (resultados.isEmpty)
+          const EstadoVacio(
+            titulo: mensajeSinResultados,
+            icono: Icons.search_off_rounded,
+          )
+        else
+          Align(
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Column(
+                children: [
+                  for (final p in resultados)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _Resultado(
+                        paciente: p,
+                        accion: accionAlElegir,
+                        onTap: () => onElegir(p),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          if (resultados.isEmpty)
-            const EstadoVacio(
-              titulo: mensajeSinResultados,
-              icono: Icons.search_off_rounded,
-            )
-          else
-            Align(
-              alignment: Alignment.topLeft,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: Column(
-                  children: [
-                    for (final p in resultados)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _Resultado(
-                          paciente: p,
-                          accion: accionAlElegir,
-                          onTap: () => onElegir(p),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-        ],
       ],
     );
   }

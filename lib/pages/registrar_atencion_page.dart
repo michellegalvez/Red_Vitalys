@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/atencion.dart';
@@ -12,18 +11,18 @@ import 'package:red_vitalys/widgets/boton.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
 import 'package:red_vitalys/widgets/tarjeta.dart';
+import 'package:red_vitalys/widgets/tipo_atencion.dart';
 
 export 'package:red_vitalys/reglas/atencion.dart'
-    show mensajeCompleteAtencion, mensajeFechaFutura, mensajeFechaInvalida;
-
-/// Lo que el médico llenó en el formulario de una atención (F-04).
-typedef NuevaAtencion = ({
-  EncounterType tipo,
-  String sedeId,
-  DateTime fecha,
-  String motivo,
-  String diagnostico,
-});
+    show
+        NuevaAtencion,
+        atencionDeFormulario,
+        ordenarAtenciones,
+        mensajeAltaAnterior,
+        mensajeElijaTipoAtencion,
+        mensajeFechaFutura,
+        mensajeFechaInvalida,
+        mensajeIndiqueFechaInicio;
 
 /// Formulario para registrar una atención (F-04). Solo captura: valida lo que
 /// el médico escribió y lo reporta con [onGuardar]; la Screen anfitriona
@@ -53,9 +52,12 @@ class RegistrarAtencionPage extends StatefulWidget {
   /// La sede de la sesión, propuesta por defecto.
   final String sedeInicialId;
 
-  /// La fecha y hora de hoy, propuestas por defecto.
+  /// La fecha y hora de hoy: de ahí sale qué fecha ya es futura.
   final DateTime ahora;
-  final ValueChanged<NuevaAtencion> onGuardar;
+
+  /// Guarda la atención y devuelve el mensaje de error, o `null` si se
+  /// guardó (F-04, F-20). Con error se conserva lo escrito.
+  final String? Function(NuevaAtencion) onGuardar;
   final VoidCallback onCancelar;
 
   @override
@@ -63,53 +65,77 @@ class RegistrarAtencionPage extends StatefulWidget {
 }
 
 class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
-  late final _fecha = TextEditingController(
-    text: formatoFechaHoraCampo(widget.ahora),
-  );
-  final _motivo = TextEditingController();
-  final _diagnostico = TextEditingController();
+  final _inicio = TextEditingController();
+  final _alta = TextEditingController();
   late String _sedeId = widget.sedeInicialId;
-  EncounterType _tipo = EncounterType.consultaExterna;
-  String? _error;
+  EncounterType? _tipo;
+  String _destino = destinoSinDefinir;
+  ValidacionAtencion? _validacion;
+  String? _errorGuardado;
   bool _guardando = false;
 
   @override
+  void initState() {
+    super.initState();
+    _alta.addListener(_altaCambio);
+  }
+
+  /// El destino solo se elige con fecha de alta; sin ella vuelve a *Sin
+  /// definir* (F-04).
+  void _altaCambio() {
+    setState(() {
+      if (_alta.text.trim().isEmpty) _destino = destinoSinDefinir;
+    });
+  }
+
+  @override
   void dispose() {
-    _fecha.dispose();
-    _motivo.dispose();
-    _diagnostico.dispose();
+    _alta.removeListener(_altaCambio);
+    _inicio.dispose();
+    _alta.dispose();
     super.dispose();
   }
 
   Future<void> _guardar() async {
     if (_guardando) return;
     final validacion = validarAtencion(
-      motivo: _motivo.text,
-      diagnostico: _diagnostico.text,
-      fechaTexto: _fecha.text,
+      tipo: _tipo,
+      inicioTexto: _inicio.text,
+      altaTexto: _alta.text,
       ahora: widget.ahora,
     );
-    final fecha = validacion.fecha;
-    if (validacion.error != null || fecha == null) {
-      setState(() => _error = validacion.error);
+    final tipo = _tipo;
+    final inicio = validacion.inicio;
+    if (!validacion.sirve || tipo == null || inicio == null) {
+      setState(() {
+        _validacion = validacion;
+        _errorGuardado = null;
+      });
       return;
     }
     // Se toma la copia antes de esperar: lo validado es lo que se guarda.
     final nueva = (
-      tipo: _tipo,
+      tipo: tipo,
       sedeId: _sedeId,
-      fecha: fecha,
-      motivo: _motivo.text.trim(),
-      diagnostico: _diagnostico.text.trim(),
+      inicio: inicio,
+      alta: validacion.alta,
+      destino: _destino,
     );
     setState(() {
-      _error = null;
+      _validacion = null;
+      _errorGuardado = null;
       _guardando = true;
     });
     // El guardado es simulado; se nota el estado "Guardando atención…".
     await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
-    widget.onGuardar(nueva);
+    final error = widget.onGuardar(nueva);
+    if (error != null) {
+      setState(() {
+        _errorGuardado = error;
+        _guardando = false;
+      });
+    }
   }
 
   @override
@@ -147,33 +173,29 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
   }
 
   Widget _formulario() {
+    final v = _validacion;
+    final faltantes = v?.faltantes ?? const <String>[];
     return TarjetaVitalys(
       relleno: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (faltantes.isNotEmpty) ...[
+            Aviso(
+              tipo: TipoAviso.errores,
+              texto: 'Revise estos ${faltantes.length} datos para continuar',
+              items: faltantes,
+            ),
+            const SizedBox(height: 18),
+          ],
           const Text(
             'Tipo de atención',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final (tipo, texto) in const [
-                (EncounterType.consultaExterna, 'Consulta externa'),
-                (EncounterType.urgencias, 'Urgencias'),
-                (EncounterType.hospitalizacion, 'Hospitalización'),
-              ])
-                FiltroPildora(
-                  texto: texto,
-                  seleccionado: _tipo == tipo,
-                  onTap: () {
-                    if (!_guardando) setState(() => _tipo = tipo);
-                  },
-                ),
-            ],
+          SelectorTipoAtencion(
+            valor: _tipo,
+            onChanged: _guardando ? null : (t) => setState(() => _tipo = t),
           ),
           const SizedBox(height: 18),
           SelectorVitalys<String>(
@@ -187,29 +209,35 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
           ),
           const SizedBox(height: 18),
           CampoTexto(
-            etiqueta: 'Fecha y hora',
-            ayuda: 'Por defecto, la actual. Formato 30/10/2026 10:42.',
-            controller: _fecha,
-            maxLength: 16,
+            etiqueta: 'Fecha de inicio',
+            ayuda: 'Obligatoria. Por ejemplo, 30 oct 2026.',
+            hint: '30 oct 2026',
+            controller: _inicio,
+            maxLength: 12,
+            teclado: TextInputType.datetime,
+            error: v?.errorInicio,
             habilitado: !_guardando,
           ),
           const SizedBox(height: 18),
           CampoTexto(
-            etiqueta: 'Motivo de consulta',
-            controller: _motivo,
-            hint: 'Por qué consulta el paciente',
-            maxLength: maxCaracteresMotivo,
-            lineas: 2,
+            etiqueta: 'Fecha de alta',
+            ayuda: 'Opcional, si el paciente ya salió.',
+            hint: '30 oct 2026',
+            controller: _alta,
+            maxLength: 12,
+            teclado: TextInputType.datetime,
+            error: v?.errorAlta,
             habilitado: !_guardando,
           ),
           const SizedBox(height: 18),
-          CampoTexto(
-            etiqueta: 'Diagnóstico',
-            controller: _diagnostico,
-            hint: 'Por ejemplo, I10 Hipertensión esencial',
-            maxLength: maxCaracteresDiagnostico,
-            lineas: 2,
-            habilitado: !_guardando,
+          SelectorVitalys<String>(
+            etiqueta: 'Destino al alta',
+            valor: _destino,
+            opciones: [for (final d in destinosAlta) (d, d)],
+            ayuda: 'Se elige cuando hay fecha de alta.',
+            onChanged: _guardando || _alta.text.trim().isEmpty
+                ? null
+                : (d) => setState(() => _destino = d ?? _destino),
           ),
           const SizedBox(height: 18),
           Text(
@@ -219,9 +247,9 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
               color: ColoresVitalys.textoSecundario,
             ),
           ),
-          if (_error != null) ...[
+          if (_errorGuardado != null) ...[
             const SizedBox(height: 16),
-            Aviso(tipo: TipoAviso.errores, texto: _error!),
+            Aviso(tipo: TipoAviso.errores, texto: _errorGuardado!),
           ],
           const SizedBox(height: 22),
           Wrap(
@@ -235,9 +263,7 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
                 onPressed: _guardando ? null : widget.onCancelar,
               ),
               BotonVitalys(
-                texto: _guardando
-                    ? 'Guardando atención…'
-                    : 'Registrar atención',
+                texto: _guardando ? 'Guardando atención…' : 'Guardar atención',
                 icono: Icons.check_rounded,
                 onPressed: _guardando ? null : _guardar,
               ),

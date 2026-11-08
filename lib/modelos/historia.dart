@@ -43,6 +43,26 @@ class ReadmissionRisk {
   final DateTime calculatedDate;
   final String periodDescription;
   final List<RiskFactor> factors;
+
+  /// Lo que el modelo asigna antes de los factores. Base más factores da
+  /// el puntaje, así que la explicación cuadra con el número (F-07).
+  int get basePoints =>
+      score - factors.fold<int>(0, (suma, f) => suma + f.points);
+
+  /// Los factores del que más pesa al que menos, sin mirar si suben o bajan.
+  /// Con la misma magnitud va primero el que sube (F-07).
+  List<RiskFactor> get orderedFactors {
+    final conPosicion = [
+      for (var i = 0; i < factors.length; i++) (i, factors[i]),
+    ];
+    conPosicion.sort((a, b) {
+      final porMagnitud = b.$2.points.abs().compareTo(a.$2.points.abs());
+      if (porMagnitud != 0) return porMagnitud;
+      final porEfecto = b.$2.points.compareTo(a.$2.points);
+      return porEfecto != 0 ? porEfecto : a.$1.compareTo(b.$1);
+    });
+    return [for (final (_, f) in conPosicion) f];
+  }
 }
 
 class Encounter {
@@ -56,8 +76,6 @@ class Encounter {
     this.lengthOfStayDays,
     this.dischargeDestination,
     required this.doctorName,
-    this.reason,
-    this.diagnosis,
   });
 
   final String id;
@@ -69,8 +87,6 @@ class Encounter {
   final int? lengthOfStayDays;
   final String? dischargeDestination;
   final String doctorName;
-  final String? reason;
-  final String? diagnosis;
 
   String get typeLabel => switch (type) {
     EncounterType.hospitalizacion => 'Hospitalización',
@@ -94,6 +110,7 @@ class Patient {
     required this.documentNumber,
     required this.birthDate,
     required this.phone,
+    required this.address,
     required this.systemIdentifiers,
     this.readmissionRisk,
     this.encounters = const [],
@@ -112,10 +129,13 @@ class Patient {
 
   /// Teléfono de contacto (F-03).
   final String phone;
+
+  /// Dirección de residencia (F-02).
+  final String address;
   final List<SystemIdentifier> systemIdentifiers;
   final ReadmissionRisk? readmissionRisk;
 
-  /// De la más reciente a la más antigua.
+  /// De la más reciente a la más antigua por fecha de inicio.
   final List<Encounter> encounters;
 
   String get documentDisplay => '$documentType $documentNumber';

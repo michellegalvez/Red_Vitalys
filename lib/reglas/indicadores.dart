@@ -9,6 +9,8 @@ import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/indicadores.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 
+export 'package:red_vitalys/formato/formato.dart' show redondear1;
+
 /// Cuántos meses cerrados muestran la tendencia y las mediciones (F-09).
 const int mesesVisibles = 6;
 
@@ -27,7 +29,7 @@ const List<Indicador> indicadores = [
   Indicador(
     id: IdIndicador.reingreso,
     nombre: 'Reingreso hospitalario a 30 días',
-    categoria: 'RESULTADO',
+    categoria: 'Resultado',
     descripcion:
         'Pacientes que vuelven a hospitalizarse en los 30 días siguientes al '
         'alta, sobre el total de egresos.',
@@ -41,7 +43,7 @@ const List<Indicador> indicadores = [
   Indicador(
     id: IdIndicador.espera,
     nombre: 'Tiempo de espera promedio',
-    categoria: 'ESTRUCTURA',
+    categoria: 'Estructura',
     descripcion:
         'Minutos que tarda en atenderse un paciente desde que llega a la sede.',
     unidad: 'min',
@@ -54,7 +56,7 @@ const List<Indicador> indicadores = [
   Indicador(
     id: IdIndicador.adherencia,
     nombre: 'Adherencia a protocolos clínicos',
-    categoria: 'PROCESO',
+    categoria: 'Proceso',
     descripcion:
         'Porcentaje de atenciones que cumplen el protocolo clínico definido.',
     unidad: '%',
@@ -67,7 +69,7 @@ const List<Indicador> indicadores = [
   Indicador(
     id: IdIndicador.eventos,
     nombre: 'Eventos adversos evitables',
-    categoria: 'RESULTADO',
+    categoria: 'Resultado',
     descripcion:
         'Incidentes dañinos para el paciente que se pudieron prevenir, por '
         'cada 1.000 atenciones.',
@@ -114,8 +116,6 @@ DateTime ultimoPeriodo(DateTime hoy) =>
 // Promedio, marca y cambio
 // ---------------------------------------------------------------------------
 
-double redondear1(double v) => (v * 10).round() / 10;
-
 Iterable<Medicion> _de(
   Iterable<Medicion> todas,
   IdIndicador id,
@@ -151,13 +151,15 @@ bool? mejoro(Indicador indicador, double actual, double anterior) {
 }
 
 /// El cambio frente al periodo anterior, con signo y en la unidad del
-/// indicador: "−1,2 puntos", "+5 min" o "+0,3 por 1.000" (RF-27).
+/// indicador: "−1,2 puntos", "+5 min" o "+0,3 por 1.000" (RF-27). Sin cambio
+/// es "0,0" sin signo. Se calcula con los valores redondeados a 1 decimal.
 String textoCambio(Indicador indicador, double actual, double anterior) {
   final d = redondear1(redondear1(actual) - redondear1(anterior));
   final signo = d > 0 ? '+' : (d < 0 ? '−' : '');
   final valor = formatoValor(d.abs());
-  final numero = valor.endsWith(',0')
-      ? valor.substring(0, valor.length - 2)
+  // En minutos se escribe entero ("+5 min"); el cero siempre es "0,0".
+  final numero = indicador.unidadCambio == 'min' && d != 0
+      ? valor.replaceFirst(RegExp(r',0$'), '')
       : valor;
   return '$signo$numero ${indicador.unidadCambio}';
 }
@@ -216,7 +218,9 @@ List<PuntoTendencia> tendenciaDe(
 }
 
 /// Las sedes a las que aplica [indicador], con su valor del último periodo,
-/// ordenadas del mejor al peor según la dirección. Las que no tienen medición
+/// ordenadas de la peor a la mejor según la dirección (F-08, F-10): del valor
+/// más alto al más bajo cuando es mejor uno bajo, y al revés si es mejor uno
+/// alto; con el mismo valor, por nombre. Las que no tienen medición
 /// van al final y no entran en el promedio (F-10).
 List<FilaSede> comparacionDe(
   Iterable<Medicion> todas,
@@ -250,8 +254,8 @@ List<FilaSede> comparacionDe(
       return a.valor == null ? 1 : -1;
     }
     final porValor = mejorEsBajo
-        ? a.valor!.compareTo(b.valor!)
-        : b.valor!.compareTo(a.valor!);
+        ? b.valor!.compareTo(a.valor!)
+        : a.valor!.compareTo(b.valor!);
     return porValor != 0 ? porValor : a.nombre.compareTo(b.nombre);
   });
   return filas;
@@ -294,16 +298,32 @@ List<FilaMedicion> medicionesRecientes(
 // Validar una medición (RF-13, RF-28, RF-29, RF-30)
 // ---------------------------------------------------------------------------
 
-/// Lee un valor escrito con coma o con punto. `null` si no es un número.
+/// Un número con coma decimal y, si quiere, punto de miles (RNF-05).
+final _conMiles = RegExp(r'^-?\d{1,3}(\.\d{3})+(,\d+)?$');
+final _sencillo = RegExp(r'^-?\d+([.,]\d+)?$');
+
+/// Deja el texto como un número que Dart entiende: la coma es el separador
+/// decimal y el punto solo es de miles con el patrón `1.440` o `1.440,5`;
+/// en otro caso el punto es decimal ("8.5"). `null` si no es un número.
+String? _normalizar(String texto) {
+  final limpio = texto.trim();
+  if (_conMiles.hasMatch(limpio)) {
+    return limpio.replaceAll('.', '').replaceAll(',', '.');
+  }
+  if (_sencillo.hasMatch(limpio)) return limpio.replaceAll(',', '.');
+  return null;
+}
+
+/// Lee un valor escrito con coma o con punto, con signo menos si lo tiene.
+/// `null` si no es un número.
 double? leerValor(String texto) {
-  final limpio = texto.trim().replaceAll(',', '.');
-  if (limpio.isEmpty || !RegExp(r'^\d+(\.\d+)?$').hasMatch(limpio)) return null;
-  return double.tryParse(limpio);
+  final normal = _normalizar(texto);
+  return normal == null ? null : double.tryParse(normal);
 }
 
 /// Cuántos decimales escribió el usuario, sin contar ceros de más.
 int _decimales(String texto) {
-  final limpio = texto.trim().replaceAll(',', '.');
+  final limpio = _normalizar(texto) ?? '';
   final i = limpio.indexOf('.');
   if (i < 0) return 0;
   // "8,50" vale como "8,5": los ceros al final no cuentan.

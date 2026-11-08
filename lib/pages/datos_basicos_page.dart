@@ -5,6 +5,7 @@ import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/aviso.dart';
 import 'package:red_vitalys/widgets/barra_volver.dart';
 import 'package:red_vitalys/widgets/campo_dato.dart';
+import 'package:red_vitalys/widgets/carga.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
 import 'package:red_vitalys/widgets/tarjeta.dart';
@@ -22,6 +23,7 @@ class DatosBasicosPage extends StatelessWidget {
     required this.propositoTexto,
     required this.fechaConsulta,
     required this.onVolver,
+    this.simularFallas = false,
   });
 
   /// Solo se usan sus datos básicos: nunca su historia ni su riesgo.
@@ -29,6 +31,9 @@ class DatosBasicosPage extends StatelessWidget {
   final String propositoTexto;
   final String fechaConsulta;
   final VoidCallback onVolver;
+
+  /// Modo demo: muestra la carga y su error con *Reintentar*.
+  final bool simularFallas;
 
   @override
   Widget build(BuildContext context) {
@@ -85,51 +90,66 @@ class DatosBasicosPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                TarjetaVitalys(
-                  relleno: const EdgeInsets.all(22),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CampoDato(
-                        'Edad y sexo',
-                        '${p.age} años · ${p.sex}',
-                        tamanoValor: 16,
-                        separacion: 16,
-                      ),
-                      CampoDato(
-                        'Documento',
-                        p.documentDisplay,
-                        tamanoValor: 16,
-                        separacion: 16,
-                      ),
-                      CampoDato(
-                        'Fecha de nacimiento',
-                        formatoFecha(p.birthDate),
-                        tamanoValor: 16,
-                        separacion: 16,
-                      ),
-                      CampoDato('Teléfono', p.phone, tamanoValor: 16),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Aviso(
-                  tipo: TipoAviso.informativo,
-                  texto:
-                      'Su rol ve los datos básicos. La historia clínica y el '
-                      'riesgo de reingreso son solo del médico.',
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Esta consulta queda registrada · Propósito: '
-                  '$propositoTexto · $fechaConsulta',
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: ColoresVitalys.textoSuave,
-                  ),
+                CargaSimulada(
+                  simular: simularFallas,
+                  textoCargando: 'Cargando datos del paciente…',
+                  textoError: 'No se pudieron cargar los datos',
+                  child: _datos(),
                 ),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _datos() {
+    final p = paciente;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TarjetaVitalys(
+          relleno: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CampoDato(
+                'Edad y sexo',
+                '${p.age} años · ${p.sex}',
+                tamanoValor: 16,
+                separacion: 16,
+              ),
+              CampoDato(
+                'Documento',
+                p.documentDisplay,
+                tamanoValor: 16,
+                separacion: 16,
+              ),
+              CampoDato(
+                'Fecha de nacimiento',
+                formatoFecha(p.birthDate),
+                tamanoValor: 16,
+                separacion: 16,
+              ),
+              CampoDato('Teléfono', p.phone, tamanoValor: 16),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Aviso(
+          tipo: TipoAviso.informativo,
+          texto:
+              'Su rol ve los datos básicos. La historia clínica y el '
+              'riesgo de reingreso son solo del médico.',
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Esta consulta queda registrada · Propósito: '
+          '$propositoTexto · $fechaConsulta',
+          style: const TextStyle(
+            fontSize: 12.5,
+            color: ColoresVitalys.textoSuave,
           ),
         ),
       ],

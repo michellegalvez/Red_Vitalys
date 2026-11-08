@@ -125,6 +125,7 @@ class DialogoProposito extends StatelessWidget {
     required this.onElegir,
     required this.onConfirmar,
     required this.onCancelar,
+    this.onReintentar,
   });
 
   final DestinoPaciente destino;
@@ -141,6 +142,10 @@ class DialogoProposito extends StatelessWidget {
   final ValueChanged<Proposito> onElegir;
   final VoidCallback onConfirmar;
   final VoidCallback onCancelar;
+
+  /// Si se pasa, el error muestra *Reintentar* (la verificación o el registro
+  /// del acceso falló; reintentar es confirmar de nuevo).
+  final VoidCallback? onReintentar;
 
   @override
   Widget build(BuildContext context) {
@@ -370,6 +375,18 @@ class DialogoProposito extends StatelessWidget {
         if (error != null) ...[
           const SizedBox(height: 2),
           Aviso(tipo: TipoAviso.errores, texto: error!),
+          if (onReintentar != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: BotonVitalys(
+                texto: 'Reintentar',
+                icono: Icons.refresh_rounded,
+                variante: VarianteBoton.secundario,
+                onPressed: onReintentar,
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
         ],
       ],

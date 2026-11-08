@@ -29,6 +29,10 @@ class TarjetaIndicador extends StatelessWidget {
     final valorTexto = valor == null
         ? mensajeSinMediciones
         : '${formatoValor(valor)} ${ind.unidad}';
+    if (valor == null) {
+      return '${ind.nombre}, $valorTexto, ${formatoPeriodo(periodo)}. '
+          'Abrir detalle';
+    }
     final cambioTexto = cambio == null
         ? 'sin periodo anterior'
         : '${estado.toLowerCase()} $cambio frente al mes previo';
@@ -60,7 +64,7 @@ class TarjetaIndicador extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  ind.categoria,
+                  ind.categoria.toUpperCase(),
                   style: const TextStyle(
                     color: ColoresVitalys.mentaTexto,
                     fontSize: 12,
@@ -100,12 +104,14 @@ class TarjetaIndicador extends StatelessWidget {
                           mostrarCuadricula: false,
                         ),
                 ),
-                const SizedBox(height: 8),
-                _CambioIndicador(
-                  estado: estado,
-                  mejoro: resumen.mejoro,
-                  cambio: resumen.cambio,
-                ),
+                if (resumen.valorRed != null) ...[
+                  const SizedBox(height: 8),
+                  _CambioIndicador(
+                    estado: estado,
+                    mejoro: resumen.mejoro,
+                    cambio: resumen.cambio,
+                  ),
+                ],
               ],
             ),
           ),
@@ -195,13 +201,14 @@ class _CambioIndicador extends StatelessWidget {
       spacing: 8,
       runSpacing: 4,
       children: [
-        ChipVitalys(
-          texto: estado,
-          icono: icono,
-          colorFondo: fondo,
-          colorTexto: texto,
-          tamanoTexto: 12,
-        ),
+        if (cambio != null)
+          ChipVitalys(
+            texto: estado,
+            icono: icono,
+            colorFondo: fondo,
+            colorTexto: texto,
+            tamanoTexto: 12,
+          ),
         Text(
           cambio == null ? 'Sin periodo anterior' : '$cambio vs. mes previo',
           style: const TextStyle(color: ColoresVitalys.tinta, fontSize: 12),

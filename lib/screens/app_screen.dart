@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/datos/historia_simulada.dart';
 import 'package:red_vitalys/formato/formato.dart';
@@ -29,6 +30,7 @@ import 'package:red_vitalys/widgets/navegacion.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
 
 part 'app_screen_paginas.dart';
+part 'app_screen_guardado.dart';
 
 /// Una declaración de propósito en curso. Sin paciente es la de la lista de
 /// pacientes con alta reciente (F-06); con paciente, la de abrirlo o, si
@@ -39,13 +41,27 @@ class _Solicitud {
     this.elegido,
     this.error,
     this.registrar = false,
+    this.reintentable = false,
   });
 
   final PacienteEnSeguimiento? paciente;
   final Proposito? elegido;
   final String? error;
   final bool registrar;
+
+  /// El error es de red (verificar o registrar el acceso): el pop-up ofrece
+  /// *Reintentar* (F-05, F-18, F-20).
+  final bool reintentable;
 }
+
+// Mensajes de las fallas simuladas (specs F-04, F-05, F-12, F-13, F-20, F-23).
+const _mensajeFallaIngreso = 'No se pudo iniciar sesión. Intente de nuevo.';
+const _mensajeFallaVerificar = 'No se pudo verificar el acceso';
+const _mensajeFallaAccion = 'No se pudo completar la acción';
+const _mensajeFallaAtencion = 'No se pudo registrar la atención';
+const _mensajeFallaMedicion = 'No se pudo registrar la medición';
+const _mensajeFallaCierre = 'No se pudo cerrar la sesión. Intente de nuevo.';
+const _duracionCierreSimulado = Duration(milliseconds: 400);
 
 /// Un paciente abierto con el propósito declarado: su historia, sus datos
 /// básicos (F-03) o el registro de una atención en curso (F-04).
@@ -91,7 +107,6 @@ class _AppScreenState extends State<AppScreen> {
   final _contrasena = TextEditingController();
   PasoAcceso _paso = PasoAcceso.credenciales;
   Usuario? _usuarioValidado;
-  bool _mostrarContrasena = false;
   bool _ingresando = false;
   String? _mensajeError;
   String? _avisoInactividad;
@@ -105,6 +120,10 @@ class _AppScreenState extends State<AppScreen> {
   // Navegación y consultas.
   Seccion _seccion = Seccion.inicio;
   bool _listaDeclarada = false;
+
+  /// La sección en la que estaba antes de que se pidiera el propósito de la
+  /// lista: a ella vuelve *Cancelar* (F-16 A2).
+  Seccion? _seccionPrevia;
   _Solicitud? _solicitud;
   _ConsultaAbierta? _historia;
   _ConsultaAbierta? _registro;
@@ -118,8 +137,18 @@ class _AppScreenState extends State<AppScreen> {
   String? _sedeTendencia;
   String _busquedaPaciente = '';
 
-  /// El indicador cuyas sedes se ven en el tablero (F-08).
-  IdIndicador _indicadorTablero = IdIndicador.reingreso;
+  /// Interruptor de demo del acceso: con él, cada pantalla muestra su
+  /// "Cargando…" y su error con *Reintentar*, y las acciones fallan la
+  /// primera vez (estados de carga y error de las specs).
+  bool _simularFallas = false;
+
+  /// Las acciones que ya fallaron una vez con [_simularFallas]: la siguiente
+  /// funciona.
+  final Set<String> _fallasHechas = {};
+
+  // Cierre de sesión en curso o fallido (F-23, solo en modo demo).
+  bool _cerrandoSesion = false;
+  String? _errorCierre;
 
   // Pacientes y atenciones registradas en esta sesión. Viven aquí, en la
   // Screen anfitriona; las Pages solo las muestran.
@@ -139,7 +168,20 @@ class _AppScreenState extends State<AppScreen> {
   FiltroAuditoria _filtroAuditoria = FiltroAuditoria.todos;
 
   @override
+  void initState() {
+    super.initState();
+    // Cualquier tecla cuenta como uso, tenga o no el foco la app (F-15).
+    HardwareKeyboard.instance.addHandler(_teclaPulsada);
+  }
+
+  bool _teclaPulsada(KeyEvent _) {
+    _registrarActividad();
+    return false;
+  }
+
+  @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_teclaPulsada);
     _temporizadorInactividad?.cancel();
     _correo.dispose();
     _contrasena.dispose();
@@ -189,6 +231,17 @@ class _AppScreenState extends State<AppScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 450));
     if (!mounted) return;
 
+    if (_falla('ingresar')) {
+      // Falla de red (F-13): se conserva el correo, se borra la contraseña y
+      // no cuenta para el bloqueo ni crea evento.
+      setState(() {
+        _ingresando = false;
+        _contrasena.clear();
+        _mensajeError = _mensajeFallaIngreso;
+      });
+      return;
+    }
+
     setState(() {
       _ingresando = false;
       if (resultado.cuentaComoFallo ||
@@ -222,7 +275,6 @@ class _AppScreenState extends State<AppScreen> {
       }
       final usuario = usuarioEscrito;
       if (usuario == null) return;
-      _fallosSeguidos = 0;
       _mensajeError = null;
       _usuarioValidado = usuario;
       _paso = PasoAcceso.sede;
@@ -241,6 +293,12 @@ class _AppScreenState extends State<AppScreen> {
     if (usuario == null) return;
     if (sede == null || !usuario.sedesAsignadas.contains(sede)) {
       setState(() => _errorSede = mensajeElijaSede);
+      return;
+    }
+    if (_falla('evento-ingreso')) {
+      // Falla de red al registrar el ingreso (F-13 paso 5): no se abre la
+      // sesión y se puede reintentar.
+      setState(() => _errorSede = _mensajeFallaIngreso);
       return;
     }
     setState(() {
@@ -283,6 +341,8 @@ class _AppScreenState extends State<AppScreen> {
   void _cerrarSesion({bool porInactividad = false}) {
     _temporizadorInactividad?.cancel();
     setState(() {
+      _cerrandoSesion = false;
+      _errorCierre = null;
       _usuario = null;
       _usuarioValidado = null;
       _paso = PasoAcceso.credenciales;
@@ -291,18 +351,44 @@ class _AppScreenState extends State<AppScreen> {
       _solicitud = null;
       _cerrarDetalles();
       _listaDeclarada = false;
+      _seccionPrevia = null;
       _filtroAuditoria = FiltroAuditoria.todos;
       // Lo escrito en las búsquedas no pasa al siguiente usuario (F-15).
       _busqueda = '';
       _busquedaPaciente = '';
       _seccion = Seccion.inicio;
-      _indicadorTablero = IdIndicador.reingreso;
       _correo.clear();
       _contrasena.clear();
-      _mostrarContrasena = false;
       _mensajeError = null;
       _avisoInactividad = porInactividad ? mensajeInactividad : null;
     });
+  }
+
+  /// *Cerrar sesión* a mano (F-23). En modo demo espera "Cerrando sesión…" y
+  /// puede fallar una vez; el usuario sigue en el perfil. Sin el modo, cierra
+  /// al instante.
+  Future<void> _pedirCierreDeSesion() async {
+    if (!_simularFallas) {
+      _cerrarSesion();
+      return;
+    }
+    if (_cerrandoSesion) return;
+    setState(() {
+      _cerrandoSesion = true;
+      _errorCierre = null;
+      _verPerfil = true;
+    });
+    await Future<void>.delayed(_duracionCierreSimulado);
+    if (!mounted || _usuario == null) return;
+    if (_falla('cerrar-sesion')) {
+      setState(() {
+        _cerrandoSesion = false;
+        _errorCierre = _mensajeFallaCierre;
+      });
+      return;
+    }
+    _fallasHechas.clear();
+    _cerrarSesion();
   }
 
   void _registrarActividad() {
@@ -346,6 +432,10 @@ class _AppScreenState extends State<AppScreen> {
     );
   }
 
+  /// Con [_simularFallas], la acción [clave] falla la primera vez y funciona
+  /// al reintentar. Sin él, nunca falla.
+  bool _falla(String clave) => _simularFallas && _fallasHechas.add(clave);
+
   void _rellenarPerfil(String correo) {
     setState(() {
       _correo.text = correo;
@@ -360,6 +450,11 @@ class _AppScreenState extends State<AppScreen> {
 
   /// Cambia de sección. Llamar dentro de `setState`.
   void _irA(Seccion seccion) {
+    if (seccion.muestraPacientes &&
+        !_listaDeclarada &&
+        !_seccion.muestraPacientes) {
+      _seccionPrevia = _seccion;
+    }
     _seccion = seccion;
     // Al abrir la auditoría el filtro es *Todos* (F-21).
     if (seccion == Seccion.auditoria) _filtroAuditoria = FiltroAuditoria.todos;
@@ -373,34 +468,47 @@ class _AppScreenState extends State<AppScreen> {
   }
 
   void _elegirSeccion(Seccion seccion) {
-    final usuario = _usuario;
-    if (usuario == null) return;
-    if (!seccionesDe(usuario.rol).contains(seccion)) {
-      _rechazarPorRol(usuario, RecursoAuditoria.pacientesAltaReciente);
+    if (_usuario == null) return;
+    if (!intentarAcceso(accionDeSeccion(seccion), recursoDeSeccion(seccion))) {
       return;
     }
     setState(() => _irA(seccion));
   }
 
-  /// Lo que el rol no tiene en la tabla de F-18 se rechaza y queda como
-  /// evento *Denegado* (F-18 CA-1, F-20). La navegación no ofrece esas
-  /// acciones; esta es la guarda por si se llega por otro camino.
-  void _rechazarPorRol(Usuario usuario, RecursoAuditoria recurso) {
+  /// La puerta del sistema para lo que el rol no tiene en la tabla de F-18:
+  /// si el rol lo permite no hace nada y devuelve `true`; si no, registra el
+  /// evento *Denegado* (F-20), avisa con [rechazoRol] y devuelve `false`.
+  /// Las pantallas no ofrecen esas acciones; esta es la guarda por si se
+  /// llega por otro camino.
+  @visibleForTesting
+  bool intentarAcceso(
+    AccionPermitida accion,
+    RecursoAuditoria recurso, {
+    PacienteEnSeguimiento? paciente,
+    Proposito? proposito,
+  }) {
+    final usuario = _usuario;
+    if (usuario == null) return false;
+    if (rolPermite(usuario.rol, accion)) return true;
+    final registra =
+        accion == AccionPermitida.registrarAtencion ||
+        accion == AccionPermitida.registrarMedicion;
     setState(() {
       _registrarEvento(
         usuario: usuario,
         sedeId: _sedeSesion,
-        accion:
-            recurso == RecursoAuditoria.atencion ||
-                recurso == RecursoAuditoria.medicionIndicador
+        accion: registra
             ? AccionAuditoria.registrar
             : AccionAuditoria.consultar,
         recurso: recurso,
         resultado: ResultadoAuditoria.denegado,
+        paciente: paciente,
+        proposito: proposito,
       );
     });
     ScaffoldMessenger.maybeOf(context)
         ?.showSnackBar(const SnackBar(content: Text(rechazoRol)));
+    return false;
   }
 
   void _verPacientes() => _elegirSeccion(Seccion.pacientes);
@@ -413,10 +521,12 @@ class _AppScreenState extends State<AppScreen> {
   /// El médico elige *Registrar atención* en la historia: antes declara el
   /// propósito (F-04, F-16).
   void _pedirRegistro(PacienteEnSeguimiento p) {
-    final usuario = _usuario;
-    if (usuario == null) return;
-    if (!rolPermite(usuario.rol, AccionPermitida.registrarAtencion)) {
-      _rechazarPorRol(usuario, RecursoAuditoria.atencion);
+    if (_usuario == null) return;
+    if (!intentarAcceso(
+      AccionPermitida.registrarAtencion,
+      RecursoAuditoria.atencion,
+      paciente: p,
+    )) {
       return;
     }
     setState(() => _solicitud = _Solicitud(paciente: p, registrar: true));
@@ -450,6 +560,27 @@ class _AppScreenState extends State<AppScreen> {
       return;
     }
     final paciente = s.paciente;
+    if (paciente != null) {
+      // Fallas de red al verificar el acceso y al registrar el evento (F-05,
+      // F-18, F-20). Registrar una atención deja su evento al guardar.
+      final falla = _falla('verificar-${paciente.id}')
+          ? _mensajeFallaVerificar
+          : (!s.registrar && _falla('evento-${paciente.id}')
+                ? _mensajeFallaAccion
+                : null);
+      if (falla != null) {
+        setState(() {
+          _solicitud = _Solicitud(
+            paciente: paciente,
+            elegido: elegido,
+            error: falla,
+            registrar: s.registrar,
+            reintentable: true,
+          );
+        });
+        return;
+      }
+    }
     setState(() {
       _solicitud = null;
       if (paciente == null) {
@@ -537,18 +668,20 @@ class _AppScreenState extends State<AppScreen> {
         paciente: paciente,
         proposito: elegido,
       );
+      // La historia muestra también el riesgo de reingreso: es otro recurso
+      // y deja su propio evento, permitido o denegado (F-07 pasos 3-4, A2).
+      _registrarEvento(
+        usuario: usuario,
+        sedeId: _sedeSesion,
+        accion: AccionAuditoria.consultar,
+        recurso: RecursoAuditoria.riesgoReingreso,
+        resultado: permitido
+            ? ResultadoAuditoria.permitido
+            : ResultadoAuditoria.denegado,
+        paciente: paciente,
+        proposito: elegido,
+      );
       if (permitido) {
-        // La historia muestra también el riesgo de reingreso: es otro
-        // recurso y deja su propio evento (F-07 pasos 3-4).
-        _registrarEvento(
-          usuario: usuario,
-          sedeId: _sedeSesion,
-          accion: AccionAuditoria.consultar,
-          recurso: RecursoAuditoria.riesgoReingreso,
-          resultado: ResultadoAuditoria.permitido,
-          paciente: paciente,
-          proposito: elegido,
-        );
         _historia = (paciente: paciente, proposito: elegido);
       } else {
         _denegado = (
@@ -567,7 +700,13 @@ class _AppScreenState extends State<AppScreen> {
     if (s == null) return;
     setState(() {
       _solicitud = null;
-      if (s.paciente == null) _irA(Seccion.indicadores);
+      if (s.paciente == null) {
+        // Vuelve a donde estaba; recién iniciada la sesión, al tablero
+        // (F-16 A2, CA-9).
+        final previa = _seccionPrevia ?? Seccion.indicadores;
+        _seccionPrevia = null;
+        _irA(previa);
+      }
     });
   }
 
@@ -601,106 +740,6 @@ class _AppScreenState extends State<AppScreen> {
     } else {
       _abrirPaciente(d.paciente);
     }
-  }
-
-  /// Valida una medición con las reglas de F-12. Devuelve el mensaje de
-  /// rechazo o `null` si se puede guardar.
-  String? _validarMedicion(NuevaMedicion m) {
-    return validarMedicion(
-      indicador: indicadorDe(m.indicador),
-      sede: _datos.sede(m.sedeId),
-      periodo: m.periodo,
-      valorTexto: m.valorTexto,
-      hoy: _datos.hoy,
-      existentes: _mediciones,
-    );
-  }
-
-  /// Guarda la medición: entra al tablero y a las mediciones recientes, y
-  /// deja su evento sin paciente y con propósito *No aplica* (F-12, F-20).
-  void _guardarMedicion(NuevaMedicion nueva) {
-    final usuario = _usuario;
-    final valor = leerValor(nueva.valorTexto);
-    if (usuario == null || valor == null) return;
-    if (!rolPermite(usuario.rol, AccionPermitida.registrarMedicion)) {
-      _rechazarPorRol(usuario, RecursoAuditoria.medicionIndicador);
-      return;
-    }
-    // Se vuelve a validar al guardar: la regla no depende de la Page.
-    if (_validarMedicion(nueva) != null) return;
-    setState(() {
-      _mediciones = [
-        ..._mediciones,
-        Medicion(
-          indicador: nueva.indicador,
-          sedeId: nueva.sedeId,
-          periodo: nueva.periodo,
-          valor: redondear1(valor),
-          registradaPor: usuario.nombre,
-          registradaEn: _datos.hoy,
-        ),
-      ];
-      _registrarEvento(
-        usuario: usuario,
-        sedeId: _sedeSesion,
-        accion: AccionAuditoria.registrar,
-        recurso: RecursoAuditoria.medicionIndicador,
-        resultado: ResultadoAuditoria.permitido,
-      );
-    });
-  }
-
-  /// Guarda la atención que llenó el médico: queda primera en la historia,
-  /// con *Atención del paciente* le da relación con el paciente y deja su
-  /// evento (F-04, F-05, F-20).
-  void _guardarAtencion(NuevaAtencion nueva) {
-    final registro = _registro;
-    final usuario = _usuario;
-    if (registro == null || usuario == null) return;
-    final paciente = registro.paciente;
-    final total = _atenciones.values.fold<int>(0, (a, l) => a + l.length);
-    final atencion = Encounter(
-      id: 'enc-n${total + 1}',
-      type: nueva.tipo,
-      status: EncounterStatus.finalizada,
-      facilityName: _datos.sede(nueva.sedeId).nombreCorto,
-      startDate: nueva.fecha,
-      endDate: nueva.fecha,
-      lengthOfStayDays: 0,
-      doctorName: usuario.nombre,
-      reason: nueva.motivo,
-      diagnosis: nueva.diagnostico,
-    );
-    setState(() {
-      _atenciones = {
-        ..._atenciones,
-        paciente.id: [atencion, ...?_atenciones[paciente.id]],
-      };
-      if (registro.proposito == Proposito.atencionPaciente &&
-          !paciente.medicosConAtencion.contains(usuario.id)) {
-        final actualizado = paciente.copyWith(
-          medicosConAtencion: [...paciente.medicosConAtencion, usuario.id],
-        );
-        _pacientes = [
-          for (final p in _pacientes) p.id == paciente.id ? actualizado : p,
-        ];
-      }
-      _registrarEvento(
-        usuario: usuario,
-        sedeId: _sedeSesion,
-        accion: AccionAuditoria.registrar,
-        recurso: RecursoAuditoria.atencion,
-        resultado: ResultadoAuditoria.permitido,
-        paciente: paciente,
-        proposito: registro.proposito,
-      );
-      _registro = null;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Atención registrada en la historia unificada'),
-      ),
-    );
   }
 
   // ---------------------------------------------------------------------

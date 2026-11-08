@@ -27,6 +27,15 @@ final datosSinEventos = DatosSimulados(
   ipPrototipo: datos.ipPrototipo,
 );
 
+/// Ningún Scrollable horizontal: la auditoría nunca se desliza de lado
+/// (RNF-07, F-19 CA-9).
+void esperarSinScrollHorizontal() => expect(
+  find.byWidgetPredicate(
+    (w) => w is Scrollable && w.axisDirection == AxisDirection.right,
+  ),
+  findsNothing,
+);
+
 Future<void> abrirApp(
   WidgetTester t, {
   Size tamano = celular,
@@ -239,16 +248,17 @@ void main() {
       await cerrarApp(t);
     });
 
-    testWidgets('en escritorio la tabla se ve completa, sin deslizar', (
+    testWidgets('en escritorio los eventos se ven sin deslizar de lado', (
       t,
     ) async {
       await abrirApp(t, tamano: escritorio);
       await entrarComoAuditora(t);
       expect(find.textContaining('Deslice la tabla'), findsNothing);
-      expect(find.text('SEDE'), findsOneWidget);
-      expect(find.text('RESULTADO'), findsOneWidget);
-      expect(find.text('Urgencia (acceso de emergencia)'), findsOneWidget);
-      expect(find.text('María Fernanda Rojas Benítez'), findsWidgets);
+      esperarSinScrollHorizontal();
+      // Tabla o, si no cabe, tarjetas: los datos del evento se ven.
+      expect(find.textContaining('Urgencia'), findsWidgets);
+      expect(find.textContaining('María Fernanda Rojas Benítez'), findsWidgets);
+      expect(find.textContaining('Permitido'), findsWidgets);
       expect(t.takeException(), isNull);
       await cerrarApp(t);
     });
@@ -263,6 +273,8 @@ void main() {
         await entrarComoAuditora(t);
         t.view.physicalSize = Size(ancho, 800);
         await t.pumpAndSettle();
+        esperarSinScrollHorizontal();
+        expect(find.textContaining('Urgencia'), findsWidgets);
         // Un texto está en una sola línea si mide lo mismo de alto que con
         // ancho infinito.
         for (final texto in [
@@ -326,13 +338,13 @@ void main() {
       await cerrarSesion(t);
       await entrarComoAuditora(t);
 
-      // 8 del Figma + ingreso de Camila + lista + rechazo + historia y
-      // riesgo con Urgencia (F-07) + ingreso de Marcela.
-      await t.ensureVisible(find.text('14 eventos'));
-      expect(find.text('14 eventos'), findsOneWidget);
+      // 8 del Figma + ingreso de Camila + lista + rechazo (historia y
+      // riesgo) + historia y riesgo con Urgencia (F-07) + ingreso de Marcela.
+      await t.ensureVisible(find.text('15 eventos'));
+      expect(find.text('15 eventos'), findsOneWidget);
       await tocar(t, find.text('Denegados'));
-      await t.ensureVisible(find.text('3 eventos'));
-      expect(find.text('3 eventos'), findsOneWidget);
+      await t.ensureVisible(find.text('4 eventos'));
+      expect(find.text('4 eventos'), findsOneWidget);
       await tocar(t, find.text('Emergencia'));
       // El del Figma + la historia y el riesgo de Hernán con Urgencia.
       await t.ensureVisible(find.text('3 eventos'));
@@ -349,11 +361,31 @@ void main() {
 
       await entrarComoAuditora(t);
       await tocar(t, find.text('Denegados'));
-      expect(find.text('camila.martinez@vitalys.co'), findsOneWidget);
-      expect(find.text('IP ${datos.ipPrototipo}'), findsOneWidget);
+      esperarSinScrollHorizontal();
+      expect(find.textContaining('camila.martinez@vitalys.co'), findsOneWidget);
+      expect(find.textContaining(datos.ipPrototipo), findsOneWidget);
       expect(find.text('3 eventos'), findsOneWidget);
       await cerrarApp(t);
     });
+
+    for (final ancho in [1280.0, 960.0]) {
+      testWidgets('un correo de 40 caracteres no desliza la lista ($ancho)', (
+        t,
+      ) async {
+        final correoLargo = '${'x' * 29}@vitalys.co';
+        expect(correoLargo.length, 40);
+        await abrirApp(t, tamano: Size(ancho, 800));
+        await escribir(t, correoLargo, 'equivocada');
+        await tocar(t, find.text('Ingresar'));
+        await entrarComoAuditora(t);
+        await tocar(t, find.text('Denegados'));
+        esperarSinScrollHorizontal();
+        expect(find.textContaining(correoLargo), findsOneWidget);
+        expect(find.textContaining(datos.ipPrototipo), findsOneWidget);
+        expect(t.takeException(), isNull);
+        await cerrarApp(t);
+      });
+    }
 
     testWidgets('en celular el correo de un ingreso fallido no se parte', (
       t,

@@ -18,6 +18,13 @@ const List<String> _meses = [
 
 String _dosDigitos(int n) => n.toString().padLeft(2, '0');
 
+/// El número del mes (1 a 12) de una abreviatura como "oct", sin distinguir
+/// mayúsculas, o `null` si no es un mes.
+int? numeroDeMes(String abreviatura) {
+  final i = _meses.indexOf(abreviatura.trim().toLowerCase());
+  return i < 0 ? null : i + 1;
+}
+
 /// "30 oct 2026".
 String formatoFecha(DateTime f) => '${f.day} ${_meses[f.month - 1]} ${f.year}';
 
@@ -43,8 +50,13 @@ DateTime? leerFechaHoraCampo(String texto) {
   return coincide && n[4] < 60 ? f : null;
 }
 
-/// "8,4": un decimal con coma (RNF-05).
-String formatoValor(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
+/// Redondea a 1 decimal, con medio hacia arriba. Es la única regla de
+/// redondeo: la usan el valor mostrado y la marca, para que no difieran.
+double redondear1(double v) => (v * 10).round() / 10;
+
+/// "8,4": un decimal con coma (RNF-05), redondeado con [redondear1].
+String formatoValor(double v) =>
+    redondear1(v).toStringAsFixed(1).replaceAll('.', ',');
 
 /// "oct 2026": el mes de una medición.
 String formatoPeriodo(DateTime periodo) =>

@@ -26,6 +26,8 @@ typedef MedicionRegistrada = ({
   String sede,
   DateTime periodo,
   double valor,
+  String registradaPor,
+  DateTime registradaEn,
 });
 
 const mensajeMedicionRegistrada = 'Medición registrada';
@@ -55,7 +57,10 @@ class RegistrarMedicionPage extends StatefulWidget {
 
   /// Devuelve el mensaje de rechazo o `null` si se puede guardar.
   final String? Function(NuevaMedicion) validar;
-  final ValueChanged<NuevaMedicion> onGuardar;
+
+  /// Guarda la medición y devuelve el mensaje de error, o `null` si se
+  /// guardó (F-12). Con error se conserva lo escrito.
+  final String? Function(NuevaMedicion) onGuardar;
 
   @override
   State<RegistrarMedicionPage> createState() => _RegistrarMedicionPageState();
@@ -110,7 +115,14 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
     // El guardado es simulado; se nota el estado "Guardando medición…".
     await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
-    widget.onGuardar(nueva);
+    final fallo = widget.onGuardar(nueva);
+    if (fallo != null) {
+      setState(() {
+        _guardando = false;
+        _error = fallo;
+      });
+      return;
+    }
     setState(() {
       _guardando = false;
       _exito = mensajeMedicionRegistrada;
@@ -275,6 +287,14 @@ class _FilaRegistrada extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${m.sede} · ${formatoPeriodo(m.periodo)}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: ColoresVitalys.textoSecundario,
+                  ),
+                ),
+                Text(
+                  'Registró ${m.registradaPor} · '
+                  '${formatoFechaHora(m.registradaEn)}',
                   style: const TextStyle(
                     fontSize: 13,
                     color: ColoresVitalys.textoSecundario,

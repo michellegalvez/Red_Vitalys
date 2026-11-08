@@ -23,8 +23,11 @@ extension _Paginas on _AppScreenState {
       child: Listener(
         behavior: HitTestBehavior.translucent,
         onPointerDown: (_) => _registrarActividad(),
-        // La rueda del mouse también es uso (F-15).
+        // La rueda del mouse, el trackpad y arrastrar también son uso (F-15).
         onPointerSignal: (_) => _registrarActividad(),
+        onPointerPanZoomStart: (_) => _registrarActividad(),
+        onPointerPanZoomUpdate: (_) => _registrarActividad(),
+        onPointerMove: (_) => _registrarActividad(),
         child: Stack(
           children: [
             Positioned.fill(
@@ -81,6 +84,7 @@ extension _Paginas on _AppScreenState {
                               key: ValueKey('denegado-${denegado.paciente.id}'),
                               child: ConsultaPage(
                                 resultado: denegado.resultado,
+                                alRegistrar: denegado.alRegistrar,
                                 onVolver: _cerrarDenegado,
                                 onDeclararUrgencia: _declararUrgencia,
                               ),
@@ -139,7 +143,6 @@ extension _Paginas on _AppScreenState {
         paso: _paso,
         correo: _correo,
         contrasena: _contrasena,
-        mostrarContrasena: _mostrarContrasena,
         ingresando: _ingresando,
         mensajeError: _mensajeError,
         avisoInactividad: _avisoInactividad,
@@ -158,8 +161,11 @@ extension _Paginas on _AppScreenState {
         ],
         sedeElegida: _sedeElegida,
         errorSede: _errorSede,
-        onAlternarContrasena: () =>
-            _actualizar(() => _mostrarContrasena = !_mostrarContrasena),
+        simularFallas: _simularFallas,
+        onSimularFallas: (valor) => _actualizar(() {
+          _simularFallas = valor;
+          _fallasHechas.clear();
+        }),
         onIngresar: _ingresar,
         onElegirPerfil: _rellenarPerfil,
         onElegirSede: (id) => _actualizar(() {
@@ -237,7 +243,7 @@ extension _Paginas on _AppScreenState {
         indiceActual: indice,
         onDestino: onDestino,
         onPerfil: () => _actualizar(() => _verPerfil = true),
-        onSalir: _cerrarSesion,
+        onSalir: _pedirCierreDeSesion,
       ),
       bottomNavigationBar: escritorio
           ? null
@@ -286,6 +292,7 @@ extension _Paginas on _AppScreenState {
       onVerTodos: _verPacientes,
       onVerIndicadores: () => _elegirSeccion(Seccion.indicadores),
       onAbrirPaciente: _abrirPaciente,
+      simularFallas: _simularFallas,
     );
   }
 
@@ -303,6 +310,7 @@ extension _Paginas on _AppScreenState {
           : 'Ningún paciente coincide con la búsqueda.',
       onBuscar: (texto) => _actualizar(() => _busqueda = texto),
       onAbrirPaciente: _abrirPaciente,
+      simularFallas: _simularFallas,
     );
   }
 
@@ -356,6 +364,7 @@ extension _Paginas on _AppScreenState {
       onElegir: _elegirProposito,
       onConfirmar: _confirmarProposito,
       onCancelar: _cancelarProposito,
+      onReintentar: solicitud.reintentable ? _confirmarProposito : null,
     );
   }
 
@@ -374,25 +383,19 @@ extension _Paginas on _AppScreenState {
   /// Tablero de indicadores (F-08): el valor de la red de cada uno, su cambio
   /// y las sedes donde actuar primero.
   Widget _tablero() {
-    final destacado = indicadorDe(_indicadorTablero);
-    final comparacion = comparacionDe(
-      _mediciones,
-      destacado,
-      _datos.sedes,
-      _datos.hoy,
-    );
+    final periodo = ultimoPeriodo(_datos.hoy);
     return IndicadoresPage(
       resumenes: resumenes(_mediciones, _datos.hoy),
-      destacado: destacado,
-      comparacionDestacada: comparacion,
-      promedioDestacado: valorRed(
-        _mediciones,
-        destacado.id,
-        ultimoPeriodo(_datos.hoy),
-      ),
-      periodo: ultimoPeriodo(_datos.hoy),
-      // Las sedes con su marca se ven para el indicador que se elija (F-08).
-      onElegirDestacado: (id) => _actualizar(() => _indicadorTablero = id),
+      // Por cada indicador, sus sedes con valor y marca (F-08 paso 3).
+      sedesPorIndicador: {
+        for (final i in indicadores)
+          i.id: comparacionDe(_mediciones, i, _datos.sedes, _datos.hoy),
+      },
+      promedios: {
+        for (final i in indicadores) i.id: valorRed(_mediciones, i.id, periodo),
+      },
+      periodo: periodo,
+      simularFallas: _simularFallas,
       onAbrirDetalle: (id) => _actualizar(() {
         _indicadorAbierto = id;
         _sedeTendencia = null;
@@ -436,6 +439,7 @@ extension _Paginas on _AppScreenState {
           _datos.hoy,
         ),
         onElegirSede: (sedeId) => _actualizar(() => _sedeTendencia = sedeId),
+        simularFallas: _simularFallas,
         onVolver: () => _actualizar(() {
           _indicadorAbierto = null;
           _sedeTendencia = null;
@@ -446,16 +450,20 @@ extension _Paginas on _AppScreenState {
 
   /// Registrar la medición mensual de un indicador (F-12).
   Widget _registrarMedicion() {
-    final registradas = [
-      for (final m in _mediciones.reversed)
-        if (m.registradaPor != null)
-          (
-            indicador: indicadorDe(m.indicador),
-            sede: _datos.sede(m.sedeId).nombreCorto,
-            periodo: m.periodo,
-            valor: m.valor,
-          ),
-    ];
+    final registradas = <MedicionRegistrada>[];
+    for (final m in _mediciones.reversed) {
+      final quien = m.registradaPor;
+      final cuando = m.registradaEn;
+      if (quien == null || cuando == null) continue;
+      registradas.add((
+        indicador: indicadorDe(m.indicador),
+        sede: _datos.sede(m.sedeId).nombreCorto,
+        periodo: m.periodo,
+        valor: m.valor,
+        registradaPor: quien,
+        registradaEn: cuando,
+      ));
+    }
     return RegistrarMedicionPage(
       sedes: _datos.sedes,
       hoy: _datos.hoy,
@@ -477,6 +485,7 @@ extension _Paginas on _AppScreenState {
           : 'Ver los datos básicos',
       onBuscar: (texto) => _actualizar(() => _busquedaPaciente = texto),
       onElegir: _abrirPaciente,
+      simularFallas: _simularFallas,
     );
   }
 
@@ -500,6 +509,7 @@ extension _Paginas on _AppScreenState {
         propositoTexto: d.proposito.nombreCorto,
         fechaConsulta: formatoFechaHora(_datos.hoy),
         onVolver: () => _actualizar(() => _datosBasicos = null),
+        simularFallas: _simularFallas,
       ),
     );
   }
@@ -530,6 +540,7 @@ extension _Paginas on _AppScreenState {
         puedeRegistrar: usuario.rol == Rol.medico,
         onVolver: _cerrarHistoria,
         onRegistrarAtencion: () => _pedirRegistro(paciente),
+        simularFallas: _simularFallas,
       ),
     );
   }
@@ -565,6 +576,7 @@ extension _Paginas on _AppScreenState {
       nombresPacientes: {for (final p in _pacientes) p.id: p.nombre},
       nombresSedes: {for (final s in _datos.sedes) s.id: s.nombre},
       onElegirFiltro: (f) => _actualizar(() => _filtroAuditoria = f),
+      simularFallas: _simularFallas,
     );
   }
 
@@ -597,7 +609,10 @@ extension _Paginas on _AppScreenState {
             (accion: a.nombre, permitido: rolPermite(usuario.rol, a)),
         ],
         propositos: [for (final p in propositosDe(usuario.rol)) p.nombreCorto],
-        onCerrarSesion: _cerrarSesion,
+        onCerrarSesion: _pedirCierreDeSesion,
+        simularFallas: _simularFallas,
+        cerrandoSesion: _cerrandoSesion,
+        errorCierre: _errorCierre,
       ),
     );
   }

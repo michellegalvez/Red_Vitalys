@@ -17,6 +17,7 @@ class ConsultaPage extends StatelessWidget {
     required this.resultado,
     required this.onVolver,
     required this.onDeclararUrgencia,
+    this.alRegistrar = false,
   });
 
   final ResultadoConsulta resultado;
@@ -24,6 +25,9 @@ class ConsultaPage extends StatelessWidget {
 
   /// Solo se ofrece cuando el rechazo es por falta de relación.
   final VoidCallback onDeclararUrgencia;
+
+  /// El rechazo fue al registrar una atención, no al abrir al paciente.
+  final bool alRegistrar;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +69,9 @@ class ConsultaPage extends StatelessWidget {
                   Semantics(
                     header: true,
                     child: Text(
-                      'No puede abrir este paciente',
+                      alRegistrar
+                          ? 'No puede registrar la atención'
+                          : 'No puede abrir este paciente',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),

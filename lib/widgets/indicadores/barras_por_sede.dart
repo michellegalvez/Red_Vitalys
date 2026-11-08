@@ -59,6 +59,7 @@ class BarrasPorSede extends StatelessWidget {
                 promedio: promedio,
                 tope: tope,
                 compacta: compacta,
+                unidad: unidad,
               ),
             ),
         ],
@@ -73,8 +74,10 @@ class _FilaBarra extends StatelessWidget {
     required this.promedio,
     required this.tope,
     required this.compacta,
+    required this.unidad,
   });
 
+  final String unidad;
   final FilaSede fila;
   final double? promedio;
   final double tope;
@@ -84,58 +87,56 @@ class _FilaBarra extends StatelessWidget {
   Widget build(BuildContext context) {
     final estilo = estiloMarca(fila.marca);
     final valor = fila.valor;
-    final simbolo = switch (fila.marca) {
-      MarcaSede.peor => '▲',
-      MarcaSede.mejor => '✓',
-      _ => '=',
-    };
-    return Row(
+    final texto = valor == null
+        ? mensajeSinMedicion
+        : '${formatoValor(valor)} $unidad · ${estilo.texto}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: compacta ? 106 : 118,
-          child: Text(
-            fila.nombre,
-            textAlign: TextAlign.right,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: ColoresVitalys.textoSecundario,
-              fontSize: 12,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                fila.nombre,
+                style: const TextStyle(
+                  color: ColoresVitalys.textoSecundario,
+                  fontSize: 12.5,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: Text(
+                texto,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: fila.marca == MarcaSede.mejor
+                      ? ColoresVitalys.mentaTexto
+                      : ColoresVitalys.tinta,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: SizedBox(
-            height: compacta ? 16 : 18,
-            child: valor == null
-                ? const SizedBox.shrink()
-                : CustomPaint(
-                    painter: _PintorBarra(
-                      valor: valor,
-                      color: estilo.colorBarra,
-                      promedio: promedio,
-                      maximo: tope,
-                    ),
+        const SizedBox(height: 3),
+        SizedBox(
+          height: compacta ? 14 : 16,
+          width: double.infinity,
+          child: valor == null
+              ? const SizedBox.shrink()
+              : CustomPaint(
+                  painter: _PintorBarra(
+                    valor: valor,
+                    color: estilo.colorBarra,
+                    promedio: promedio,
+                    maximo: tope,
                   ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: valor == null ? 90 : 58,
-          child: Text(
-            valor == null
-                ? mensajeSinMedicion
-                : '${formatoValor(valor)} $simbolo',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: fila.marca == MarcaSede.mejor
-                  ? ColoresVitalys.mentaTexto
-                  : ColoresVitalys.tinta,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+                ),
         ),
       ],
     );
