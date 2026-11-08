@@ -2,15 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
+import 'package:red_vitalys/datos/historia_simulada.dart';
 import 'package:red_vitalys/formato/formato.dart';
+import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/pages/acceso_page.dart';
 import 'package:red_vitalys/pages/auditoria_page.dart';
 import 'package:red_vitalys/pages/consulta_page.dart';
+import 'package:red_vitalys/pages/indicadores_page.dart';
 import 'package:red_vitalys/pages/inicio_page.dart';
+import 'package:red_vitalys/pages/paciente_page.dart';
 import 'package:red_vitalys/pages/perfil_page.dart';
 import 'package:red_vitalys/pages/pendiente_page.dart';
 import 'package:red_vitalys/pages/proposito_lista_page.dart';
+import 'package:red_vitalys/pages/registrar_atencion_page.dart';
 import 'package:red_vitalys/pages/seguimiento_page.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/screens/secciones.dart';
@@ -18,21 +23,34 @@ import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
 
-/// Una declaración de propósito en curso. Sin paciente es la de la lista
-/// de pacientes con alta reciente (F-06); con paciente, la de abrirlo.
+/// Una declaración de propósito en curso. Sin paciente es la de la lista de
+/// pacientes con alta reciente (F-06); con paciente, la de abrirlo o, si
+/// [registrar], la de registrarle una atención (F-04).
 class _Solicitud {
-  const _Solicitud({this.paciente, this.elegido, this.error});
+  const _Solicitud({
+    this.paciente,
+    this.elegido,
+    this.error,
+    this.registrar = false,
+  });
 
   final PacienteEnSeguimiento? paciente;
   final Proposito? elegido;
   final String? error;
+  final bool registrar;
 }
 
-/// Un paciente abierto, con el propósito declarado y lo que se decidió.
-typedef _Consulta = ({
+/// Un paciente abierto, con el propósito declarado.
+typedef _Historia = ({PacienteEnSeguimiento paciente, Proposito proposito});
+
+/// Un registro de atención en curso, con el propósito declarado.
+typedef _Registro = ({PacienteEnSeguimiento paciente, Proposito proposito});
+
+/// Un acceso rechazado: al abrir al paciente o al registrarle una atención.
+typedef _Denegado = ({
   PacienteEnSeguimiento paciente,
-  Proposito proposito,
   ResultadoConsulta resultado,
+  bool alRegistrar,
 });
 
 /// Screen anfitriona: guarda todo el estado de la app con `setState` y se
@@ -80,8 +98,16 @@ class _AppScreenState extends State<AppScreen> {
   Seccion _seccion = Seccion.inicio;
   bool _listaDeclarada = false;
   _Solicitud? _solicitud;
-  _Consulta? _consulta;
+  _Historia? _historia;
+  _Registro? _registro;
+  _Denegado? _denegado;
   bool _verPerfil = false;
+  bool _verIndicador = false;
+
+  // Pacientes y atenciones registradas en esta sesión. Viven aquí, en la
+  // Screen anfitriona; las Pages solo las muestran.
+  late List<PacienteEnSeguimiento> _pacientes = [..._datos.pacientes];
+  Map<String, List<Encounter>> _atenciones = {};
 
   // Filtros de Pacientes en seguimiento.
   String _busqueda = '';
@@ -240,8 +266,7 @@ class _AppScreenState extends State<AppScreen> {
       _sedeElegida = null;
       _sedeSesion = null;
       _solicitud = null;
-      _consulta = null;
-      _verPerfil = false;
+      _cerrarDetalles();
       _listaDeclarada = false;
       _filtroAuditoria = FiltroAuditoria.todos;
       _correo.clear();
@@ -328,10 +353,24 @@ class _AppScreenState extends State<AppScreen> {
     setState(() => _solicitud = _Solicitud(paciente: p, elegido: elegido));
   }
 
+  /// El médico elige *Registrar atención* en la historia: antes declara el
+  /// propósito (F-04, F-16).
+  void _pedirRegistro(PacienteEnSeguimiento p, {Proposito? elegido}) {
+    setState(() {
+      _solicitud = _Solicitud(paciente: p, elegido: elegido, registrar: true);
+    });
+  }
+
   void _elegirProposito(Proposito p) {
     final s = _solicitud;
     if (s == null) return;
-    setState(() => _solicitud = _Solicitud(paciente: s.paciente, elegido: p));
+    setState(() {
+      _solicitud = _Solicitud(
+        paciente: s.paciente,
+        elegido: p,
+        registrar: s.registrar,
+      );
+    });
   }
 
   void _confirmarProposito() {
@@ -344,6 +383,7 @@ class _AppScreenState extends State<AppScreen> {
         _solicitud = _Solicitud(
           paciente: s.paciente,
           error: mensajeElijaProposito,
+          registrar: s.registrar,
         );
       });
       return;
@@ -370,6 +410,30 @@ class _AppScreenState extends State<AppScreen> {
         proposito: elegido,
         hoy: _datos.hoy,
       );
+      final permitido = resultado == ResultadoConsulta.permitido;
+      if (s.registrar) {
+        // Registrar una atención (F-04): el evento *Permitido* se crea al
+        // guardarla; el rechazo queda registrado ya (F-18).
+        if (permitido) {
+          _registro = (paciente: paciente, proposito: elegido);
+        } else {
+          _registrarEvento(
+            usuario: usuario,
+            sedeId: _sedeSesion,
+            accion: AccionAuditoria.registrar,
+            recurso: RecursoAuditoria.atencion,
+            resultado: ResultadoAuditoria.denegado,
+            paciente: paciente,
+            proposito: elegido,
+          );
+          _denegado = (
+            paciente: paciente,
+            resultado: resultado,
+            alRegistrar: true,
+          );
+        }
+        return;
+      }
       // Abrir a un paciente, se permita o se deniegue (F-02, F-17, F-18).
       // Con *Urgencia* permitida queda en el filtro Emergencia.
       _registrarEvento(
@@ -377,17 +441,21 @@ class _AppScreenState extends State<AppScreen> {
         sedeId: _sedeSesion,
         accion: AccionAuditoria.consultar,
         recurso: RecursoAuditoria.historiaClinica,
-        resultado: resultado == ResultadoConsulta.permitido
+        resultado: permitido
             ? ResultadoAuditoria.permitido
             : ResultadoAuditoria.denegado,
         paciente: paciente,
         proposito: elegido,
       );
-      _consulta = (
-        paciente: paciente,
-        proposito: elegido,
-        resultado: resultado,
-      );
+      if (permitido) {
+        _historia = (paciente: paciente, proposito: elegido);
+      } else {
+        _denegado = (
+          paciente: paciente,
+          resultado: resultado,
+          alRegistrar: false,
+        );
+      }
     });
   }
 
@@ -402,13 +470,85 @@ class _AppScreenState extends State<AppScreen> {
     });
   }
 
-  void _cerrarConsulta() => setState(() => _consulta = null);
+  /// Cierra todo lo que se abre encima de las secciones.
+  /// Llamar dentro de `setState`.
+  void _cerrarDetalles() {
+    _historia = null;
+    _registro = null;
+    _denegado = null;
+    _verPerfil = false;
+    _verIndicador = false;
+  }
+
+  void _cerrarHistoria() => setState(() {
+    _historia = null;
+    _registro = null;
+  });
+
+  void _cerrarDenegado() => setState(() => _denegado = null);
 
   void _declararUrgencia() {
-    final c = _consulta;
-    if (c == null) return;
-    setState(() => _consulta = null);
-    _abrirPaciente(c.paciente, elegido: Proposito.urgencia);
+    final d = _denegado;
+    if (d == null) return;
+    setState(() => _denegado = null);
+    if (d.alRegistrar) {
+      _pedirRegistro(d.paciente, elegido: Proposito.urgencia);
+    } else {
+      _abrirPaciente(d.paciente, elegido: Proposito.urgencia);
+    }
+  }
+
+  /// Guarda la atención que llenó el médico: queda primera en la historia,
+  /// con *Atención del paciente* le da relación con el paciente y deja su
+  /// evento (F-04, F-05, F-20).
+  void _guardarAtencion(NuevaAtencion nueva) {
+    final registro = _registro;
+    final usuario = _usuario;
+    if (registro == null || usuario == null) return;
+    final paciente = registro.paciente;
+    final total = _atenciones.values.fold<int>(0, (a, l) => a + l.length);
+    final atencion = Encounter(
+      id: 'enc-n${total + 1}',
+      type: nueva.tipo,
+      status: EncounterStatus.finalizada,
+      facilityName: _datos.sede(nueva.sedeId).nombreCorto,
+      startDate: nueva.fecha,
+      endDate: nueva.fecha,
+      lengthOfStayDays: 0,
+      doctorName: usuario.nombre,
+      reason: nueva.motivo,
+      diagnosis: nueva.diagnostico,
+    );
+    setState(() {
+      _atenciones = {
+        ..._atenciones,
+        paciente.id: [atencion, ...?_atenciones[paciente.id]],
+      };
+      if (registro.proposito == Proposito.atencionPaciente &&
+          !paciente.medicosConAtencion.contains(usuario.id)) {
+        final actualizado = paciente.copyWith(
+          medicosConAtencion: [...paciente.medicosConAtencion, usuario.id],
+        );
+        _pacientes = [
+          for (final p in _pacientes) p.id == paciente.id ? actualizado : p,
+        ];
+      }
+      _registrarEvento(
+        usuario: usuario,
+        sedeId: _sedeSesion,
+        accion: AccionAuditoria.registrar,
+        recurso: RecursoAuditoria.atencion,
+        resultado: ResultadoAuditoria.permitido,
+        paciente: paciente,
+        proposito: registro.proposito,
+      );
+      _registro = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Atención registrada en la historia unificada'),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------
@@ -420,7 +560,7 @@ class _AppScreenState extends State<AppScreen> {
   };
 
   List<PacienteEnSeguimiento> get _altasRecientes =>
-      pacientesConAltaReciente(_datos.pacientes, _datos.hoy);
+      pacientesConAltaReciente(_pacientes, _datos.hoy);
 
   bool get _busquedaActiva =>
       normalizarTexto(_busqueda).length >= minimoCaracteresBusqueda;
@@ -444,7 +584,12 @@ class _AppScreenState extends State<AppScreen> {
   @override
   Widget build(BuildContext context) {
     final usuario = _usuario;
-    final consulta = _consulta;
+    final solicitud = _solicitud;
+    // Registrar una atención se pide desde la historia, que está apilada
+    // encima de la pantalla raíz: su pop-up tiene que dibujarse por encima de
+    // todas las pantallas para verse.
+    final dialogoArriba =
+        usuario != null && solicitud != null && solicitud.registrar;
     return Focus(
       canRequestFocus: false,
       skipTraversal: true,
@@ -455,63 +600,110 @@ class _AppScreenState extends State<AppScreen> {
       child: Listener(
         behavior: HitTestBehavior.translucent,
         onPointerDown: (_) => _registrarActividad(),
-        child: NavigatorPopHandler(
-          enabled: _atrasPendiente,
-          onPopWithResult: (_) => _navegador.currentState?.maybePop(),
-          child: Navigator(
-            key: _navegador,
-            pages: [
-              if (usuario == null)
-                MaterialPage<void>(
-                  key: const ValueKey('acceso'),
-                  child: _acceso(),
-                )
-              else ...[
-                MaterialPage<void>(
-                  key: const ValueKey('app'),
-                  child: _aplicacion(usuario),
-                ),
-                if (_verPerfil)
-                  MaterialPage<void>(
-                    key: const ValueKey('perfil'),
-                    child: _perfil(),
-                  ),
-                if (consulta != null)
-                  MaterialPage<void>(
-                    key: ValueKey('consulta-${consulta.paciente.id}'),
-                    child: ConsultaPage(
-                      resultado: consulta.resultado,
-                      paciente: consulta.paciente,
-                      proposito: consulta.proposito,
-                      sedeAlta:
-                          _nombresSedes[consulta.paciente.sedeAltaId] ?? '',
-                      onVolver: _cerrarConsulta,
-                      onDeclararUrgencia: _declararUrgencia,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ExcludeSemantics(
+                excluding: dialogoArriba,
+                child: ExcludeFocus(
+                  excluding: dialogoArriba,
+                  child: NavigatorPopHandler(
+                    enabled: _atrasPendiente,
+                    // Atrás cierra primero el pop-up de propósito que esté abierto y,
+                    // si no hay, la pantalla de arriba.
+                    onPopWithResult: (_) {
+                      if (_solicitud != null) {
+                        _cancelarProposito();
+                      } else {
+                        _navegador.currentState?.maybePop();
+                      }
+                    },
+                    child: Navigator(
+                      key: _navegador,
+                      pages: [
+                        if (usuario == null)
+                          MaterialPage<void>(
+                            key: const ValueKey('acceso'),
+                            child: _acceso(),
+                          )
+                        else ...[
+                          MaterialPage<void>(
+                            key: const ValueKey('app'),
+                            child: _aplicacion(usuario),
+                          ),
+                          if (_verIndicador)
+                            MaterialPage<void>(
+                              key: const ValueKey('indicador'),
+                              child: _detalleIndicador(usuario),
+                            ),
+                          if (_historia case final historia?)
+                            MaterialPage<void>(
+                              key: ValueKey('historia-${historia.paciente.id}'),
+                              child: _paginaHistoria(usuario, historia),
+                            ),
+                          if (_registro case final registro?)
+                            MaterialPage<void>(
+                              key: ValueKey('registro-${registro.paciente.id}'),
+                              child: _paginaRegistro(usuario, registro),
+                            ),
+                          if (_denegado case final denegado?)
+                            MaterialPage<void>(
+                              key: ValueKey('denegado-${denegado.paciente.id}'),
+                              child: ConsultaPage(
+                                resultado: denegado.resultado,
+                                onVolver: _cerrarDenegado,
+                                onDeclararUrgencia: _declararUrgencia,
+                              ),
+                            ),
+                          if (_verPerfil)
+                            MaterialPage<void>(
+                              key: const ValueKey('perfil'),
+                              child: _perfil(),
+                            ),
+                        ],
+                      ],
+                      onDidRemovePage: (page) {
+                        final clave = page.key;
+                        if (clave is! ValueKey<String>) return;
+                        final id = clave.value;
+                        if (id.startsWith('historia')) {
+                          _cerrarHistoria();
+                        } else if (id.startsWith('registro')) {
+                          setState(() => _registro = null);
+                        } else if (id.startsWith('denegado')) {
+                          _cerrarDenegado();
+                        } else if (id == 'indicador') {
+                          setState(() => _verIndicador = false);
+                        } else if (id == 'perfil') {
+                          setState(() => _verPerfil = false);
+                        }
+                      },
                     ),
                   ),
-              ],
+                ),
+              ),
+            ),
+            if (dialogoArriba) ...[
+              const Positioned.fill(child: FondoDialogo()),
+              Positioned.fill(child: _dialogo(usuario, solicitud)),
             ],
-            onDidRemovePage: (page) {
-              final clave = page.key;
-              if (clave is! ValueKey<String>) return;
-              if (clave.value.startsWith('consulta')) {
-                _cerrarConsulta();
-              } else if (clave.value == 'perfil') {
-                setState(() => _verPerfil = false);
-              }
-            },
-          ),
+          ],
         ),
       ),
     );
   }
 
-  /// Hay algo a lo que volver con Atrás: el paso de la sede, el perfil, una
-  /// consulta abierta o una declaración de propósito. Si no, Atrás sale de
-  /// la app como siempre.
+  /// Hay algo a lo que volver con Atrás: el paso de la sede, una pantalla de
+  /// detalle o una declaración de propósito. Si no, Atrás sale de la app como
+  /// siempre.
   bool get _atrasPendiente {
     if (_usuario == null) return _paso == PasoAcceso.sede;
-    return _verPerfil || _consulta != null || _solicitud != null;
+    return _verPerfil ||
+        _verIndicador ||
+        _historia != null ||
+        _registro != null ||
+        _denegado != null ||
+        _solicitud != null;
   }
 
   Widget _acceso() {
@@ -563,6 +755,9 @@ class _AppScreenState extends State<AppScreen> {
     final secciones = seccionesDe(usuario.rol);
     final sede = _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
     final solicitud = _solicitud;
+    // El pop-up de registrar una atención lo dibuja `build`, por encima de
+    // todas las pantallas.
+    final enRaiz = solicitud != null && !solicitud.registrar;
 
     return PopScope(
       canPop: solicitud == null,
@@ -575,9 +770,9 @@ class _AppScreenState extends State<AppScreen> {
               children: [
                 Positioned.fill(
                   child: ExcludeSemantics(
-                    excluding: solicitud != null,
+                    excluding: enRaiz,
                     child: ExcludeFocus(
-                      excluding: solicitud != null,
+                      excluding: enRaiz,
                       child: _marco(
                         usuario: usuario,
                         sede: sede,
@@ -589,7 +784,7 @@ class _AppScreenState extends State<AppScreen> {
                   ),
                 ),
                 // El pop-up de un paciente desenfoca toda la pantalla.
-                if (solicitud != null) ...[
+                if (enRaiz) ...[
                   const Positioned.fill(child: FondoDialogo()),
                   Positioned.fill(child: _dialogo(usuario, solicitud)),
                 ],
@@ -641,13 +836,8 @@ class _AppScreenState extends State<AppScreen> {
     return switch (_seccion) {
       Seccion.inicio => _inicio(usuario, sede),
       Seccion.pacientes => _seguimiento(),
-      Seccion.indicadores => const PendientePage(
-        sobretitulo: 'Calidad de la red',
-        titulo: 'Tablero de indicadores',
-        descripcion:
-            'Reingreso hospitalario a 30 días, tiempo de espera, adherencia '
-            'a protocolos clínicos y eventos adversos evitables, por sede.',
-        icono: Icons.insights_rounded,
+      Seccion.indicadores => IndicadoresPage(
+        onAbrirDetalle: () => setState(() => _verIndicador = true),
       ),
       Seccion.mediciones => const PendientePage(
         sobretitulo: 'Calidad de la red',
@@ -733,13 +923,99 @@ class _AppScreenState extends State<AppScreen> {
         paciente: paciente,
         sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
       ),
-      propositos: propositosDe(usuario.rol),
+      paraRegistro: solicitud.registrar,
+      // Al registrar solo sirven *Atención del paciente* y *Urgencia* (F-04).
+      propositos: [
+        for (final p in propositosDe(usuario.rol))
+          if (!solicitud.registrar ||
+              p == Proposito.atencionPaciente ||
+              p == Proposito.urgencia)
+            p,
+      ],
       elegido: solicitud.elegido,
       error: solicitud.error,
       quedaraRegistrado: _quedaraRegistrado(usuario, sede),
       onElegir: _elegirProposito,
       onConfirmar: _confirmarProposito,
       onCancelar: _cancelarProposito,
+    );
+  }
+
+  /// Las acciones que cierran lo abierto y llevan a una sección.
+  ValueChanged<int> _irASeccion(Usuario usuario) {
+    final secciones = seccionesDe(usuario.rol);
+    return (i) => setState(() {
+      _cerrarDetalles();
+      _irA(secciones[i]);
+    });
+  }
+
+  Sede _sedeDe(Usuario usuario) =>
+      _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
+
+  /// Detalle de un indicador (F-09, F-10, F-11) con las barras de la app.
+  Widget _detalleIndicador(Usuario usuario) {
+    return _marco(
+      usuario: usuario,
+      sede: _sedeDe(usuario),
+      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
+      onDestino: _irASeccion(usuario),
+      body: DetalleIndicadorPage(
+        onVolver: () => setState(() => _verIndicador = false),
+      ),
+    );
+  }
+
+  /// Historia clínica unificada, con el riesgo y sus factores (F-02, F-07).
+  Widget _paginaHistoria(Usuario usuario, _Historia h) {
+    // El paciente puede haber cambiado (por ejemplo, ganó relación al
+    // registrarle una atención), así que se busca el actual.
+    final paciente = _pacientes.firstWhere(
+      (p) => p.id == h.paciente.id,
+      orElse: () => h.paciente,
+    );
+    final historia = historiaDe(
+      paciente,
+      sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
+      hoy: _datos.hoy,
+      nuevas: _atenciones[paciente.id] ?? const [],
+    );
+    return _marco(
+      usuario: usuario,
+      sede: _sedeDe(usuario),
+      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
+      onDestino: _irASeccion(usuario),
+      body: PacientePage(
+        historia: historia,
+        proposito: h.proposito,
+        fechaConsulta: formatoFechaHora(_datos.hoy),
+        puedeRegistrar: usuario.rol == Rol.medico,
+        onVolver: _cerrarHistoria,
+        onRegistrarAtencion: () => _pedirRegistro(paciente),
+      ),
+    );
+  }
+
+  /// Formulario para registrar una atención (F-04).
+  Widget _paginaRegistro(Usuario usuario, _Registro r) {
+    return _marco(
+      usuario: usuario,
+      sede: _sedeDe(usuario),
+      escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
+      onDestino: _irASeccion(usuario),
+      body: RegistrarAtencionPage(
+        nombrePaciente: r.paciente.nombre,
+        proposito: r.proposito,
+        medico: usuario.nombre,
+        sedes: [
+          for (final s in _datos.sedes)
+            if (s.tipo != TipoSede.laboratorio) s,
+        ],
+        sedeInicialId: _sedeSesion ?? usuario.sedesAsignadas.first,
+        ahora: _datos.hoy,
+        onGuardar: _guardarAtencion,
+        onCancelar: () => setState(() => _registro = null),
+      ),
     );
   }
 
@@ -750,7 +1026,7 @@ class _AppScreenState extends State<AppScreen> {
       eventos: eventosFiltrados(_eventos, _filtroAuditoria),
       filtro: _filtroAuditoria,
       nombresUsuarios: {for (final u in _datos.usuarios) u.id: u.nombre},
-      nombresPacientes: {for (final p in _datos.pacientes) p.id: p.nombre},
+      nombresPacientes: {for (final p in _pacientes) p.id: p.nombre},
       nombresSedes: {for (final s in _datos.sedes) s.id: s.nombre},
       onElegirFiltro: (f) => setState(() => _filtroAuditoria = f),
     );
@@ -762,15 +1038,11 @@ class _AppScreenState extends State<AppScreen> {
     final usuario = _usuario;
     if (usuario == null) return const SizedBox.shrink();
     final sede = _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
-    final secciones = seccionesDe(usuario.rol);
     return _marco(
       usuario: usuario,
       sede: sede,
       escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
-      onDestino: (i) => setState(() {
-        _verPerfil = false;
-        _irA(secciones[i]);
-      }),
+      onDestino: _irASeccion(usuario),
       body: PerfilPage(
         datos: [
           (etiqueta: 'Nombre', valor: usuario.nombre),

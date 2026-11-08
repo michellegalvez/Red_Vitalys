@@ -112,6 +112,7 @@ class DialogoProposito extends StatelessWidget {
     required this.elegido,
     required this.error,
     required this.quedaraRegistrado,
+    this.paraRegistro = false,
     required this.onElegir,
     required this.onConfirmar,
     required this.onCancelar,
@@ -125,6 +126,9 @@ class DialogoProposito extends StatelessWidget {
   /// Quién, desde dónde y cuándo, por ejemplo
   /// "Dra. Camila Martínez · Cali Norte · 30 oct 2026 · 10:42".
   final String quedaraRegistrado;
+
+  /// Verdadero al registrar una atención (F-04): cambia los textos del pop-up.
+  final bool paraRegistro;
   final ValueChanged<Proposito> onElegir;
   final VoidCallback onConfirmar;
   final VoidCallback onCancelar;
@@ -194,7 +198,7 @@ class DialogoProposito extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const _Encabezado(),
+                        _Encabezado(paraRegistro: paraRegistro),
                         const SizedBox(height: 22),
                         _Contexto(destino: destino),
                         const SizedBox(height: 14),
@@ -221,6 +225,7 @@ class DialogoProposito extends StatelessWidget {
                       ),
                     ),
                     _Pie(
+                      paraRegistro: paraRegistro,
                       onConfirmar: onConfirmar,
                       onCancelar: onCancelar,
                       padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
@@ -257,7 +262,7 @@ class DialogoProposito extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: const _Encabezado(),
+                  child: _Encabezado(paraRegistro: paraRegistro),
                 ),
                 Flexible(
                   child: SingleChildScrollView(
@@ -280,6 +285,7 @@ class DialogoProposito extends StatelessWidget {
                   ),
                 ),
                 _Pie(
+                  paraRegistro: paraRegistro,
                   onConfirmar: onConfirmar,
                   onCancelar: onCancelar,
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
@@ -300,7 +306,9 @@ class DialogoProposito extends StatelessWidget {
         Semantics(
           header: true,
           child: Text(
-            '¿Para qué va a abrir a este paciente?',
+            paraRegistro
+                ? '¿Con qué propósito va a registrar la atención?'
+                : '¿Para qué va a abrir a este paciente?',
             style: TextStyle(
               fontSize: compacto ? 16 : 19,
               fontWeight: FontWeight.w800,
@@ -349,11 +357,13 @@ class DialogoProposito extends StatelessWidget {
 /// Botones del diálogo, fijos al pie.
 class _Pie extends StatelessWidget {
   const _Pie({
+    required this.paraRegistro,
     required this.onConfirmar,
     required this.onCancelar,
     required this.padding,
   });
 
+  final bool paraRegistro;
   final VoidCallback onConfirmar;
   final VoidCallback onCancelar;
   final EdgeInsets padding;
@@ -377,8 +387,12 @@ class _Pie extends StatelessWidget {
           const SizedBox(width: 12),
           Flexible(
             child: BotonVitalys(
-              texto: 'Abrir historia clínica',
-              icono: Icons.folder_open_rounded,
+              texto: paraRegistro
+                  ? 'Registrar atención'
+                  : 'Abrir historia clínica',
+              icono: paraRegistro
+                  ? Icons.edit_note_rounded
+                  : Icons.folder_open_rounded,
               onPressed: onConfirmar,
             ),
           ),
@@ -389,7 +403,9 @@ class _Pie extends StatelessWidget {
 }
 
 class _Encabezado extends StatelessWidget {
-  const _Encabezado();
+  const _Encabezado({required this.paraRegistro});
+
+  final bool paraRegistro;
 
   @override
   Widget build(BuildContext context) {
@@ -417,9 +433,11 @@ class _Encabezado extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'ANTES DE ABRIR LA HISTORIA',
-                style: TextStyle(
+              Text(
+                paraRegistro
+                    ? 'ANTES DE REGISTRAR UNA ATENCIÓN'
+                    : 'ANTES DE ABRIR LA HISTORIA',
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.1,

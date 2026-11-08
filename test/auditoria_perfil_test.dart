@@ -309,7 +309,7 @@ void main() {
       expect(find.text(rechazoRelacion), findsOneWidget);
       await tocar(t, find.text('Declarar Urgencia'));
       await tocar(t, find.text('Abrir historia clínica'));
-      await tocar(t, find.text('Volver a la lista'));
+      await tocar(t, find.textContaining('Pacientes  /'));
 
       await abrirPerfil(t);
       await cerrarSesion(t);

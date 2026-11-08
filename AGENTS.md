@@ -22,22 +22,23 @@ Materia: Seminario en Ingeniería de Software · Universidad Icesi.
 
 ## Estructura actual de lib/
 
-Prototipo navegable solo de front-end (Entrega 2): datos simulados en memoria, sin backend ni paquetes externos. Lo hecho hasta ahora es Acceso, Inicio del médico, Pacientes en seguimiento, la declaración del propósito y el acceso denegado. Las demás secciones (tablero, auditoría, perfil, historia y riesgo, registros) son marcadores para que otros integrantes los conecten.
+Prototipo navegable solo de front-end (Entrega 2): datos simulados en memoria, sin backend ni paquetes externos. Integra las pantallas de todo el equipo en una sola app: acceso en dos pasos, inicio del médico, pacientes en seguimiento, declaración del propósito, historia clínica con el riesgo y sus factores, registro de una atención, acceso denegado, tablero y detalle de indicadores, auditoría de accesos y perfil. Solo *Registrar medición* (F-12) sigue como marcador.
 
 ```
 lib/
 ├── main.dart            # arranca la app
 ├── tema/                # colores, tema y breakpoint (900 px, contenido máx. 1200)
-├── modelos/             # Rol, Sede, Usuario, PacienteEnSeguimiento, Proposito
-├── datos/               # datos simulados (los del Figma, riesgo entero)
-├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos
+├── modelos/             # modelos.dart (sedes, usuarios, pacientes, propósitos, auditoría)
+│                        # historia.dart (historia clínica, atenciones y factores del riesgo)
+├── datos/               # datos simulados: los del Figma, riesgo entero, eventos e historias
+├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos
 ├── formato/             # fechas, horas y búsqueda sin tildes (RNF-05)
 ├── widgets/             # componentes de la galería, cada uno una sola vez
 ├── pages/               # Pages: solo muestran y avisan con callbacks
-└── screens/             # AppScreen: la Screen anfitriona con todo el estado (setState)
+└── screens/             # AppScreen: la Screen anfitriona con todo el estado (setState) y las rutas
 ```
 
-Reglas del enunciado: el estado vive en la Screen anfitriona, las Pages no guardan datos de la app y los componentes de la galería se construyen una sola vez en `widgets/`. Antes de subir cambios: `dart format .`, `flutter analyze` y `flutter test`.
+Reglas del enunciado: el estado vive en la Screen anfitriona, las Pages no guardan datos de la app (solo lo que se está escribiendo en un formulario) y los componentes de la galería se construyen una sola vez en `widgets/`. Antes de subir cambios: `dart format lib test`, `flutter analyze` y `flutter test`.
 
 ## Documentos
 

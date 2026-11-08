@@ -25,6 +25,24 @@ String formatoFecha(DateTime f) => '${f.day} ${_meses[f.month - 1]} ${f.year}';
 String formatoFechaHora(DateTime f) =>
     '${formatoFecha(f)} · ${_dosDigitos(f.hour)}:${_dosDigitos(f.minute)}';
 
+/// "30/10/2026 10:42": la fecha y hora como se escriben en un formulario.
+String formatoFechaHoraCampo(DateTime f) =>
+    '${_dosDigitos(f.day)}/${_dosDigitos(f.month)}/${f.year} '
+    '${_dosDigitos(f.hour)}:${_dosDigitos(f.minute)}';
+
+/// Lee "30/10/2026 10:42". Devuelve `null` si no tiene esa forma o la fecha
+/// no existe, por ejemplo "31/02/2026 10:00".
+DateTime? leerFechaHoraCampo(String texto) {
+  final m = RegExp(r'^\s*(\d{1,2})/(\d{1,2})/(\d{4})\s+(\d{1,2}):(\d{2})\s*$')
+      .firstMatch(texto);
+  if (m == null) return null;
+  final n = [for (var i = 1; i <= 5; i++) int.parse(m.group(i)!)];
+  final f = DateTime(n[2], n[1], n[0], n[3], n[4]);
+  final coincide =
+      f.day == n[0] && f.month == n[1] && f.year == n[2] && f.hour == n[3];
+  return coincide && n[4] < 60 ? f : null;
+}
+
 /// "15 d", o "Mismo día" cuando la estancia fue de 0 días.
 String formatoEstancia(int dias) => dias == 0 ? 'Mismo día' : '$dias d';
 

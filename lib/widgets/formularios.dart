@@ -79,6 +79,7 @@ class CampoTexto extends StatelessWidget {
     this.sufijo,
     this.accion,
     this.habilitado = true,
+    this.lineas = 1,
     this.teclado,
     this.onSubmitted,
   });
@@ -96,6 +97,9 @@ class CampoTexto extends StatelessWidget {
 
   /// Sin habilitar, el campo se ve y no se puede editar.
   final bool habilitado;
+
+  /// Líneas visibles del campo (más de una para textos largos).
+  final int lineas;
   final TextInputType? teclado;
   final ValueChanged<String>? onSubmitted;
 
@@ -106,6 +110,8 @@ class CampoTexto extends StatelessWidget {
       child: TextField(
         controller: controller,
         enabled: habilitado,
+        minLines: lineas,
+        maxLines: oculto ? 1 : lineas,
         obscureText: oculto,
         keyboardType: teclado,
         onSubmitted: onSubmitted,

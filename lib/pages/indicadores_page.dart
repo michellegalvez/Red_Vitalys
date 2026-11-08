@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:red_vitalys/tema/tema.dart';
 
-const _ink = Color(0xFF171638);
-const _muted = Color(0xFF656581);
-const _purple = Color(0xFF5146F0);
-const _mint = Color(0xFF9BF0D8);
-const _green = Color(0xFF008A58);
-const _greenPale = Color(0xFFD4F7E5);
-const _red = Color(0xFFE51F36);
-const _redPale = Color(0xFFFFE5E3);
-const _line = Color(0xFFE6E6F1);
+const _ink = ColoresVitalys.tinta;
+const _muted = ColoresVitalys.textoSecundario;
+const _purple = ColoresVitalys.primario;
+const _mint = ColoresVitalys.verdeLima;
+const _green = ColoresVitalys.mentaTexto;
+const _greenPale = ColoresVitalys.exitoFondo;
+const _red = ColoresVitalys.alerta;
+const _redPale = ColoresVitalys.alertaFondo;
+const _line = ColoresVitalys.borde;
 
 const _sites = <_SiteValue>[
   _SiteValue('Cali Norte', 9.8, _Performance.worse),
@@ -23,514 +24,293 @@ const _sites = <_SiteValue>[
 
 const _trendValues = <double>[9.9, 9.5, 9.3, 8.9, 8.6, 8.4];
 
-class IndicatorsDashboardScreen extends StatelessWidget {
-  const IndicatorsDashboardScreen({super.key});
+/// Tablero de indicadores de calidad (F-08). Solo muestra y avisa: abrir el
+/// detalle de un indicador lo decide la Screen anfitriona.
+class IndicadoresPage extends StatelessWidget {
+  const IndicadoresPage({super.key, required this.onAbrirDetalle});
 
-  void _openDetail(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const IndicatorDetailScreen()),
-    );
-  }
+  final VoidCallback onAbrirDetalle;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _TopBar(
-              actionLabel: 'Detalle',
-              onAction: () => _openDetail(context),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 26, 20, 28),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1120),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _Eyebrow('CALIDAD CLÍNICA · TODA LA RED'),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tablero de indicadores',
-                          style: _headingStyle(32),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Cuatro indicadores de estructura, proceso y resultado, '
-                          'calculados con las mediciones de cada sede.',
-                          style: TextStyle(
-                            color: _muted,
-                            height: 1.5,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isWide = constraints.maxWidth >= 700;
-                            final cardWidth = isWide
-                                ? (constraints.maxWidth - 16) / 2
-                                : constraints.maxWidth;
-                            return Wrap(
-                              spacing: 16,
-                              runSpacing: 16,
-                              children: [
-                                _MetricCard(
-                                  width: cardWidth,
-                                  category: 'RESULTADO',
-                                  title: 'Reingreso hospitalario a 30 días',
-                                  value: '8,4',
-                                  unit: '%',
-                                  change: '−0,3 vs. mes previo',
-                                  trend: const [10.1, 9.7, 9.5, 9.1, 8.7, 8.4],
-                                  onTap: () => _openDetail(context),
-                                ),
-                                _MetricCard(
-                                  width: cardWidth,
-                                  category: 'ESTRUCTURA',
-                                  title: 'Tiempo de espera promedio',
-                                  value: '25,8',
-                                  unit: 'min',
-                                  change: '−1,5 vs. mes previo',
-                                  trend: const [32, 31, 30, 28, 27, 25.8],
-                                  onTap: () => _openDetail(context),
-                                ),
-                                _MetricCard(
-                                  width: cardWidth,
-                                  category: 'PROCESO',
-                                  title: 'Adherencia a protocolos clínicos',
-                                  value: '86,9',
-                                  unit: '%',
-                                  change: '+1,1 vs. mes previo',
-                                  trend: const [82, 83, 83.8, 84.9, 85.8, 86.9],
-                                  onTap: () => _openDetail(context),
-                                ),
-                                _MetricCard(
-                                  width: cardWidth,
-                                  category: 'RESULTADO',
-                                  title: 'Eventos adversos evitables',
-                                  value: '1,8',
-                                  unit: 'por 1.000',
-                                  change: '−0,1 vs. mes previo',
-                                  trend: const [2.4, 2.2, 2.1, 1.9, 1.9, 1.8],
-                                  onTap: () => _openDetail(context),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        _SectionCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Dónde actuar primero',
-                                style: _headingStyle(22),
-                              ),
-                              const SizedBox(height: 5),
-                              const Text(
-                                'Reingreso a 30 días por sede en el último periodo, '
-                                'frente al promedio de la red (8,4 %).',
-                                style: TextStyle(
-                                  color: _muted,
-                                  height: 1.4,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton.icon(
-                                  onPressed: () => _openDetail(context),
-                                  iconAlignment: IconAlignment.end,
-                                  icon: const Icon(
-                                    Icons.arrow_forward,
-                                    size: 16,
-                                  ),
-                                  label: const Text('Ver detalle'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: _purple,
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final isWide = constraints.maxWidth >= 700;
-                                  final width = isWide
-                                      ? (constraints.maxWidth - 20) / 2
-                                      : constraints.maxWidth;
-                                  return Wrap(
-                                    spacing: 20,
-                                    runSpacing: 10,
-                                    children: [
-                                      for (final site in _sites)
-                                        SizedBox(
-                                          width: width,
-                                          child: _SiteSummaryTile(site: site),
-                                        ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Reingreso por sede, de peor a mejor',
-                                style: _headingStyle(20),
-                              ),
-                              const SizedBox(height: 5),
-                              const Text(
-                                'La línea punteada marca el promedio de la red.',
-                                style: TextStyle(color: _muted, fontSize: 13),
-                              ),
-                              const SizedBox(height: 18),
-                              const _SiteBarChart(),
-                              const SizedBox(height: 16),
-                              const _PerformanceLegend(),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 26, 20, 28),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _Eyebrow('CALIDAD CLÍNICA · TODA LA RED'),
+              const SizedBox(height: 8),
+              Text('Tablero de indicadores', style: _headingStyle(32)),
+              const SizedBox(height: 8),
+              const Text(
+                'Cuatro indicadores de estructura, proceso y resultado, '
+                'calculados con las mediciones de cada sede.',
+                style: TextStyle(color: _muted, height: 1.5, fontSize: 15),
               ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: const _BottomNav(),
-    );
-  }
-}
-
-class IndicatorDetailScreen extends StatelessWidget {
-  const IndicatorDetailScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _TopBar(
-              actionLabel: 'Tablero',
-              onAction: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1120),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+              const SizedBox(height: 24),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 700;
+                  final cardWidth = isWide
+                      ? (constraints.maxWidth - 16) / 2
+                      : constraints.maxWidth;
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      _MetricCard(
+                        width: cardWidth,
+                        category: 'RESULTADO',
+                        title: 'Reingreso hospitalario a 30 días',
+                        value: '8,4',
+                        unit: '%',
+                        change: '−0,3 vs. mes previo',
+                        trend: const [10.1, 9.7, 9.5, 9.1, 8.7, 8.4],
+                        onTap: onAbrirDetalle,
+                      ),
+                      _MetricCard(
+                        width: cardWidth,
+                        category: 'ESTRUCTURA',
+                        title: 'Tiempo de espera promedio',
+                        value: '25,8',
+                        unit: 'min',
+                        change: '−1,5 vs. mes previo',
+                        trend: const [32, 31, 30, 28, 27, 25.8],
+                        onTap: onAbrirDetalle,
+                      ),
+                      _MetricCard(
+                        width: cardWidth,
+                        category: 'PROCESO',
+                        title: 'Adherencia a protocolos clínicos',
+                        value: '86,9',
+                        unit: '%',
+                        change: '+1,1 vs. mes previo',
+                        trend: const [82, 83, 83.8, 84.9, 85.8, 86.9],
+                        onTap: onAbrirDetalle,
+                      ),
+                      _MetricCard(
+                        width: cardWidth,
+                        category: 'RESULTADO',
+                        title: 'Eventos adversos evitables',
+                        value: '1,8',
+                        unit: 'por 1.000',
+                        change: '−0,1 vs. mes previo',
+                        trend: const [2.4, 2.2, 2.1, 1.9, 1.9, 1.8],
+                        onTap: onAbrirDetalle,
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Dónde actuar primero', style: _headingStyle(22)),
+                    const SizedBox(height: 5),
+                    const Text(
+                      'Reingreso a 30 días por sede en el último periodo, '
+                      'frente al promedio de la red (8,4 %).',
+                      style: TextStyle(
+                        color: _muted,
+                        height: 1.4,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: onAbrirDetalle,
+                        iconAlignment: IconAlignment.end,
+                        icon: const Icon(Icons.arrow_forward, size: 16),
+                        label: const Text('Ver detalle'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: _purple,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWide = constraints.maxWidth >= 700;
+                        final width = isWide
+                            ? (constraints.maxWidth - 20) / 2
+                            : constraints.maxWidth;
+                        return Wrap(
+                          spacing: 20,
+                          runSpacing: 10,
                           children: [
-                            InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () => Navigator.of(context).maybePop(),
-                              child: const Padding(
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 4,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.arrow_back,
-                                      size: 17,
-                                      color: _muted,
-                                    ),
-                                    SizedBox(width: 7),
-                                    Text(
-                                      'Indicadores',
-                                      style: TextStyle(
-                                        color: _muted,
-                                        decoration: TextDecoration.underline,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            for (final site in _sites)
+                              SizedBox(
+                                width: width,
+                                child: _SiteSummaryTile(site: site),
                               ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 10),
-                              child: Text('/', style: TextStyle(color: _muted)),
-                            ),
-                            const Expanded(
-                              child: Text(
-                                'Reingreso hospitalario a 30 días',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: _muted),
-                              ),
-                            ),
                           ],
-                        ),
-                        const SizedBox(height: 22),
-                        const _Eyebrow('RESULTADO · %'),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Reingreso hospitalario a 30 días',
-                          style: _headingStyle(32),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Pacientes que vuelven a hospitalizarse en los 30 días '
-                          'siguientes al alta, sobre el total de egresos.',
-                          style: TextStyle(
-                            color: _muted,
-                            height: 1.5,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-                        _SectionCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Tendencia mensual',
-                                style: _headingStyle(22),
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Último periodo: 8,4 %',
-                                style: TextStyle(color: _muted, fontSize: 13),
-                              ),
-                              const SizedBox(height: 12),
-                              const _StaticSelector(label: 'Toda la red'),
-                              const SizedBox(height: 18),
-                              const SizedBox(
-                                height: 205,
-                                width: double.infinity,
-                                child: _TrendChart(
-                                  values: _trendValues,
-                                  minY: 0,
-                                  maxY: 12,
-                                  labels: [
-                                    'May',
-                                    'Jun',
-                                    'Jul',
-                                    'Ago',
-                                    'Sep',
-                                    'Oct',
-                                  ],
-                                  filled: true,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Comparación entre sedes',
-                                style: _headingStyle(22),
-                              ),
-                              const SizedBox(height: 7),
-                              const Text(
-                                'Último periodo · línea punteada: promedio de la red',
-                                style: TextStyle(
-                                  color: _muted,
-                                  height: 1.4,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              const _SiteBarChart(compact: true),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text('Mediciones recientes', style: _headingStyle(22)),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Desliza la tabla para ver el valor y la comparación.',
-                          style: TextStyle(color: _muted, fontSize: 13),
-                        ),
-                        const SizedBox(height: 8),
-                        const _RecentMeasurements(),
-                      ],
+                        );
+                      },
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: const _BottomNav(),
-    );
-  }
-}
-
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.actionLabel, required this.onAction});
-
-  final String actionLabel;
-  final VoidCallback onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 62,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: _line)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        children: [
-          Container(
-            height: 34,
-            width: 34,
-            decoration: BoxDecoration(
-              color: _purple,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.monitor_heart,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Red Vitalys',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: _ink,
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
+              const SizedBox(height: 18),
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reingreso por sede, de peor a mejor',
+                      style: _headingStyle(20),
+                    ),
+                    const SizedBox(height: 5),
+                    const Text(
+                      'La línea punteada marca el promedio de la red.',
+                      style: TextStyle(color: _muted, fontSize: 13),
+                    ),
+                    const SizedBox(height: 18),
+                    const _SiteBarChart(),
+                    const SizedBox(height: 16),
+                    const _PerformanceLegend(),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-          TextButton(
-            onPressed: onAction,
-            style: TextButton.styleFrom(
-              foregroundColor: _purple,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-            ),
-            child: Text(actionLabel),
-          ),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: _purple,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'CM',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  const _BottomNav();
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(20, 8, 20, 10),
-        height: 58,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(32),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x26181740),
-              blurRadius: 18,
-              offset: Offset(0, 7),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const _NavItem(icon: Icons.home_outlined, label: 'Inicio'),
-            const _NavItem(icon: Icons.people_outline, label: 'Pacientes'),
-            const _NavItem(
-              icon: Icons.query_stats,
-              label: 'Indicadores',
-              selected: true,
-            ),
-          ],
         ),
       ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.selected = false,
-  });
+/// Detalle de un indicador (F-09, F-10, F-11): tendencia, comparación entre
+/// sedes y mediciones recientes. Volver lo decide la Screen anfitriona.
+class DetalleIndicadorPage extends StatelessWidget {
+  const DetalleIndicadorPage({super.key, required this.onVolver});
 
-  final IconData icon;
-  final String label;
-  final bool selected;
+  final VoidCallback onVolver;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        margin: selected ? const EdgeInsets.all(4) : EdgeInsets.zero,
-        decoration: selected
-            ? BoxDecoration(
-                color: _ink,
-                borderRadius: BorderRadius.circular(28),
-              )
-            : null,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18, color: selected ? Colors.white : _muted),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? Colors.white : _muted,
-                fontSize: 10,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: onVolver,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.arrow_back, size: 17, color: _muted),
+                          SizedBox(width: 7),
+                          Text(
+                            'Indicadores',
+                            style: TextStyle(
+                              color: _muted,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Text('/', style: TextStyle(color: _muted)),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'Reingreso hospitalario a 30 días',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: _muted),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 22),
+              const _Eyebrow('RESULTADO · %'),
+              const SizedBox(height: 8),
+              Text(
+                'Reingreso hospitalario a 30 días',
+                style: _headingStyle(32),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Pacientes que vuelven a hospitalizarse en los 30 días '
+                'siguientes al alta, sobre el total de egresos.',
+                style: TextStyle(color: _muted, height: 1.5, fontSize: 15),
+              ),
+              const SizedBox(height: 22),
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Tendencia mensual', style: _headingStyle(22)),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Último periodo: 8,4 %',
+                      style: TextStyle(color: _muted, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    const _StaticSelector(label: 'Toda la red'),
+                    const SizedBox(height: 18),
+                    const SizedBox(
+                      height: 205,
+                      width: double.infinity,
+                      child: _TrendChart(
+                        values: _trendValues,
+                        minY: 0,
+                        maxY: 12,
+                        labels: ['May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct'],
+                        filled: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              _SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Comparación entre sedes', style: _headingStyle(22)),
+                    const SizedBox(height: 7),
+                    const Text(
+                      'Último periodo · línea punteada: promedio de la red',
+                      style: TextStyle(
+                        color: _muted,
+                        height: 1.4,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const _SiteBarChart(compact: true),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('Mediciones recientes', style: _headingStyle(22)),
+              const SizedBox(height: 12),
+              const Text(
+                'Desliza la tabla para ver el valor y la comparación.',
+                style: TextStyle(color: _muted, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              const _RecentMeasurements(),
+            ],
+          ),
         ),
       ),
     );

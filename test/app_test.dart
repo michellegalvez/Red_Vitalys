@@ -325,7 +325,7 @@ void main() {
       await tocar(t, find.text('Abrir historia clínica'));
       expect(find.text(avisoAccesoEmergencia), findsOneWidget);
 
-      await tocar(t, find.text('Volver a la lista'));
+      await tocar(t, find.textContaining('Pacientes  /'));
       expect(find.text('Pacientes en seguimiento'), findsOneWidget);
       await cerrarApp(t);
     });
@@ -337,7 +337,10 @@ void main() {
       await tocar(t, find.text('María Fernanda Rojas Benítez'));
       await tocar(t, find.text('Consulta de historia clínica'));
       await tocar(t, find.text('Abrir historia clínica'));
-      expect(find.text('Propósito: Consulta de historia clínica'), findsOne);
+      expect(
+        find.textContaining('Propósito: Consulta de historia clínica'),
+        findsOne,
+      );
       expect(find.text(avisoAccesoEmergencia), findsNothing);
       await cerrarApp(t);
     });
@@ -379,7 +382,7 @@ void main() {
       expect(find.text('ANTES DE ABRIR LA HISTORIA'), findsNothing);
       expect(find.text('Pacientes en seguimiento'), findsOneWidget);
       expect(
-        find.text('Propósito: Consulta de historia clínica'),
+        find.textContaining('Propósito: Consulta de historia clínica'),
         findsNothing,
       );
       await cerrarApp(t);
@@ -407,9 +410,9 @@ void main() {
         'Consulta de historia clínica',
         'Abrir historia clínica',
       );
-      expect(find.text('Volver a la lista'), findsOneWidget);
+      expect(find.textContaining('Pacientes  /'), findsOneWidget);
       await atras(t);
-      expect(find.text('Volver a la lista'), findsNothing);
+      expect(find.textContaining('Pacientes  /'), findsNothing);
       expect(find.text('Pacientes en seguimiento'), findsOneWidget);
       await cerrarApp(t);
     });

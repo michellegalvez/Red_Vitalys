@@ -107,6 +107,25 @@ class PacienteEnSeguimiento {
   /// *Atención del paciente*, que les da relación (RF-25).
   final List<String> medicosConAtencion;
 
+  /// Copia con otros médicos con atención. El resto no cambia.
+  PacienteEnSeguimiento copyWith({List<String>? medicosConAtencion}) {
+    return PacienteEnSeguimiento(
+      id: id,
+      nombre: nombre,
+      iniciales: iniciales,
+      edad: edad,
+      sexo: sexo,
+      tipoDocumento: tipoDocumento,
+      numeroDocumento: numeroDocumento,
+      sedeAltaId: sedeAltaId,
+      tipoAtencion: tipoAtencion,
+      fechaAlta: fechaAlta,
+      diasEstancia: diasEstancia,
+      riesgo: riesgo,
+      medicosConAtencion: medicosConAtencion ?? this.medicosConAtencion,
+    );
+  }
+
   /// Documento con solo los últimos 4 dígitos, por ejemplo "CC ··· 7654".
   String get documentoOculto {
     final n = numeroDocumento;
