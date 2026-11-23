@@ -22,16 +22,18 @@ Materia: Seminario en Ingeniería de Software · Universidad Icesi.
 
 ## Estructura actual de lib/
 
-Prototipo navegable solo de front-end (Entrega 2): datos simulados en memoria, sin backend ni paquetes externos. Integra las pantallas de todo el equipo en una sola app y cubre los 37 requisitos funcionales: acceso en dos pasos, inicio del médico, pacientes en seguimiento, búsqueda de pacientes, declaración del propósito, historia clínica con el riesgo y sus factores, registro de una atención, datos básicos del administrativo, acceso denegado, tablero y detalle de indicadores, registro de una medición, auditoría de accesos y perfil.
+Prototipo navegable (Entrega 2) con datos simulados en memoria. En la entrega 3 se conecta a Supabase: el único paquete externo es `supabase_flutter` y la conexión ya está inicializada en `main.dart` (plan P-00), pero las pantallas siguen leyendo de memoria. La URL y la publishable key salen de `env.json` (en `.gitignore`; el ejemplo es `env.example.json`) y la secret key nunca va en el repo. Integra las pantallas de todo el equipo en una sola app y cubre los 37 requisitos funcionales: acceso en dos pasos, inicio del médico, pacientes en seguimiento, búsqueda de pacientes, declaración del propósito, historia clínica con el riesgo y sus factores, registro de una atención, datos básicos del administrativo, acceso denegado, tablero y detalle de indicadores, registro de una medición, auditoría de accesos y perfil.
 
 ```
 lib/
-├── main.dart            # arranca la app
+├── main.dart            # arranca la app e inicializa Supabase (único punto)
+├── config/              # entorno.dart: URL y publishable key de Supabase (--dart-define-from-file=env.json)
 ├── tema/                # colores, tema y breakpoint (900 px, contenido máx. 1200)
 ├── modelos/             # modelos.dart (sedes, usuarios, pacientes, propósitos, auditoría)
 │                        # historia.dart (historia clínica, atenciones y factores del riesgo)
 │                        # indicadores.dart (indicadores y mediciones)
 ├── datos/               # datos simulados: pacientes, eventos, historias y mediciones (hoy: 6 nov 2026)
+│                        # fuente_de_datos.dart: único punto que elige la fuente de datos (AD-02; hoy, memoria)
 ├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
 │                        # indicadores (promedio, marca, cambio y validar una medición), búsqueda
 │                        # y atencion.dart (validar una atención)
@@ -55,6 +57,8 @@ La carpeta `docs/` tiene los documentos que guían el desarrollo (Spec Driven De
 - `docs/prd.md`: el PRD, con el problema, los usuarios, los objetivos medibles y el alcance.
 - `docs/requisitos.md`: los requisitos funcionales (RF) y no funcionales (RNF), numerados y ligados a un objetivo.
 - `docs/architectural_spine.md`: la architectural spine, con el stack, el diagrama y las invariantes.
+- `docs/plans/`: un plan por funcionalidad o pieza técnica (metadatos, enfoque, componentes y cambios), con el formato en `docs/plans/README.md`.
+- `docs/tasks/`: las tareas de cada plan, con casilla `[ ]` y cómo se comprueba cada una (`docs/tasks/README.md`). Los commits citan el id: `feat(T-00.3): ...`.
 - `docs/specs/`: una spec funcional por funcionalidad, con el índice en `docs/specs/README.md` y el reporte de la crítica en `docs/specs/reporte.md`.
 
 Las skills que crean y revisan esos documentos están en `.agents/skills/`.

@@ -30,6 +30,31 @@ flutter run               # en un emulador o un celular con Android 10+
 flutter test              # corre las pruebas
 ```
 
+## Configuración de Supabase
+
+La entrega 3 conecta la app a Supabase (`supabase_flutter`). La URL y la publishable key **no están en el código** (AD-13): se pasan al compilar desde un archivo local.
+
+1. Copia el ejemplo: `cp env.example.json env.json` (en Windows: `copy env.example.json env.json`).
+2. Llena `env.json` con los valores de tu proyecto, en el panel de Supabase:
+
+   | Variable | De dónde sale |
+   |---|---|
+   | `SUPABASE_URL` | *Settings → Data API*, «Project URL» (`https://<id>.supabase.co`) |
+   | `SUPABASE_PUBLISHABLE_KEY` | *Settings → API Keys → Publishable key* (`sb_publishable_...`) |
+
+3. Ejecuta pasando el archivo:
+
+```bash
+flutter run -d chrome --dart-define-from-file=env.json
+flutter run --dart-define-from-file=env.json     # Android
+flutter build web --dart-define-from-file=env.json
+```
+
+- `env.json` está en `.gitignore`: no lo subas. Solo se sube `env.example.json`, con los valores vacíos.
+- **Nunca** pongas la secret key (`sb_secret_...`) en la app, en `env.json` ni en el repositorio.
+- Sin `env.json` la app funciona igual, con los datos simulados, y la consola avisa «Supabase no está configurado». Con las llaves bien puestas dice «Supabase inicializado».
+- Por ahora todos los datos siguen en memoria: la conexión está lista, pero ninguna pantalla lee de Supabase. La fuente de datos se elige en un solo punto, `lib/datos/fuente_de_datos.dart` (AD-02).
+
 ## Cuentas de prueba
 
 Son datos ficticios del prototipo; no corresponden a personas reales. La contraseña de todas las cuentas es `vitalys2026`. La fecha de «hoy» simulada es fija: el **6 de noviembre de 2026** (el último periodo cerrado de los indicadores es octubre).
@@ -47,12 +72,14 @@ Los datos están en `lib/datos/datos_simulados.dart`.
 
 ```
 lib/
-├── main.dart            # arranca la app
+├── main.dart            # arranca la app e inicializa Supabase (único punto)
+├── config/              # entorno.dart: URL y publishable key de Supabase (--dart-define)
 ├── tema/                # colores, tema y breakpoint (900 px, contenido máx. 1200)
 ├── modelos/             # modelos.dart (sedes, usuarios, pacientes, propósitos, auditoría)
 │                        # historia.dart (historia clínica, atenciones y factores del riesgo)
 │                        # indicadores.dart (indicadores y mediciones)
 ├── datos/               # datos simulados: pacientes, eventos, historias y mediciones (hoy: 6 nov 2026)
+│                        # fuente_de_datos.dart: el único punto que elige la fuente (hoy, memoria)
 ├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
 │                        # indicadores (promedio, marca, cambio y validar una medición) y búsqueda
 ├── formato/             # fechas, horas y búsqueda sin tildes (RNF-05)
@@ -86,6 +113,8 @@ La carpeta `docs/` guía el desarrollo (Spec Driven Development), en este orden:
 - `docs/prd.md`: el PRD, con el problema, los usuarios, los objetivos medibles y el alcance.
 - `docs/requisitos.md`: los requisitos funcionales (RF) y no funcionales (RNF).
 - `docs/architectural_spine.md`: la architectural spine, con el stack, el diagrama y las invariantes.
+- `docs/plans/`: un plan por funcionalidad o pieza técnica (cómo se construye), con el formato y el índice en `docs/plans/README.md`.
+- `docs/tasks/`: las tareas de cada plan, con casilla y cómo se comprueba cada una (`docs/tasks/README.md`).
 - `docs/specs/`: una spec funcional por funcionalidad, con el índice y el avance en `docs/specs/README.md` (incluye las excepciones del prototipo) y la crítica en `docs/specs/reporte.md`.
 
 ## Equipo
