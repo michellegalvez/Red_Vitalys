@@ -22,10 +22,14 @@ import 'package:red_vitalys/pages/registrar_atencion_page.dart';
 import 'package:red_vitalys/pages/registrar_medicion_page.dart';
 import 'package:red_vitalys/pages/seguimiento_page.dart';
 import 'package:red_vitalys/reglas/busqueda.dart';
+import 'package:red_vitalys/reglas/foto.dart';
 import 'package:red_vitalys/reglas/indicadores.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/repositorios/auditoria_memoria.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
+import 'package:red_vitalys/repositorios/foto_memoria.dart';
+import 'package:red_vitalys/repositorios/foto_repositorio.dart';
+import 'package:red_vitalys/repositorios/selector_foto.dart';
 import 'package:red_vitalys/repositorios/sesion_supabase.dart';
 import 'package:red_vitalys/screens/secciones.dart';
 import 'package:red_vitalys/tema/tema.dart';
@@ -34,6 +38,7 @@ import 'package:red_vitalys/widgets/proposito.dart';
 
 part 'app_screen_paginas.dart';
 part 'app_screen_guardado.dart';
+part 'app_screen_foto.dart';
 
 /// Una declaración de propósito en curso. Sin paciente es la de la lista de
 /// pacientes con alta reciente (F-06); con paciente, la de abrirlo o, si
@@ -89,9 +94,17 @@ class AppScreen extends StatefulWidget {
     this.reloj = DateTime.now,
     this.auditoria,
     this.sesion,
+    this.fotos,
+    this.selectorFoto,
   });
 
   final DatosSimulados datos;
+
+  /// Dónde se guarda la foto de perfil. Sin él, en memoria (P-02).
+  final FotoPerfilRepositorio? fotos;
+
+  /// Cómo se elige la foto en el dispositivo. Sin él, el selector real.
+  final SelectorFoto? selectorFoto;
 
   /// Dónde se guardan los eventos de auditoría. Sin él, en memoria (P-01).
   final AuditoriaRepositorio? auditoria;
@@ -190,6 +203,16 @@ class _AppScreenState extends State<AppScreen> {
   bool _errorEventos = false;
   bool _confirmandoSede = false;
   FiltroAuditoria _filtroAuditoria = FiltroAuditoria.todos;
+
+  // Foto de perfil (F-22).
+  late final FotoPerfilRepositorio _fotos = widget.fotos ?? FotoMemoria();
+  late final SelectorFoto _selectorFoto =
+      widget.selectorFoto ?? SelectorFotoDispositivo();
+  Uint8List? _foto;
+  bool _cargandoFoto = false;
+  bool _errorFoto = false;
+  bool _guardandoFoto = false;
+  String? _avisoFoto;
 
   @override
   void initState() {
@@ -420,6 +443,10 @@ class _AppScreenState extends State<AppScreen> {
       _listaDeclarada = false;
       _seccionPrevia = null;
       _filtroAuditoria = FiltroAuditoria.todos;
+      // La foto es de quien tenía la sesión: no pasa al siguiente usuario.
+      _foto = null;
+      _errorFoto = false;
+      _avisoFoto = null;
       // Lo escrito en las búsquedas no pasa al siguiente usuario (F-15).
       _busqueda = '';
       _busquedaPaciente = '';

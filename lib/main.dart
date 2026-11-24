@@ -4,6 +4,7 @@ import 'package:red_vitalys/config/entorno.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/datos/fuente_de_datos.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
+import 'package:red_vitalys/repositorios/foto_repositorio.dart';
 import 'package:red_vitalys/repositorios/sesion_supabase.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
 import 'package:red_vitalys/tema/tema.dart';
@@ -19,6 +20,7 @@ Future<void> main() async {
       datos: datos,
       auditoria: elegirAuditoria(datos: datos, cliente: cliente),
       sesion: cliente == null ? null : SesionSupabase(cliente),
+      fotos: elegirFotos(cliente: cliente),
     ),
   );
 }
@@ -56,11 +58,13 @@ class RedVitalysApp extends StatelessWidget {
     required this.datos,
     this.auditoria,
     this.sesion,
+    this.fotos,
   });
 
   final DatosSimulados datos;
   final AuditoriaRepositorio? auditoria;
   final SesionSupabase? sesion;
+  final FotoPerfilRepositorio? fotos;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +75,12 @@ class RedVitalysApp extends StatelessWidget {
       supportedLocales: const [Locale('es', 'CO')],
       locale: const Locale('es', 'CO'),
       theme: temaRedVitalys(),
-      home: AppScreen(datos: datos, auditoria: auditoria, sesion: sesion),
+      home: AppScreen(
+        datos: datos,
+        auditoria: auditoria,
+        sesion: sesion,
+        fotos: fotos,
+      ),
     );
   }
 }

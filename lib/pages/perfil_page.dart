@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/aviso.dart';
 import 'package:red_vitalys/widgets/boton.dart';
 import 'package:red_vitalys/widgets/carga.dart';
+import 'package:red_vitalys/widgets/foto_perfil.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
 import 'package:red_vitalys/widgets/perfil.dart';
 
@@ -23,6 +26,15 @@ class PerfilPage extends StatelessWidget {
     required this.permisos,
     required this.propositos,
     required this.onCerrarSesion,
+    required this.iniciales,
+    required this.onCambiarFoto,
+    required this.onQuitarFoto,
+    required this.onReintentarFoto,
+    this.foto,
+    this.cargandoFoto = false,
+    this.errorFoto = false,
+    this.guardandoFoto = false,
+    this.avisoFoto,
     this.simularFallas = false,
     this.cerrandoSesion = false,
     this.errorCierre,
@@ -32,6 +44,17 @@ class PerfilPage extends StatelessWidget {
   final List<PermisoPerfil> permisos;
   final List<String> propositos;
   final VoidCallback onCerrarSesion;
+
+  // Foto de perfil: la Screen la trae y la guarda; aquí solo se muestra.
+  final String iniciales;
+  final Uint8List? foto;
+  final bool cargandoFoto;
+  final bool errorFoto;
+  final bool guardandoFoto;
+  final String? avisoFoto;
+  final VoidCallback onCambiarFoto;
+  final VoidCallback onQuitarFoto;
+  final VoidCallback onReintentarFoto;
 
   /// Modo demo: muestra "Cargando perfil…" y su error con *Reintentar*.
   final bool simularFallas;
@@ -50,6 +73,17 @@ class PerfilPage extends StatelessWidget {
       icono: Icons.logout_rounded,
       variante: VarianteBoton.secundario,
       onPressed: cerrandoSesion ? null : onCerrarSesion,
+    );
+    final tarjetaFoto = TarjetaFotoPerfil(
+      iniciales: iniciales,
+      foto: foto,
+      cargando: cargandoFoto,
+      hayError: errorFoto,
+      guardando: guardandoFoto,
+      aviso: avisoFoto,
+      onCambiar: onCambiarFoto,
+      onQuitar: onQuitarFoto,
+      onReintentar: onReintentarFoto,
     );
     final cuenta = [
       TarjetaDatosPerfil(datos: datos),
@@ -91,6 +125,8 @@ class PerfilPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  tarjetaFoto,
+                  const SizedBox(height: 16),
                   TarjetaDatosPerfil(datos: datos, columnas: 3),
                   const SizedBox(height: 40),
                   ...rol,
@@ -103,6 +139,8 @@ class PerfilPage extends StatelessWidget {
         else ...[
           // En celular: la cuenta, lo que puede hacer y, al final, la nota
           // y el cierre de sesión, como en el Figma.
+          tarjetaFoto,
+          const SizedBox(height: 16),
           cuenta.first,
           const SizedBox(height: 30),
           ...rol,
