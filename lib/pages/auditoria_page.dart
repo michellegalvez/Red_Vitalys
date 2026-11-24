@@ -23,6 +23,9 @@ class AuditoriaPage extends StatelessWidget {
     required this.nombresSedes,
     required this.onElegirFiltro,
     this.simularFallas = false,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
   });
 
   final List<EventoAuditoria> eventos;
@@ -37,6 +40,11 @@ class AuditoriaPage extends StatelessWidget {
 
   /// Modo demo: muestra la carga y su error con *Reintentar*.
   final bool simularFallas;
+
+  /// Los eventos se están trayendo de Supabase, o no se pudieron traer.
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   FilaEvento _fila(EventoAuditoria e) {
     final usuarioId = e.usuarioId;
@@ -106,29 +114,36 @@ class AuditoriaPage extends StatelessWidget {
           filtros,
         ],
         SizedBox(height: escritorio ? 36 : 22),
-        CargaSimulada(
-          simular: simularFallas,
+        CargaRemota(
+          cargando: cargando,
+          hayError: hayError,
+          onReintentar: onReintentar ?? () {},
           textoCargando: 'Cargando eventos…',
           textoError: 'No se pudieron cargar los eventos',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TablaEventos(
-                filas: [for (final e in eventos) _fila(e)],
-                mensajeVacio: mensajeSinEventos,
-              ),
-              const SizedBox(height: 22),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  cantidad == 1 ? '1 evento' : '$cantidad eventos',
-                  style: TextStyle(
-                    fontSize: escritorio ? 15 : 13,
-                    color: ColoresVitalys.textoSecundario,
+          child: CargaSimulada(
+            simular: simularFallas,
+            textoCargando: 'Cargando eventos…',
+            textoError: 'No se pudieron cargar los eventos',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TablaEventos(
+                  filas: [for (final e in eventos) _fila(e)],
+                  mensajeVacio: mensajeSinEventos,
+                ),
+                const SizedBox(height: 22),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    cantidad == 1 ? '1 evento' : '$cantidad eventos',
+                    style: TextStyle(
+                      fontSize: escritorio ? 15 : 13,
+                      color: ColoresVitalys.textoSecundario,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

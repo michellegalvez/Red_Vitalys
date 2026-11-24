@@ -24,6 +24,9 @@ import 'package:red_vitalys/pages/seguimiento_page.dart';
 import 'package:red_vitalys/reglas/busqueda.dart';
 import 'package:red_vitalys/reglas/indicadores.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
+import 'package:red_vitalys/repositorios/auditoria_memoria.dart';
+import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
+import 'package:red_vitalys/repositorios/sesion_supabase.dart';
 import 'package:red_vitalys/screens/secciones.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
@@ -80,9 +83,21 @@ typedef _Denegado = ({
 /// Screen anfitriona: guarda todo el estado de la app con `setState` y se
 /// lo pasa a las Pages, que solo muestran y avisan por callbacks.
 class AppScreen extends StatefulWidget {
-  const AppScreen({super.key, required this.datos, this.reloj = DateTime.now});
+  const AppScreen({
+    super.key,
+    required this.datos,
+    this.reloj = DateTime.now,
+    this.auditoria,
+    this.sesion,
+  });
 
   final DatosSimulados datos;
+
+  /// Dónde se guardan los eventos de auditoría. Sin él, en memoria (P-01).
+  final AuditoriaRepositorio? auditoria;
+
+  /// TEMPORAL (P-01): sesión de Supabase junto al inicio simulado.
+  final SesionSupabase? sesion;
 
   /// Hora real del dispositivo, para el bloqueo de 15 minutos (F-14).
   final DateTime Function() reloj;
@@ -164,7 +179,16 @@ class _AppScreenState extends State<AppScreen> {
 
   // Auditoría de accesos (F-20, F-21). Los eventos solo se agregan con
   // [_registrarEvento]: nunca se editan ni se borran (AD-08).
-  late final List<EventoAuditoria> _eventos = [..._datos.eventos];
+  late final AuditoriaRepositorio _auditoria =
+      widget.auditoria ?? AuditoriaMemoria(_datos.eventos);
+  // Con Supabase la lista sale de la base al abrir la auditoría; en memoria
+  // arranca con los eventos simulados.
+  late final List<EventoAuditoria> _eventos = _auditoria.esRemoto
+      ? []
+      : [..._datos.eventos];
+  bool _cargandoEventos = false;
+  bool _errorEventos = false;
+  bool _confirmandoSede = false;
   FiltroAuditoria _filtroAuditoria = FiltroAuditoria.todos;
 
   @override
@@ -208,6 +232,7 @@ class _AppScreenState extends State<AppScreen> {
     // Se valida con lo que había al pulsar Ingresar; después del await no se
     // vuelve a leer el campo.
     final correoEscrito = _correo.text.trim();
+    final contrasenaEscrita = _contrasena.text;
     final usuarioEscrito = _datos.usuarioPorCorreo(correoEscrito);
     final resultado = evaluarIngreso(
       correo: _correo.text,
@@ -240,6 +265,11 @@ class _AppScreenState extends State<AppScreen> {
         _mensajeError = _mensajeFallaIngreso;
       });
       return;
+    }
+
+    if (resultado == ResultadoIngreso.valido) {
+      await _abrirSesionDeSupabase(correoEscrito, contrasenaEscrita);
+      if (!mounted) return;
     }
 
     setState(() {
@@ -287,7 +317,8 @@ class _AppScreenState extends State<AppScreen> {
   }
 
   /// El usuario confirma la sede y se abre la sesión (F-13 pasos 4 a 6).
-  void _confirmarSede() {
+  Future<void> _confirmarSede() async {
+    if (_confirmandoSede) return;
     final usuario = _usuarioValidado;
     final sede = _sedeElegida;
     if (usuario == null) return;
@@ -301,16 +332,32 @@ class _AppScreenState extends State<AppScreen> {
       setState(() => _errorSede = _mensajeFallaIngreso);
       return;
     }
+    // El ingreso se registra al confirmar la sede, antes de abrir la
+    // sesión, porque lleva la sede (F-13 paso 5, F-20 A3). Si no se puede
+    // guardar, la sesión no se abre (AD-07).
+    final evento = _armarEvento(
+      usuario: usuario,
+      sedeId: sede,
+      accion: AccionAuditoria.ingresar,
+      recurso: RecursoAuditoria.sesion,
+      resultado: ResultadoAuditoria.permitido,
+    );
+    if (_auditoria.esRemoto) {
+      _confirmandoSede = true;
+      try {
+        await _auditoria.agregar(evento);
+      } catch (error) {
+        debugPrint('No se pudo guardar el evento de ingreso: $error');
+        if (!mounted) return;
+        setState(() => _errorSede = _mensajeFallaIngreso);
+        return;
+      } finally {
+        _confirmandoSede = false;
+      }
+      if (!mounted) return;
+    }
     setState(() {
-      // El ingreso se registra al confirmar la sede, antes de abrir la
-      // sesión, porque lleva la sede (F-13 paso 5, F-20 A3).
-      _registrarEvento(
-        usuario: usuario,
-        sedeId: sede,
-        accion: AccionAuditoria.ingresar,
-        recurso: RecursoAuditoria.sesion,
-        resultado: ResultadoAuditoria.permitido,
-      );
+      _eventos.add(evento);
       _fallosSeguidos = 0;
       _mensajeError = null;
       _errorSede = null;
@@ -323,6 +370,18 @@ class _AppScreenState extends State<AppScreen> {
       _irA(seccionesDe(usuario.rol).first);
     });
     _registrarActividad();
+    _cargarEventosSiHaceFalta();
+  }
+
+  /// TEMPORAL (P-01): abre una sesión en Supabase con el mismo correo y
+  /// contraseña. Si falla, la app sigue; el ingreso se detiene al guardar el
+  /// evento, que sí necesita la sesión.
+  Future<void> _abrirSesionDeSupabase(String correo, String contrasena) async {
+    try {
+      await widget.sesion?.iniciar(correo, contrasena);
+    } catch (error) {
+      debugPrint('No se pudo abrir la sesión en Supabase: $error');
+    }
   }
 
   /// El usuario sale sin confirmar la sede: no se abre la sesión (F-13 A6).
@@ -340,6 +399,14 @@ class _AppScreenState extends State<AppScreen> {
   /// sede, la consulta abierta y lo que no se había guardado.
   void _cerrarSesion({bool porInactividad = false}) {
     _temporizadorInactividad?.cancel();
+    final sesion = widget.sesion;
+    if (sesion != null) {
+      unawaited(
+        sesion.cerrar().catchError((Object error) {
+          debugPrint('No se pudo cerrar la sesión en Supabase: $error');
+        }),
+      );
+    }
     setState(() {
       _cerrandoSesion = false;
       _errorCierre = null;
@@ -404,6 +471,9 @@ class _AppScreenState extends State<AppScreen> {
   /// misma que el diálogo muestra en *Quedará registrado* (F-20). Es la
   /// única forma de cambiar [_eventos], y solo agrega. Llamar dentro de
   /// `setState`.
+  ///
+  /// Con Supabase, además lo guarda en la base sin esperar. Hasta que cada
+  /// acción pase a Supabase, solo el ingreso espera el resultado (P-01).
   void _registrarEvento({
     required AccionAuditoria accion,
     required RecursoAuditoria recurso,
@@ -415,21 +485,78 @@ class _AppScreenState extends State<AppScreen> {
     Proposito? proposito,
     String? ip,
   }) {
-    _eventos.add(
-      EventoAuditoria(
-        id: 'e${_eventos.length + 1}',
-        usuarioId: usuario?.id,
-        correoIntento: correoIntento,
-        pacienteId: paciente?.id,
-        fechaHora: _datos.hoy,
-        accion: accion,
-        recurso: recurso,
-        resultado: resultado,
-        proposito: proposito,
-        sedeId: sedeId,
-        ip: ip,
-      ),
+    final evento = _armarEvento(
+      accion: accion,
+      recurso: recurso,
+      resultado: resultado,
+      usuario: usuario,
+      sedeId: sedeId,
+      correoIntento: correoIntento,
+      paciente: paciente,
+      proposito: proposito,
+      ip: ip,
     );
+    _eventos.add(evento);
+    if (_auditoria.esRemoto) {
+      unawaited(
+        _auditoria.agregar(evento).catchError((Object error) {
+          debugPrint('No se pudo guardar el evento: $error');
+        }),
+      );
+    }
+  }
+
+  EventoAuditoria _armarEvento({
+    required AccionAuditoria accion,
+    required RecursoAuditoria recurso,
+    required ResultadoAuditoria resultado,
+    Usuario? usuario,
+    String? sedeId,
+    String? correoIntento,
+    PacienteEnSeguimiento? paciente,
+    Proposito? proposito,
+    String? ip,
+  }) {
+    return EventoAuditoria(
+      id: 'e${_eventos.length + 1}',
+      usuarioId: usuario?.id,
+      correoIntento: correoIntento,
+      pacienteId: paciente?.id,
+      fechaHora: _datos.hoy,
+      accion: accion,
+      recurso: recurso,
+      resultado: resultado,
+      proposito: proposito,
+      sedeId: sedeId,
+      ip: ip,
+    );
+  }
+
+  /// Con Supabase, trae los eventos de la base cuando se abre la auditoría.
+  /// En memoria no hace nada: la lista ya está al día (F-21).
+  Future<void> _cargarEventosSiHaceFalta() async {
+    if (!_auditoria.esRemoto || _seccion != Seccion.auditoria) return;
+    setState(() {
+      _cargandoEventos = true;
+      _errorEventos = false;
+    });
+    try {
+      final eventos = await _auditoria.listar();
+      if (!mounted) return;
+      setState(() {
+        _eventos
+          ..clear()
+          ..addAll(eventos);
+        _cargandoEventos = false;
+      });
+    } catch (error) {
+      debugPrint('No se pudieron cargar los eventos: $error');
+      if (!mounted) return;
+      setState(() {
+        _cargandoEventos = false;
+        _errorEventos = true;
+      });
+    }
   }
 
   /// Con [_simularFallas], la acción [clave] falla la primera vez y funciona
@@ -473,6 +600,7 @@ class _AppScreenState extends State<AppScreen> {
       return;
     }
     setState(() => _irA(seccion));
+    _cargarEventosSiHaceFalta();
   }
 
   /// La puerta del sistema para lo que el rol no tiene en la tabla de F-18:

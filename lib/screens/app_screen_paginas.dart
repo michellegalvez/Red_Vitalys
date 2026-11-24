@@ -577,6 +577,9 @@ extension _Paginas on _AppScreenState {
       nombresSedes: {for (final s in _datos.sedes) s.id: s.nombre},
       onElegirFiltro: (f) => _actualizar(() => _filtroAuditoria = f),
       simularFallas: _simularFallas,
+      cargando: _cargandoEventos,
+      hayError: _errorEventos,
+      onReintentar: _cargarEventosSiHaceFalta,
     );
   }
 

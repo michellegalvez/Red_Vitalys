@@ -81,54 +81,120 @@ class _CargaSimuladaState extends State<CargaSimulada> {
   Widget build(BuildContext context) {
     return switch (_fase) {
       _Fase.listo => widget.child,
-      _Fase.cargando => Semantics(
-        liveRegion: true,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox.square(
-                dimension: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  widget.textoCargando,
-                  style: const TextStyle(
-                    color: ColoresVitalys.textoSecundario,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      _Fase.cargando => IndicadorCarga(texto: widget.textoCargando),
+      _Fase.error => ErrorCarga(
+        texto: widget.textoError,
+        onReintentar: _reintentar,
+        acciones: widget.accionesEnError,
       ),
-      _Fase.error => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    };
+  }
+}
+
+/// La carga de verdad: los datos vienen de Supabase. Muestra [textoCargando]
+/// mientras [cargando], [textoError] con *Reintentar* si [hayError], y si no
+/// el [child]. La Screen anfitriona es quien trae los datos (P-01).
+class CargaRemota extends StatelessWidget {
+  const CargaRemota({
+    super.key,
+    required this.cargando,
+    required this.hayError,
+    required this.onReintentar,
+    required this.textoCargando,
+    required this.textoError,
+    required this.child,
+  });
+
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback onReintentar;
+  final String textoCargando;
+  final String textoError;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (cargando) return IndicadorCarga(texto: textoCargando);
+    if (hayError) {
+      return ErrorCarga(texto: textoError, onReintentar: onReintentar);
+    }
+    return child;
+  }
+}
+
+/// El "Cargando…" con su indicador.
+class IndicadorCarga extends StatelessWidget {
+  const IndicadorCarga({super.key, required this.texto});
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Aviso(tipo: TipoAviso.errores, texto: widget.textoError),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                BotonVitalys(
-                  texto: textoReintentar,
-                  icono: Icons.refresh_rounded,
-                  variante: VarianteBoton.secundario,
-                  onPressed: _reintentar,
+            const SizedBox.square(
+              dimension: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                texto,
+                style: const TextStyle(
+                  color: ColoresVitalys.textoSecundario,
+                  fontWeight: FontWeight.w600,
                 ),
-                ...widget.accionesEnError,
-              ],
+              ),
             ),
           ],
         ),
       ),
-    };
+    );
+  }
+}
+
+/// El mensaje de error con *Reintentar* y, si hace falta, otras acciones.
+class ErrorCarga extends StatelessWidget {
+  const ErrorCarga({
+    super.key,
+    required this.texto,
+    required this.onReintentar,
+    this.acciones = const [],
+  });
+
+  final String texto;
+  final VoidCallback onReintentar;
+  final List<Widget> acciones;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Aviso(tipo: TipoAviso.errores, texto: texto),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              BotonVitalys(
+                texto: textoReintentar,
+                icono: Icons.refresh_rounded,
+                variante: VarianteBoton.secundario,
+                onPressed: onReintentar,
+              ),
+              ...acciones,
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

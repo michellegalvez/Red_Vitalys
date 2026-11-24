@@ -3,6 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:red_vitalys/config/entorno.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/datos/fuente_de_datos.dart';
+import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
+import 'package:red_vitalys/repositorios/sesion_supabase.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,8 +12,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final supabaseListo = await _iniciarSupabase();
+  final datos = elegirFuenteDeDatos(supabaseListo: supabaseListo);
+  final cliente = supabaseListo ? Supabase.instance.client : null;
   runApp(
-    RedVitalysApp(datos: elegirFuenteDeDatos(supabaseListo: supabaseListo)),
+    RedVitalysApp(
+      datos: datos,
+      auditoria: elegirAuditoria(datos: datos, cliente: cliente),
+      sesion: cliente == null ? null : SesionSupabase(cliente),
+    ),
   );
 }
 
@@ -43,9 +51,16 @@ Future<bool> _iniciarSupabase() async {
 }
 
 class RedVitalysApp extends StatelessWidget {
-  const RedVitalysApp({super.key, required this.datos});
+  const RedVitalysApp({
+    super.key,
+    required this.datos,
+    this.auditoria,
+    this.sesion,
+  });
 
   final DatosSimulados datos;
+  final AuditoriaRepositorio? auditoria;
+  final SesionSupabase? sesion;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +71,7 @@ class RedVitalysApp extends StatelessWidget {
       supportedLocales: const [Locale('es', 'CO')],
       locale: const Locale('es', 'CO'),
       theme: temaRedVitalys(),
-      home: AppScreen(datos: datos),
+      home: AppScreen(datos: datos, auditoria: auditoria, sesion: sesion),
     );
   }
 }
