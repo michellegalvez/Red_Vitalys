@@ -34,6 +34,8 @@ lib/
 │                        # indicadores.dart (indicadores y mediciones)
 ├── datos/               # datos simulados: pacientes, eventos, historias y mediciones (hoy: 6 nov 2026)
 │                        # fuente_de_datos.dart: único punto que elige la fuente de datos (AD-02; hoy, memoria)
+├── repositorios/        # AuditoriaRepositorio (agregar y listar) con su versión en memoria y la de Supabase;
+│                        # sesion_supabase.dart es temporal hasta que el login use Auth (plan P-01)
 ├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
 │                        # indicadores (promedio, marca, cambio y validar una medición), búsqueda
 │                        # y atencion.dart (validar una atención)

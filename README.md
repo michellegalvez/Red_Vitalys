@@ -55,6 +55,18 @@ flutter build web --dart-define-from-file=env.json
 - Sin `env.json` la app funciona igual, con los datos simulados, y la consola avisa «Supabase no está configurado». Con las llaves bien puestas dice «Supabase inicializado».
 - Por ahora todos los datos siguen en memoria: la conexión está lista, pero ninguna pantalla lee de Supabase. La fuente de datos se elige en un solo punto, `lib/datos/fuente_de_datos.dart` (AD-02).
 
+## Base de datos en Supabase
+
+Los scripts están en `supabase/migraciones/`. Se corren en orden, una sola vez, en *SQL Editor → New query → Run* del proyecto (se pueden repetir sin dañar nada):
+
+1. `001_base_y_auditoria.sql`: tablas comunes (`rol`, `sistema_origen`, `sede`, `usuario`, `usuario_sede`), la auditoría de solo agregar y leer, las políticas de acceso (RLS) y las sedes.
+2. Crear los 4 correos de la tabla *Cuentas de prueba* en *Authentication → Users → Add user → Create new user*, con la contraseña `vitalys2026` y **Auto Confirm User** marcado.
+3. `002_usuarios_de_prueba.sql`: carga esos usuarios con su rol y sus sedes. Debe terminar con `usuarios = 4` y `sedes_asignadas = 4`.
+
+La auditoría (`evento_auditoria`) solo acepta agregar: un trigger rechaza editar o borrar, y la IP la pone la base. Si la app corre con `env.json`, los eventos se guardan ahí y el auditor los lee de Supabase; sin `env.json`, siguen en memoria.
+
+> Temporal: mientras el inicio de sesión no use Supabase Auth, la app abre además una sesión en Supabase con el mismo correo y contraseña (`lib/repositorios/sesion_supabase.dart`).
+
 ## Cuentas de prueba
 
 Son datos ficticios del prototipo; no corresponden a personas reales. La contraseña de todas las cuentas es `vitalys2026`. La fecha de «hoy» simulada es fija: el **6 de noviembre de 2026** (el último periodo cerrado de los indicadores es octubre).
@@ -80,6 +92,7 @@ lib/
 │                        # indicadores.dart (indicadores y mediciones)
 ├── datos/               # datos simulados: pacientes, eventos, historias y mediciones (hoy: 6 nov 2026)
 │                        # fuente_de_datos.dart: el único punto que elige la fuente (hoy, memoria)
+├── repositorios/        # auditoría: interfaz, versión en memoria y versión Supabase
 ├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
 │                        # indicadores (promedio, marca, cambio y validar una medición) y búsqueda
 ├── formato/             # fechas, horas y búsqueda sin tildes (RNF-05)

@@ -41,3 +41,4 @@ Reglas:
 ## Índice
 
 - [T-00 · Conexión con Supabase](T-00-conexion-supabase.md) · v0.1.0 · hecho · plan P-00
+- [T-01 · Auditoría en Supabase](T-01-auditoria-supabase.md) · v0.1.0 · hecho · plan P-01
