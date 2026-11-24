@@ -1,11 +1,11 @@
 ---
 id: F-22
 titulo: Perfil del usuario
-version: 0.2.3
-fecha: 2026-11-06
+version: 0.3.0
+fecha: 2026-11-24
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
-requisitos: [RF-22]
+requisitos: [RF-22, RF-38]
 depende_de: [F-18]
 ---
 
@@ -13,12 +13,12 @@ depende_de: [F-18]
 
 ## Objetivo
 
-Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qué rol y desde qué sede está trabajando, y qué puede hacer y qué no con su rol (O-05).
+Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qué rol y desde qué sede está trabajando, y qué puede hacer y qué no con su rol (O-05). Además puede tener una foto de perfil, que ve y cambia desde ahí.
 
 ## Flujo principal
 
 1. El usuario entra a *Perfil*.
-2. El sistema muestra su nombre, su correo, su rol, la sede de esta sesión y las sedes que tiene asignadas.
+2. El sistema muestra su foto de perfil (o sus iniciales si no tiene), su nombre, su correo, su rol, la sede de esta sesión y las sedes que tiene asignadas.
 3. El sistema muestra la lista *Qué puede hacer con su rol*, con cada acción marcada como *Permitido* o *No incluido*, y los propósitos que su rol puede declarar.
 4. El perfil muestra la nota: "El acceso también depende de la sede desde la que ingresó y del propósito que declare en cada consulta."
 5. El perfil ofrece la opción *Cerrar sesión* (F-23).
@@ -26,6 +26,11 @@ Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qu
 ## Flujos alternos
 
 - **A1 · Otro rol:** si el usuario es administrativo o auditor, la lista tiene las mismas acciones en el mismo orden, marcadas según la tabla de *Reglas*.
+- **A2 · Subir o cambiar la foto:** el usuario elige *Subir foto* (o *Cambiar foto* si ya tiene una) y escoge una imagen de su dispositivo. Si cumple las reglas, el sistema la guarda, reemplaza la anterior y la muestra.
+- **A3 · Quitar la foto:** el usuario elige *Quitar foto*. El sistema la borra y vuelve a mostrar sus iniciales.
+- **A4 · Foto no válida:** si la imagen no es JPG ni PNG, pesa más de 2 MB o está vacía, el sistema no la guarda, conserva la foto anterior y muestra el motivo: "La foto debe ser JPG o PNG." o "La foto pesa más de 2 MB.".
+- **A5 · No se pudo guardar:** si la foto no se puede guardar, se ve "No se pudo guardar su foto. Inténtelo de nuevo." y la foto anterior sigue igual.
+- **A6 · Cancelar:** si el usuario cierra el selector sin elegir, no cambia nada.
 
 ## Reglas
 
@@ -48,17 +53,23 @@ Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qu
 Es la misma tabla de F-18.
 
 - La lista sale de las mismas reglas que el sistema aplica para permitir o denegar cada acción. Si una acción está *Permitido* en el perfil, el sistema la permite. Si está *No incluido*, el sistema la deniega.
-- El usuario no puede cambiar su rol, su sede ni sus datos desde el perfil.
+- El usuario no puede cambiar su rol, su sede ni sus datos desde el perfil, salvo su foto.
+- La foto es JPG o PNG y pesa hasta 2 MB. Cada usuario tiene una sola; subir otra reemplaza la anterior.
+- Cada usuario solo ve y cambia su propia foto. Nadie más puede leerla ni cambiarla, ni siquiera otro usuario con sesión.
+- La foto se guarda en un almacenamiento privado (AD-16) y sigue ahí al cerrar y volver a abrir la app.
+- Ver o cambiar la foto no crea un evento de acceso, porque no es información de un paciente.
 - Ver el perfil no crea un evento de acceso, porque no es información de un paciente.
 
 ## Estados
 
-- **Cargando:** mientras llegan los datos, se ve "Cargando perfil…".
+- **Cargando:** mientras llegan los datos, se ve "Cargando perfil…". La foto tiene su propio "Cargando foto…" y, mientras se guarda, el botón dice "Guardando…" y no se puede volver a pulsar.
 - **Vacío:** no aplica, porque siempre hay un usuario con sesión iniciada.
 - **Error:** si los datos no se pueden cargar, se ve "No se pudo cargar su perfil" con la opción *Reintentar*. La opción *Cerrar sesión* sigue disponible.
+- **Error de la foto:** si la foto no se puede cargar, se ve "No se pudo cargar su foto" con *Reintentar*, y el resto del perfil se ve igual.
 
 ## Datos
 
+- **Foto de perfil** del usuario, opcional. Sin ella se ven sus iniciales.
 - **Nombre** del usuario, por ejemplo "Dra. Camila Martínez".
 - **Correo** institucional, por ejemplo "camila.martinez@vitalys.co".
 - **Rol:** *Médico*, *Administrativo* o *Auditor*.
@@ -80,10 +91,18 @@ Es la misma tabla de F-18.
 - **CA-9** Dado un administrativo, cuyo perfil muestra *Registrar una medición* como *Permitido*, cuando registra la medición de un indicador para una sede, entonces ve esa medición entre las mediciones registradas.
 - **CA-10** Dado un usuario con 2 sedes asignadas que ingresó desde una de ellas, cuando abre el perfil, entonces ve la sede de la sesión y las 2 sedes asignadas.
 - **CA-11** Dado un médico, cuando abre el perfil, entonces ve los 5 propósitos; dado un administrativo, ve solo *Revisión de calidad*; y dado un auditor, ve que no declara ninguno.
+- **CA-12** Dado un usuario sin foto, cuando abre el perfil, entonces ve sus iniciales y el botón *Subir foto*, y no ve *Quitar foto*.
+- **CA-13** Dado un usuario que elige un PNG de 500 KB, cuando la sube, entonces ve su foto en el perfil, el botón pasa a *Cambiar foto* y, si cierra la app y vuelve a entrar, la foto sigue ahí.
+- **CA-14** Dado un usuario con foto, cuando elige *Quitar foto*, entonces vuelve a ver sus iniciales y, al volver a entrar, no hay foto.
+- **CA-15** Dado un usuario que elige un archivo GIF o un JPG de 3 MB, cuando intenta subirlo, entonces ve "La foto debe ser JPG o PNG." o "La foto pesa más de 2 MB." y su foto anterior no cambia.
+- **CA-16** Dado un usuario con foto, cuando sube otra distinta, entonces solo se ve la nueva y la anterior ya no está guardada.
+- **CA-17** Dado que Marcela tiene foto, cuando otro usuario con sesión intenta leer o cambiar el archivo de Marcela, entonces el sistema se lo niega.
+- **CA-18** Dado que la foto no se puede guardar, cuando el usuario la sube, entonces ve "No se pudo guardar su foto. Inténtelo de nuevo." y su foto anterior sigue igual.
 
 ## Fuera de alcance
 
 - Editar el nombre, el correo o la contraseña.
+- Recortar o girar la foto, o tomarla con la cámara.
 - Cambiar de rol o de sede sin cerrar sesión.
 - Crear, editar o desactivar usuarios y roles.
 - Cerrar sesión, que es F-23.
@@ -99,3 +118,4 @@ Ninguna.
 - 0.2.1 · 2026-11-06 · Los mensajes de rechazo quedan definidos en F-18. Se cierra esa pregunta abierta.
 - 0.2.2 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
 - 0.2.3 · 2026-11-06 · Formato: línea en blanco antes de los encabezados y lista de criterios sin cortes.
+- 0.3.0 · 2026-11-24 · Foto de perfil guardada en Supabase Storage (A2 a A6, CA-12 a CA-18) y requisito RF-38.

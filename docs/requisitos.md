@@ -1,10 +1,10 @@
 ---
 documento: requisitos
 proyecto: Red Vitalys
-version: 0.7.7
-fecha: 2026-11-08
+version: 0.8.0
+fecha: 2026-11-24
 estado: borrador
-basado_en: prd 0.7.6
+basado_en: prd 0.8.0
 ---
 
 # Requisitos · Red Vitalys
@@ -61,6 +61,7 @@ basado_en: prd 0.7.6
 - **RF-22** El sistema debe permitir que el usuario vea en su perfil su rol, su sede de ingreso y la lista de lo que tiene permitido y lo que no. *Debe*
 - **RF-23** El sistema debe permitir que el usuario cierre sesión. *Debe*
 - **RF-35** El sistema debe cerrar la sesión de un usuario después de 15 minutos sin uso. *Debe*
+- **RF-38** El sistema debe permitir que el usuario suba, cambie y quite su foto de perfil, que debe ser JPG o PNG de hasta 2 MB. La foto se guarda en Supabase Storage y solo su dueño puede verla y cambiarla. *Debe*
 - **RF-37** El sistema debe llevar al usuario, al abrir la sesión, a la pantalla inicial de su rol: *Pacientes con alta reciente* para el médico, el *Tablero de indicadores* para el administrativo y la *Auditoría de accesos* para el auditor. *Debe*
 
 ### Tabla de permisos
@@ -101,6 +102,7 @@ Los laboratorios no tienen indicadores. Un mes cierra cuando termina: la medici�
 - **RNF-05** Toda la interfaz está en español, con las fechas en formato día, mes abreviado y año (por ejemplo, "30 oct 2026") y la hora en formato de 24 horas. (O-01, O-02, O-03, O-04, O-05) *Debe*
 - **RNF-06** Con los datos simulados, la búsqueda de pacientes, la lista de pacientes con alta reciente, la historia unificada, el tablero de indicadores y el registro de accesos se muestran en menos de 2 segundos desde que el usuario los abre. (O-01, O-02, O-03, O-04) *Debe*
 - **RNF-07** Todas las pantallas se pueden usar sin desplazamiento horizontal en un ancho de 360 px (celular) y de 1280 px (computador). (O-01, O-02, O-03, O-04, O-05) *Debe*
+- **RNF-08** En la entrega 3 los datos de la app (usuarios, sedes, auditoría y la foto de perfil) se guardan en Supabase y siguen ahí al cerrar y volver a abrir la app. La memoria solo se usa en las pruebas automáticas y cuando la app corre sin configurar Supabase. (O-04, O-05) *Debe*
 
 ## Preguntas abiertas
 
@@ -124,3 +126,4 @@ Ninguna.
 - 0.7.5 · 2026-11-08 · RF-14: la atención rechazada por validación no es evento. RF-08: categoría del indicador. RF-27: redondeo del cambio y marca Mejora/Empeora/Sin cambio. Alineado con el prd 0.7.4.
 - 0.7.6 · 2026-11-08 · RF-25: la atención con Urgencia no da relación ni por su alta. RF-14: dos eventos al abrir la historia y el ingreso sin sedes. Alineado con el prd 0.7.5.
 - 0.7.7 · 2026-11-08 · RF-19: al registrar solo dos propósitos. RNF-04: la cuenta sin sedes, el usuario con 2 sedes y la sede sin medición de prueba. Alineado con el prd 0.7.6.
+- 0.8.0 · 2026-11-24 · RF-38: foto de perfil. RNF-08: los datos de la entrega 3 viven en Supabase. Alineado con el prd 0.8.0.

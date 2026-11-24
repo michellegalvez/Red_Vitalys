@@ -12,9 +12,9 @@ Esta app es el frontend para la Dirección Médica y el personal clínico. El ac
 
 ## Qué cubre el prototipo
 
-Cubre los 37 requisitos funcionales (23 specs, F-01 a F-23). Con el rol médico, el administrativo o el auditor se puede:
+Cubre los 38 requisitos funcionales (23 specs, F-01 a F-23). Con el rol médico, el administrativo o el auditor se puede:
 
-- **Todos los roles:** iniciar sesión en dos pasos (correo y contraseña, y luego la sede entre las asignadas), ver el perfil con lo que el rol puede hacer y cerrar sesión. La sesión se cierra tras 15 minutos sin uso y el inicio de sesión se bloquea 15 minutos tras 5 intentos fallidos.
+- **Todos los roles:** iniciar sesión en dos pasos (correo y contraseña, y luego la sede entre las asignadas), ver el perfil con lo que el rol puede hacer, subir, cambiar o quitar su foto de perfil y cerrar sesión. La sesión se cierra tras 15 minutos sin uso y el inicio de sesión se bloquea 15 minutos tras 5 intentos fallidos.
 - **Médico:** ver el inicio y los pacientes con alta reciente ordenados por riesgo de reingreso, buscar pacientes, declarar el propósito de la consulta, abrir la historia clínica unificada, ver el riesgo de reingreso con los factores que lo subieron o bajaron, registrar una atención y ver el tablero y el detalle de los indicadores.
 - **Administrativo:** buscar pacientes y ver sus datos básicos (solo con el propósito *Revisión de calidad*), ver el tablero de indicadores y registrar la medición mensual de una sede. Si intenta algo que su rol no permite, ve el acceso denegado.
 - **Auditor:** revisar la auditoría de accesos (quién, cuándo, a qué recurso, con qué resultado y propósito) y consultar el tablero y el detalle de los indicadores: reingreso a 30 días, tiempo de espera, adherencia a protocolos y eventos adversos evitables, por sede.
@@ -62,8 +62,11 @@ Los scripts están en `supabase/migraciones/`. Se corren en orden, una sola vez,
 1. `001_base_y_auditoria.sql`: tablas comunes (`rol`, `sistema_origen`, `sede`, `usuario`, `usuario_sede`), la auditoría de solo agregar y leer, las políticas de acceso (RLS) y las sedes.
 2. Crear los 4 correos de la tabla *Cuentas de prueba* en *Authentication → Users → Add user → Create new user*, con la contraseña `vitalys2026` y **Auto Confirm User** marcado.
 3. `002_usuarios_de_prueba.sql`: carga esos usuarios con su rol y sus sedes. Debe terminar con `usuarios = 4` y `sedes_asignadas = 4`.
+4. `003_fotos_perfil.sql`: crea el bucket privado `fotos-perfil` de Storage (solo JPG y PNG, hasta 2 MB) y las políticas para que cada usuario solo lea y cambie su propia foto. Se corre después del 001; se ve en *Storage*.
 
 La auditoría (`evento_auditoria`) solo acepta agregar: un trigger rechaza editar o borrar, y la IP la pone la base. Si la app corre con `env.json`, los eventos se guardan ahí y el auditor los lee de Supabase; sin `env.json`, siguen en memoria.
+
+La foto de perfil se guarda en Storage, en `fotos-perfil/<id_usuario>/foto.<ext>`, y su ruta en `usuario.foto_ruta`. Se sube desde *Perfil*; sin `env.json` la foto queda solo en memoria.
 
 > Temporal: mientras el inicio de sesión no use Supabase Auth, la app abre además una sesión en Supabase con el mismo correo y contraseña (`lib/repositorios/sesion_supabase.dart`).
 
@@ -92,7 +95,8 @@ lib/
 │                        # indicadores.dart (indicadores y mediciones)
 ├── datos/               # datos simulados: pacientes, eventos, historias y mediciones (hoy: 6 nov 2026)
 │                        # fuente_de_datos.dart: el único punto que elige la fuente (hoy, memoria)
-├── repositorios/        # auditoría: interfaz, versión en memoria y versión Supabase
+├── repositorios/        # auditoría y foto de perfil: interfaz, versión en memoria y versión Supabase;
+│                        # selector_foto.dart abre el selector de imágenes (image_picker)
 ├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
 │                        # indicadores (promedio, marca, cambio y validar una medición) y búsqueda
 ├── formato/             # fechas, horas y búsqueda sin tildes (RNF-05)

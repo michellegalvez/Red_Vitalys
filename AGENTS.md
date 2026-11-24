@@ -22,7 +22,7 @@ Materia: Seminario en Ingeniería de Software · Universidad Icesi.
 
 ## Estructura actual de lib/
 
-Prototipo navegable (Entrega 2) con datos simulados en memoria. En la entrega 3 se conecta a Supabase: el único paquete externo es `supabase_flutter` y la conexión ya está inicializada en `main.dart` (plan P-00), pero las pantallas siguen leyendo de memoria. La URL y la publishable key salen de `env.json` (en `.gitignore`; el ejemplo es `env.example.json`) y la secret key nunca va en el repo. Integra las pantallas de todo el equipo en una sola app y cubre los 37 requisitos funcionales: acceso en dos pasos, inicio del médico, pacientes en seguimiento, búsqueda de pacientes, declaración del propósito, historia clínica con el riesgo y sus factores, registro de una atención, datos básicos del administrativo, acceso denegado, tablero y detalle de indicadores, registro de una medición, auditoría de accesos y perfil.
+Prototipo navegable (Entrega 2) con datos simulados en memoria. En la entrega 3 se conecta a Supabase: los paquetes externos son `supabase_flutter` y `image_picker` (selector de la foto de perfil) y la conexión ya está inicializada en `main.dart` (plan P-00), pero las pantallas siguen leyendo de memoria. La URL y la publishable key salen de `env.json` (en `.gitignore`; el ejemplo es `env.example.json`) y la secret key nunca va en el repo. Integra las pantallas de todo el equipo en una sola app y cubre los 38 requisitos funcionales: acceso en dos pasos, inicio del médico, pacientes en seguimiento, búsqueda de pacientes, declaración del propósito, historia clínica con el riesgo y sus factores, registro de una atención, datos básicos del administrativo, acceso denegado, tablero y detalle de indicadores, registro de una medición, auditoría de accesos y perfil.
 
 ```
 lib/
@@ -34,11 +34,13 @@ lib/
 │                        # indicadores.dart (indicadores y mediciones)
 ├── datos/               # datos simulados: pacientes, eventos, historias y mediciones (hoy: 6 nov 2026)
 │                        # fuente_de_datos.dart: único punto que elige la fuente de datos (AD-02; hoy, memoria)
-├── repositorios/        # AuditoriaRepositorio (agregar y listar) con su versión en memoria y la de Supabase;
-│                        # sesion_supabase.dart es temporal hasta que el login use Auth (plan P-01)
+├── repositorios/        # AuditoriaRepositorio (agregar y listar) y FotoPerfilRepositorio (descargar, subir,
+│                        # quitar), cada uno con su versión en memoria y la de Supabase; selector_foto.dart
+│                        # abre el selector de imágenes; sesion_supabase.dart es temporal hasta que el login
+│                        # use Auth (plan P-01)
 ├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
-│                        # indicadores (promedio, marca, cambio y validar una medición), búsqueda
-│                        # y atencion.dart (validar una atención)
+│                        # indicadores (promedio, marca, cambio y validar una medición), búsqueda,
+│                        # atencion.dart (validar una atención) y foto.dart (tipo y tamaño de la foto)
 ├── formato/             # fechas, horas y búsqueda sin tildes (RNF-05)
 ├── widgets/             # componentes de la galería, cada uno una sola vez: tarjeta.dart
 │                        # (TarjetaVitalys, ChipVitalys, EstadoVacio), campo_dato, barra_volver,

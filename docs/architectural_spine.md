@@ -1,17 +1,17 @@
 ---
 documento: architectural_spine
 proyecto: Red Vitalys
-version: 0.6.10
-fecha: 2026-11-08
+version: 0.7.0
+fecha: 2026-11-24
 estado: borrador
-basado_en: [prd 0.7.6, requisitos 0.7.7]
+basado_en: [prd 0.8.0, requisitos 0.8.0]
 ---
 
 # Architectural spine · Red Vitalys
 
 ## Resumen
 
-Red Vitalys es una app para la Dirección Médica y el personal clínico. Unifica la historia del paciente, muestra los indicadores de calidad por sede y el riesgo de reingreso, y audita cada acceso. Corre en el navegador web y en Android. En la entrega 2 funciona con datos simulados en memoria, y en la entrega 3 se conecta a Supabase (Auth y Postgres con PostgREST), sin backend propio.
+Red Vitalys es una app para la Dirección Médica y el personal clínico. Unifica la historia del paciente, muestra los indicadores de calidad por sede y el riesgo de reingreso, y audita cada acceso. Corre en el navegador web y en Android. En la entrega 2 funcionaba con datos simulados en memoria. En la entrega 3 se conecta a Supabase (Auth, Postgres con PostgREST y Storage), sin backend propio, y los datos se guardan ahí.
 
 ## Diagrama
 
@@ -24,27 +24,30 @@ flowchart LR
   guard --> repos[Repositorios]
   guard -- cada intento --> audit[Registro de auditoría]
   session -- intento fallido --> audit
-  repos --> mem[(Datos simulados en memoria · entrega 2)]
-  repos --> sdk[supabase_flutter · entrega 3]
+  repos --> mem[(Memoria · solo pruebas y sin configuración)]
+  repos --> sdk[supabase_flutter]
   audit --> mem
   audit --> sdk
   sdk --> auth[Auth]
   sdk --> db[(Postgres · PostgREST)]
+  sdk --> storage[(Storage · fotos de perfil)]
 ```
 
 ## Stack
 
 - Frontend: Flutter 3.x y Dart 3.x. Plataformas: web y Android (iPhone no se incluye).
 - Estado y navegación: lo que trae Flutter. El estado se maneja con `setState` en la Screen anfitriona y la navegación con la de Flutter. No se usan paquetes de estado ni de navegación.
-- SDK: `supabase_flutter`, que es el único paquete agregado.
-- Backend: Supabase con Auth y la base de datos (Postgres + PostgREST). Storage no se usa.
+- SDK: `supabase_flutter`, y `image_picker` para elegir la foto de perfil. No hay más paquetes agregados.
+- Backend: Supabase con Auth, la base de datos (Postgres + PostgREST) y Storage.
+- Selector de imágenes: `image_picker`, para elegir la foto de perfil en web y Android.
 - Entrega 2: sin conexión a Supabase. Todos los datos son simulados y viven en memoria.
+- Entrega 3: los datos viven en Supabase. La memoria queda para las pruebas y para correr sin configuración.
 
 ## Qué cubre cada servicio
 
 - **Auth**: inicio y cierre de sesión con correo institucional y contraseña. Las cuentas ya existen y no hay registro desde la app. Auth no guarda el rol ni la sede.
 - **Base de datos**: pacientes y sus identificadores en cada sistema de origen, sistemas de origen, sedes, atenciones, predicciones de riesgo de reingreso con sus factores, indicadores con sus mediciones, usuarios con su rol y sus sedes asignadas, y eventos de auditoría. El detalle irá en `docs/modelo.md`.
-- **Storage**: no se usa en esta versión.
+- **Storage**: un bucket privado, `fotos-perfil`, con la foto de perfil de cada usuario (AD-16).
 
 ## Invariantes
 
@@ -55,8 +58,8 @@ flowchart LR
 
 ### AD-02 · Un contrato, dos fuentes
 
-- **Regla:** cada repositorio tiene una interfaz y dos implementaciones: una en memoria con los datos simulados (entrega 2) y una con Supabase (entrega 3). La fuente se elige en un solo punto de la app, y los datos simulados salen de un único conjunto compartido que cumple RNF-04.
-- **Evita:** reescribir las pantallas al conectar Supabase, y que cada integrante invente sus propios datos de prueba.
+- **Regla:** cada repositorio tiene una interfaz y dos implementaciones: la de Supabase, que es la fuente de la app en la entrega 3, y una en memoria que solo sirve para las pruebas automáticas y para correr la app sin configurar Supabase. La fuente se elige en un solo punto de la app, y los datos simulados salen de un único conjunto compartido que cumple RNF-04.
+- **Evita:** reescribir las pantallas al conectar Supabase, que la memoria siga siendo la fuente real, y que cada integrante invente sus propios datos de prueba.
 
 ### AD-03 · Solo los servicios piden datos
 
@@ -123,16 +126,20 @@ flowchart LR
 - **Regla:** la app nunca manda la IP de un intento de inicio de sesión. En la entrega 2 es un dato simulado. En la entrega 3 la registra la base al recibir el evento.
 - **Evita:** una auditoría con IP inventadas por quien llama a la app.
 
+### AD-16 · Archivos privados, por usuario
+
+- **Regla:** las fotos de perfil van en un bucket privado de Storage, dentro de la carpeta con el id del usuario (`<id_usuario>/foto.<ext>`). Las políticas de Storage dejan a cada usuario leer y escribir solo su carpeta, y la ruta queda en `usuario.foto_ruta`. Solo `FotoPerfilRepositorio` habla con Storage.
+- **Evita:** fotos con enlace público, y que un usuario lea o reemplace la foto de otro.
+
 ## Diferido
 
-- **RLS (condición obligatoria antes de usar datos reales).** En esta versión el control de acceso corre solo en la app, así que cualquiera con la publishable key podría leer las tablas saltándoselo. Esto se acepta porque todos los datos son simulados. Antes de cargar datos reales hay que activar RLS para que el control no dependa solo de la app.
+- **RLS en las tablas de pacientes (condición obligatoria antes de usar datos reales).** La auditoría, los usuarios, las sedes y las fotos ya tienen RLS. En las tablas de pacientes, atenciones, riesgo e indicadores el control de acceso corre solo en la app, así que cualquiera con la publishable key podría leerlas saltándoselo. Esto se acepta porque todos los datos son simulados. Antes de cargar datos reales hay que activar RLS en ellas.
 - **El bloqueo por dispositivo se salta cambiando de dispositivo.** Se acepta en esta versión. En la entrega 3 se decide si además se cuentan los intentos por IP en la base.
 - **Funciones de base de datos para AD-14 y AD-15.** En la entrega 3, contar los intentos fallidos por IP y leer la IP exigen que corra lógica dentro de Supabase. No es un servidor propio ni una Edge Function, pero es algo que el equipo todavía no ha nombrado. Se decide al empezar la entrega 3.
 - **Registro abierto de intentos fallidos.** Un intento de inicio de sesión fallido lo hace alguien sin sesión, así que escribir ese evento queda abierto a cualquiera con la publishable key. Se acepta con datos simulados y se cierra antes de usar datos reales.
 - **El cálculo real del riesgo de reingreso.** En esta versión las predicciones y sus factores son simulados.
 - **`docs/modelo.md`.** El detalle de las tablas se escribe antes de conectar Supabase en la entrega 3.
 - **Edge Functions y Realtime.** No se usan. Se revisarían si la auditoría o el riesgo tuvieran que calcularse fuera de la app.
-- **Storage.** Se decide si en algún momento la app maneja archivos.
 
 ## Historial
 
@@ -153,3 +160,4 @@ flowchart LR
 - 0.6.8 · 2026-11-08 · AD-07: la atención rechazada por validación tampoco es evento. Alineada con el prd 0.7.4 y los requisitos 0.7.5.
 - 0.6.9 · 2026-11-08 · AD-07: abrir la historia crea dos eventos. Alineada con el prd 0.7.5 y los requisitos 0.7.6.
 - 0.6.10 · 2026-11-08 · Alineada con el prd 0.7.6 y los requisitos 0.7.7, sin cambios en las invariantes.
+- 0.7.0 · 2026-11-24 · Storage entra al stack con la foto de perfil (AD-16). AD-02: Supabase es la fuente y la memoria queda para pruebas. Alineada con el prd 0.8.0 y los requisitos 0.8.0.

@@ -1,8 +1,8 @@
 ---
 documento: prd
 proyecto: Red Vitalys
-version: 0.7.6
-fecha: 2026-11-08
+version: 0.8.0
+fecha: 2026-11-24
 estado: borrador
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 ---
@@ -70,7 +70,7 @@ Los 5 objetivos funcionando con datos simulados y con los 3 roles, en un recorri
 - Ver el tablero de indicadores y el detalle de un indicador.
 - Registrar las mediciones de los indicadores de una sede.
 - Revisar la auditoría de accesos, con filtros para los denegados y los de emergencia.
-- Ver el perfil con lo que el rol permite y lo que no.
+- Ver el perfil con lo que el rol permite y lo que no, y subir, cambiar o quitar la foto de perfil.
 - Cerrar sesión.
 
 ### No incluye
@@ -91,7 +91,7 @@ Los 5 objetivos funcionando con datos simulados y con los 3 roles, en un recorri
 
 - **Equipo**: 4 personas: Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco y Samuel Cardoso Martinez.
 - **Entrega 2** (8 de noviembre de 2026): prototipo navegable con datos simulados en memoria, sin conexión a la nube.
-- **Entrega 3**: aplicación final con exhibición y las specs completas.
+- **Entrega 3**: aplicación final con exhibición y las specs completas, conectada a Supabase (Auth, base de datos y Storage): los datos se guardan ahí y siguen al cerrar la app.
 - **Datos**: no se guardan datos reales de pacientes. Todos son simulados, por la protección de los datos de salud en Colombia (Ley 1581 de 2012).
 - **Plataformas**: computador y celular.
 - **Contexto académico**: Seminario en Ingeniería de Software · Universidad Icesi.
@@ -120,3 +120,4 @@ Los 5 objetivos funcionando con datos simulados y con los 3 roles, en un recorri
 - 0.7.4 · 2026-11-08 · La atención rechazada por validación tampoco es evento (O-04).
 - 0.7.5 · 2026-11-08 · Una atención con Urgencia no da relación, tampoco por el alta que lleve.
 - 0.7.6 · 2026-11-08 · El alcance une la historia y el riesgo en una sola línea; la relación con Urgencia sale de O-04 y queda en Usuarios; al registrar una atención solo hay dos propósitos.
+- 0.8.0 · 2026-11-24 · El perfil incluye la foto de perfil. La entrega 3 guarda los datos en Supabase.

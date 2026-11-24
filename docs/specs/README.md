@@ -2,7 +2,7 @@
 
 Actualizado: 2026-11-08
 
-Las 23 specs cubren los 37 requisitos funcionales (RF-01 a RF-37) y 4 no funcionales (RNF-01, RNF-03, RNF-05 y RNF-07, en F-19).
+Las 23 specs cubren los 38 requisitos funcionales (RF-01 a RF-38) y 4 no funcionales (RNF-01, RNF-03, RNF-05 y RNF-07, en F-19).
 
 - [F-01 · Búsqueda de pacientes](F-01-busqueda-pacientes.md) · v0.1.3 · borrador · RF-01
 - [F-02 · Historia unificada del paciente](F-02-historia-unificada.md) · v0.1.9 · borrador · RF-02
@@ -25,7 +25,7 @@ Las 23 specs cubren los 37 requisitos funcionales (RF-01 a RF-37) y 4 no funcion
 - [F-19 · Condiciones de uso de la app](F-19-condiciones-uso-app.md) · v0.2.1 · borrador · RNF-01, RNF-03, RNF-05, RNF-07
 - [F-20 · Registro de eventos de acceso](F-20-registro-eventos-acceso.md) · v0.4.6 · borrador · RF-14, RF-17, RF-31
 - [F-21 · Consulta de la auditoría de accesos](F-21-auditoria-accesos.md) · v0.1.9 · borrador · RF-15, RF-16
-- [F-22 · Perfil del usuario](F-22-perfil-permisos.md) · v0.2.3 · borrador · RF-22
+- [F-22 · Perfil del usuario](F-22-perfil-permisos.md) · v0.3.0 · borrador · RF-22, RF-38
 - [F-23 · Cierre de sesión](F-23-cierre-sesion.md) · v0.1.1 · borrador · RF-23
 
 ## Avance
