@@ -1,10 +1,27 @@
 import 'package:red_vitalys/datos/datos_simulados.dart';
+import 'package:red_vitalys/repositorios/auditoria_memoria.dart';
+import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
+import 'package:red_vitalys/repositorios/auditoria_supabase.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Único punto que decide de dónde salen los datos de la app (AD-02).
 ///
-/// Por ahora siempre son los datos simulados en memoria, esté o no lista la
-/// conexión con Supabase. Cuando existan los repositorios con Supabase, el
-/// cambio se hace solo aquí.
+/// Los pacientes, las historias y los indicadores siguen en memoria hasta que
+/// cada quien pase los suyos a Supabase.
 DatosSimulados elegirFuenteDeDatos({required bool supabaseListo}) {
   return DatosSimulados.porDefecto;
+}
+
+/// Dónde se guarda la auditoría: en Supabase si hay [cliente]; si no, en
+/// memoria con los eventos simulados (P-01).
+AuditoriaRepositorio elegirAuditoria({
+  required DatosSimulados datos,
+  SupabaseClient? cliente,
+}) {
+  if (cliente == null) return AuditoriaMemoria(datos.eventos);
+  return AuditoriaSupabase(
+    cliente: cliente,
+    sedesPorNombre: {for (final s in datos.sedes) s.nombre: s.id},
+    usuariosPorCorreo: {for (final u in datos.usuarios) u.correo: u.id},
+  );
 }

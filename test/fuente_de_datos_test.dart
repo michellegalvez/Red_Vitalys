@@ -16,4 +16,11 @@ void main() {
       same(DatosSimulados.porDefecto),
     );
   });
+
+  test('sin cliente de Supabase, la auditoría es la de memoria', () async {
+    final auditoria = elegirAuditoria(datos: DatosSimulados.porDefecto);
+    expect(auditoria.esRemoto, isFalse);
+    final eventos = await auditoria.listar();
+    expect(eventos.length, DatosSimulados.porDefecto.eventos.length);
+  });
 }
