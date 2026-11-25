@@ -6,6 +6,7 @@ import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/datos/historia_simulada.dart';
 import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/historia.dart';
+import 'package:red_vitalys/models/sign_in_result.dart';
 import 'package:red_vitalys/modelos/indicadores.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/pages/acceso_page.dart';
@@ -30,8 +31,9 @@ import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/repositorios/foto_memoria.dart';
 import 'package:red_vitalys/repositorios/foto_repositorio.dart';
 import 'package:red_vitalys/repositorios/selector_foto.dart';
-import 'package:red_vitalys/repositorios/sesion_supabase.dart';
 import 'package:red_vitalys/screens/secciones.dart';
+import 'package:red_vitalys/services/auth_memory.dart';
+import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
@@ -93,7 +95,7 @@ class AppScreen extends StatefulWidget {
     required this.datos,
     this.reloj = DateTime.now,
     this.auditoria,
-    this.sesion,
+    this.auth,
     this.fotos,
     this.selectorFoto,
   });
@@ -109,8 +111,8 @@ class AppScreen extends StatefulWidget {
   /// Dónde se guardan los eventos de auditoría. Sin él, en memoria (P-01).
   final AuditoriaRepositorio? auditoria;
 
-  /// TEMPORAL (P-01): sesión de Supabase junto al inicio simulado.
-  final SesionSupabase? sesion;
+  /// Cómo se inicia y se cierra la sesión. Sin él, los usuarios simulados.
+  final AuthService? auth;
 
   /// Hora real del dispositivo, para el bloqueo de 15 minutos (F-14).
   final DateTime Function() reloj;
@@ -121,6 +123,8 @@ class AppScreen extends StatefulWidget {
 
 class _AppScreenState extends State<AppScreen> {
   DatosSimulados get _datos => widget.datos;
+
+  late final AuthService _auth = widget.auth ?? AuthMemory(widget.datos);
 
   // Sesión (F-13, F-15, F-23).
   Usuario? _usuario;
@@ -256,17 +260,9 @@ class _AppScreenState extends State<AppScreen> {
     // vuelve a leer el campo.
     final correoEscrito = _correo.text.trim();
     final contrasenaEscrita = _contrasena.text;
-    final usuarioEscrito = _datos.usuarioPorCorreo(correoEscrito);
-    final resultado = evaluarIngreso(
-      correo: _correo.text,
-      contrasena: _contrasena.text,
-      usuario: usuarioEscrito,
-      contrasenaValida: _datos.contrasenaPrototipo,
-      bloqueado: _bloqueado,
-    );
-    if (resultado == ResultadoIngreso.camposVacios) {
+    if (correoEscrito.isEmpty || contrasenaEscrita.isEmpty) {
       setState(() {
-        _mensajeError = resultado.mensaje;
+        _mensajeError = mensajeCamposVacios;
         _avisoInactividad = null;
       });
       return;
@@ -276,8 +272,10 @@ class _AppScreenState extends State<AppScreen> {
       _ingresando = true;
       _avisoInactividad = null;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    if (!mounted) return;
+    if (!_auth.isRemote) {
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+      if (!mounted) return;
+    }
 
     if (_falla('ingresar')) {
       // Falla de red (F-13): se conserva el correo, se borra la contraseña y
@@ -290,9 +288,25 @@ class _AppScreenState extends State<AppScreen> {
       return;
     }
 
-    if (resultado == ResultadoIngreso.valido) {
-      await _abrirSesionDeSupabase(correoEscrito, contrasenaEscrita);
+    var resultado = ResultadoIngreso.bloqueado;
+    Usuario? usuarioEscrito;
+    if (!_bloqueado) {
+      final respuesta = await _auth.signIn(correoEscrito, contrasenaEscrita);
       if (!mounted) return;
+      if (respuesta.status == SignInStatus.networkError) {
+        setState(() {
+          _ingresando = false;
+          _contrasena.clear();
+          _mensajeError = _mensajeFallaIngreso;
+        });
+        return;
+      }
+      resultado = switch (respuesta.status) {
+        SignInStatus.success => ResultadoIngreso.valido,
+        SignInStatus.noSites => ResultadoIngreso.sinSedes,
+        _ => ResultadoIngreso.datosIncorrectos,
+      };
+      usuarioEscrito = respuesta.user;
     }
 
     setState(() {
@@ -396,19 +410,18 @@ class _AppScreenState extends State<AppScreen> {
     _cargarEventosSiHaceFalta();
   }
 
-  /// TEMPORAL (P-01): abre una sesión en Supabase con el mismo correo y
-  /// contraseña. Si falla, la app sigue; el ingreso se detiene al guardar el
-  /// evento, que sí necesita la sesión.
-  Future<void> _abrirSesionDeSupabase(String correo, String contrasena) async {
-    try {
-      await widget.sesion?.iniciar(correo, contrasena);
-    } catch (error) {
-      debugPrint('No se pudo abrir la sesión en Supabase: $error');
-    }
+  /// Cierra la sesión de Auth sin esperar; si falla, solo avisa en consola.
+  void _cerrarSesionDeAuth() {
+    unawaited(
+      _auth.signOut().catchError((Object error) {
+        debugPrint('No se pudo cerrar la sesión de Auth: $error');
+      }),
+    );
   }
 
   /// El usuario sale sin confirmar la sede: no se abre la sesión (F-13 A6).
   void _volverACredenciales() {
+    _cerrarSesionDeAuth();
     setState(() {
       _paso = PasoAcceso.credenciales;
       _usuarioValidado = null;
@@ -422,14 +435,7 @@ class _AppScreenState extends State<AppScreen> {
   /// sede, la consulta abierta y lo que no se había guardado.
   void _cerrarSesion({bool porInactividad = false}) {
     _temporizadorInactividad?.cancel();
-    final sesion = widget.sesion;
-    if (sesion != null) {
-      unawaited(
-        sesion.cerrar().catchError((Object error) {
-          debugPrint('No se pudo cerrar la sesión en Supabase: $error');
-        }),
-      );
-    }
+    _cerrarSesionDeAuth();
     setState(() {
       _cerrandoSesion = false;
       _errorCierre = null;

@@ -5,6 +5,9 @@ import 'package:red_vitalys/repositorios/auditoria_supabase.dart';
 import 'package:red_vitalys/repositorios/foto_memoria.dart';
 import 'package:red_vitalys/repositorios/foto_repositorio.dart';
 import 'package:red_vitalys/repositorios/foto_supabase.dart';
+import 'package:red_vitalys/services/auth_memory.dart';
+import 'package:red_vitalys/services/auth_service.dart';
+import 'package:red_vitalys/services/auth_supabase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Único punto que decide de dónde salen los datos de la app (AD-02).
@@ -33,5 +36,18 @@ AuditoriaRepositorio elegirAuditoria({
     cliente: cliente,
     sedesPorNombre: {for (final s in datos.sedes) s.nombre: s.id},
     usuariosPorCorreo: {for (final u in datos.usuarios) u.correo: u.id},
+  );
+}
+
+/// El servicio de autenticación: Supabase Auth, o los usuarios simulados (AD-02).
+AuthService elegirAuth({
+  required DatosSimulados datos,
+  SupabaseClient? cliente,
+}) {
+  if (cliente == null) return AuthMemory(datos);
+  return AuthSupabase(
+    client: cliente,
+    sitesByName: {for (final s in datos.sedes) s.nombre: s.id},
+    knownUsers: {for (final u in datos.usuarios) u.correo: u},
   );
 }

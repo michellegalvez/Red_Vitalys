@@ -38,6 +38,9 @@ lib/
 │                        # quitar), cada uno con su versión en memoria y la de Supabase; selector_foto.dart
 │                        # abre el selector de imágenes; sesion_supabase.dart es temporal hasta que el login
 │                        # use Auth (plan P-01)
+├── models/              # modelos nuevos que siguen el estándar (sign_in_result.dart)
+├── services/            # servicios nuevos que siguen el estándar: auth_service (interfaz) con
+│                        # auth_memory y auth_supabase
 ├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
 │                        # indicadores (promedio, marca, cambio y validar una medición), búsqueda,
 │                        # atencion.dart (validar una atención) y foto.dart (tipo y tamaño de la foto)

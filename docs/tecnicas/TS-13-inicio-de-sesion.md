@@ -1,7 +1,7 @@
 ---
 id: TS-13
 titulo: Inicio de sesión con la sede asignada
-version: 0.1.0
+version: 0.1.1
 fecha: 2026-11-24
 estado: borrador
 funcional: F-13 0.4.3
@@ -17,7 +17,7 @@ El inicio de sesión deja de comparar contra los usuarios simulados y valida con
 
 - Correr, en este orden y una sola vez, `supabase/migraciones/001_base_y_auditoria.sql` y `002_usuarios_de_prueba.sql`.
 - Crear en *Authentication → Users* los 4 correos de la tabla *Cuentas de prueba* del README, con la contraseña `vitalys2026` y *Auto Confirm User* marcado.
-- Política en `evento_auditoria` que deje a quien no tiene sesión insertar solo eventos de la acción *Ingresar* con resultado *Denegado* (un intento fallido todavía no tiene sesión). La IP la pone la base (AD-15).
+- La política que deja guardar sin sesión los eventos de *Ingresar* con resultado *Denegado* (un intento fallido todavía no tiene sesión) ya viene en el script 001. La IP la pone la base (AD-15).
 - Datos de prueba (CA-11): un usuario por rol con al menos una sede, un usuario con 2 sedes y `tomas.herrera@vitalys.co` sin sedes.
 
 ## Piezas
@@ -62,3 +62,4 @@ El inicio de sesión deja de comparar contra los usuarios simulados y valida con
 ## Historial
 
 - 0.1.0 · 2026-11-24 · Primera versión.
+- 0.1.1 · 2026-11-24 · La política de los eventos de ingreso fallido ya está en el script 001: se quita de la preparación a mano.

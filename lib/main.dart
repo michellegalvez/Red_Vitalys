@@ -5,8 +5,8 @@ import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/datos/fuente_de_datos.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/repositorios/foto_repositorio.dart';
-import 'package:red_vitalys/repositorios/sesion_supabase.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
+import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,7 +19,7 @@ Future<void> main() async {
     RedVitalysApp(
       datos: datos,
       auditoria: elegirAuditoria(datos: datos, cliente: cliente),
-      sesion: cliente == null ? null : SesionSupabase(cliente),
+      auth: elegirAuth(datos: datos, cliente: cliente),
       fotos: elegirFotos(cliente: cliente),
     ),
   );
@@ -57,13 +57,13 @@ class RedVitalysApp extends StatelessWidget {
     super.key,
     required this.datos,
     this.auditoria,
-    this.sesion,
+    this.auth,
     this.fotos,
   });
 
   final DatosSimulados datos;
   final AuditoriaRepositorio? auditoria;
-  final SesionSupabase? sesion;
+  final AuthService? auth;
   final FotoPerfilRepositorio? fotos;
 
   @override
@@ -78,7 +78,7 @@ class RedVitalysApp extends StatelessWidget {
       home: AppScreen(
         datos: datos,
         auditoria: auditoria,
-        sesion: sesion,
+        auth: auth,
         fotos: fotos,
       ),
     );
