@@ -62,3 +62,4 @@ Reglas:
 - [P-00 · Conexión con Supabase](P-00-conexion-supabase.md) · v0.1.0 · hecho · transversal (AD-01, AD-02, AD-13) · tareas: [T-00](../tasks/T-00-conexion-supabase.md)
 - [P-01 · Auditoría de accesos guardada en Supabase](P-01-auditoria-supabase.md) · v0.1.0 · hecho · F-20, F-21 · tareas: [T-01](../tasks/T-01-auditoria-supabase.md)
 - [P-02 · Foto de perfil guardada en Supabase Storage](P-02-perfil-foto-storage.md) · v0.1.0 · hecho · F-22 · tareas: [T-02](../tasks/T-02-perfil-foto-storage.md)
+- [P-03 · Autenticación con Supabase Auth y cierre de sesión](P-03-autenticacion-supabase.md) · v0.1.0 · hecho · F-13, F-14, F-15, F-18, F-23 · tareas: [T-03](../tasks/T-03-autenticacion-supabase.md)

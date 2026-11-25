@@ -43,3 +43,4 @@ Reglas:
 - [T-00 · Conexión con Supabase](T-00-conexion-supabase.md) · v0.1.0 · hecho · plan P-00
 - [T-01 · Auditoría en Supabase](T-01-auditoria-supabase.md) · v0.1.0 · hecho · plan P-01
 - [T-02 · Foto de perfil en Storage](T-02-perfil-foto-storage.md) · v0.1.0 · hecho · plan P-02
+- [T-03 · Autenticación con Supabase Auth](T-03-autenticacion-supabase.md) · v0.1.0 · hecho · plan P-03

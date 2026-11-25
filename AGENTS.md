@@ -34,10 +34,9 @@ lib/
 │                        # indicadores.dart (indicadores y mediciones)
 ├── datos/               # datos simulados: pacientes, eventos, historias y mediciones (hoy: 6 nov 2026)
 │                        # fuente_de_datos.dart: único punto que elige la fuente de datos (AD-02; hoy, memoria)
-├── repositorios/        # AuditoriaRepositorio (agregar y listar) y FotoPerfilRepositorio (descargar, subir,
-│                        # quitar), cada uno con su versión en memoria y la de Supabase; selector_foto.dart
-│                        # abre el selector de imágenes; sesion_supabase.dart es temporal hasta que el login
-│                        # use Auth (plan P-01)
+├── repositorios/        # AuthRepositorio, AuditoriaRepositorio (agregar y listar) y FotoPerfilRepositorio
+│                        # (descargar, subir, quitar), cada uno con su versión en memoria y la de Supabase;
+│                        # selector_foto.dart abre el selector de imágenes (image_picker)
 ├── reglas/              # reglas de negocio puras: umbral 70, bloqueo, relación, propósitos, permisos,
 │                        # indicadores (promedio, marca, cambio y validar una medición), búsqueda,
 │                        # atencion.dart (validar una atención) y foto.dart (tipo y tamaño de la foto)
