@@ -211,8 +211,8 @@ La spine difiere RLS hasta usar datos reales. Se propone activarla desde ya en `
 
 1. **Puntaje de riesgo.** El MER guarda `contribucion` con 4 decimales y la app muestra puntos enteros con signo (F-07). ¿Guardamos enteros?
 2. **Documento principal del paciente.** El MER pone el documento en `identificador_paciente`, uno por sistema de origen. La app muestra uno solo. Propuesta: `es_principal`. ¿O es el del sistema propio de Red Vitalys?
-3. **Registro de usuarios (nuevo).** ¿Quién elige el rol y las sedes de una cuenta nueva? Propuesta: el registro crea el usuario como `medico`, sin sedes, y alguien con acceso a la base las asigna.
-4. **Intentos fallidos por IP (AD-14).** ¿Se cuentan en la base o se mantiene el bloqueo por dispositivo? Lo segundo no exige una función en la base.
+3. **Registro de usuarios (nuevo).** ¿Quién elige el rol y las sedes de una cuenta nueva? Resuelto: al registrar un usuario en Auth, un trigger (`tr_crear_usuario_nuevo`) crea su fila en `public.usuario` con rol `medico` por defecto y sin sedes asignadas en `usuario_sede` (principio de menor privilegio). Si intenta ingresar antes de que se le asignen sedes, la app aplica el flujo alterno F-13 A3 ("Su cuenta no tiene sedes asignadas"). Alguien con privilegios asigna sus sedes en `usuario_sede` para habilitar el ingreso.
+4. **Intentos fallidos por IP (AD-14).** ¿Se cuentan en la base o se mantiene el bloqueo por dispositivo? Resuelto: se mantiene el bloqueo local en el cliente (5 intentos fallidos consecutivos bloquean durante 15 minutos en el dispositivo según F-14), mientras que cada intento fallido persiste su evento denegado en `public.evento_auditoria` con la IP obtenida por Postgres (AD-15).
 5. **Atención.** ¿Qué campos más tiene el formulario de F-04 (motivo, notas)? Hoy no se guardan.
 6. **Descripción del periodo del riesgo** ("30 días tras el alta"). Hoy es un texto de la app. ¿Se deja fijo en la app?
 
