@@ -1,6 +1,6 @@
 # Avance de la implementación · Red Vitalys
 
-Actualizado: 2026-11-24 · Hechas: 4 de 15
+Actualizado: 2026-11-24 · Hechas: 5 de 15
 
 Lo escribe la skill `sdd-tecnicas` (tareas nuevas, `[ ]`) y lo marca la skill `sdd-implementar` (`[x]`). Una tarea se marca cuando pasa `flutter analyze` sin errores. La prueba a mano la haces tú: si falla, desmárcala y vuelve a pedirla.
 
@@ -45,7 +45,10 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
 
 ## TS-06 · Pacientes con alta reciente por riesgo de reingreso
 
-- [ ] **T-13** Servicio de pacientes y lista de altas de los últimos 30 días, ordenada y con alerta · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-7, CA-10, CA-11, CA-14 · depende de: ninguna
+- [x] **T-13** Servicio de pacientes y lista de altas de los últimos 30 días, ordenada y con alerta · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-7, CA-10, CA-11, CA-14 · depende de: ninguna
+  - Hecha: 2026-11-24
+  - Archivos: `lib/services/patient_service.dart` (nuevo), `lib/services/patient_memory.dart` (nuevo), `lib/services/patient_supabase.dart` (nuevo), `lib/datos/fuente_de_datos.dart`, `lib/main.dart`, `lib/screens/app_screen.dart`, `supabase/migraciones/004_pacientes_y_riesgo.sql` (nuevo), `test/pacientes_servicio_test.dart` (nuevo)
+  - Notas: El servicio entrega todos los pacientes con su última alta y su riesgo guardado (`listPatients`), no solo las altas recientes: la búsqueda también los necesita. La ventana de 30 días, el orden y la alerta de 70 siguen en `pacientesConAltaReciente` y `conAlerta`, que ya estaban probadas. Se cargan al abrir la sesión; si falla la carga, la app sigue con la lista anterior hasta que T-15 muestre el error. El script 004 ya se aplicó al proyecto `red-vitalys` y trae 13 pacientes con fechas fijas (hoy es el 6 nov 2026). Verificado con una prueba temporal (no se sube): los 13 pacientes de Supabase son idénticos a los simulados y las altas recientes son 8. Falta la prueba a mano en la pantalla.
 - [ ] **T-14** Propósito y evento al abrir la lista, y rechazo del administrativo y del auditor · CA-9, CA-12, CA-13, CA-15 · depende de: T-04, T-11, T-13
 - [ ] **T-15** Carga y error reales de la lista, con *Reintentar* · CA-8 · depende de: T-13
 

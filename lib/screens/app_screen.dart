@@ -34,6 +34,8 @@ import 'package:red_vitalys/repositorios/selector_foto.dart';
 import 'package:red_vitalys/screens/secciones.dart';
 import 'package:red_vitalys/services/auth_memory.dart';
 import 'package:red_vitalys/services/auth_service.dart';
+import 'package:red_vitalys/services/patient_memory.dart';
+import 'package:red_vitalys/services/patient_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
@@ -96,6 +98,7 @@ class AppScreen extends StatefulWidget {
     this.reloj = DateTime.now,
     this.auditoria,
     this.auth,
+    this.patients,
     this.fotos,
     this.selectorFoto,
   });
@@ -114,6 +117,9 @@ class AppScreen extends StatefulWidget {
   /// Cómo se inicia y se cierra la sesión. Sin él, los usuarios simulados.
   final AuthService? auth;
 
+  /// De dónde salen los pacientes. Sin él, los simulados.
+  final PatientService? patients;
+
   /// Hora real del dispositivo, para el bloqueo de 15 minutos (F-14).
   final DateTime Function() reloj;
 
@@ -125,6 +131,9 @@ class _AppScreenState extends State<AppScreen> {
   DatosSimulados get _datos => widget.datos;
 
   late final AuthService _auth = widget.auth ?? AuthMemory(widget.datos);
+
+  late final PatientService _patients =
+      widget.patients ?? PatientMemory(widget.datos);
 
   // Sesión (F-13, F-15, F-23).
   Usuario? _usuario;
@@ -408,6 +417,18 @@ class _AppScreenState extends State<AppScreen> {
     });
     _registrarActividad();
     _cargarEventosSiHaceFalta();
+    unawaited(_cargarPacientes());
+  }
+
+  Future<void> _cargarPacientes() async {
+    if (!_patients.isRemote) return;
+    try {
+      final loaded = await _patients.listPatients(_datos.hoy);
+      if (!mounted) return;
+      setState(() => _pacientes = loaded);
+    } catch (error) {
+      debugPrint('No se pudieron cargar los pacientes: $error');
+    }
   }
 
   /// Cierra la sesión de Auth sin esperar; si falla, solo avisa en consola.

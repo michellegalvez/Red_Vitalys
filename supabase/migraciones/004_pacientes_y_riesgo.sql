@@ -1,8 +1,7 @@
 -- 004 · Pacientes, atenciones y riesgo de reingreso (TS-06, TS-05, TS-18).
 -- Se pega completo en Supabase → SQL Editor → Run. Se puede correr otra vez.
--- Las fechas de los datos de prueba son relativas a hoy: las altas siguen
--- dentro de los últimos 30 días cuando se corre (en la app simulada "hoy" es
--- el 6 de noviembre de 2026).
+-- Los datos de prueba usan fechas fijas, porque en la app "hoy" es el 6 de
+-- noviembre de 2026 (RNF-04).
 
 create table if not exists public.paciente (
   id_paciente bigint generated always as identity primary key,
@@ -173,15 +172,16 @@ begin
       (id_paciente, id_sede, id_usuario, tipo_atencion, fecha_inicio,
        fecha_fin, destino_alta, proposito)
     select v_paciente, s.id_sede, v_medico, fila.tipo_atencion,
-      (now() - make_interval(days => hoy_simulado - fila.alta + fila.dias)),
-      (now() - make_interval(days => hoy_simulado - fila.alta)),
-      'Domicilio', 'atencion_paciente'
+      ((fila.alta - fila.dias + time '08:00') at time zone 'America/Bogota'),
+      ((fila.alta + time '12:00') at time zone 'America/Bogota'),
+      'Domicilio',
+      case when fila.de_camila then 'atencion_paciente' else 'seguimiento_reingreso' end
     from public.sede s where s.nombre = fila.sede
     returning id_atencion into v_atencion;
 
     insert into public.prediccion_reingreso
       (id_atencion, score_riesgo, fecha_prediccion)
-    values (v_atencion, fila.riesgo, current_date)
+    values (v_atencion, fila.riesgo, fila.alta)
     returning id_prediccion into v_prediccion;
 
     escala := fila.riesgo / 91.0;
