@@ -40,9 +40,13 @@ class AccesoPage extends StatelessWidget {
     required this.onVolver,
     this.simularFallas = false,
     this.onSimularFallas,
+    this.conServidor = false,
   });
 
   final PasoAcceso paso;
+
+  /// Si valida contra Supabase (cambia el título de la ayuda de prueba).
+  final bool conServidor;
 
   final TextEditingController correo;
   final TextEditingController contrasena;
@@ -155,6 +159,7 @@ class AccesoPage extends StatelessWidget {
             const SizedBox(height: 16),
             _AyudaPrototipo(
               contrasena: contrasenaPrototipo,
+              conServidor: conServidor,
               perfiles: perfiles,
               onElegir: onElegirPerfil,
               simularFallas: simularFallas,
@@ -303,6 +308,7 @@ class _UsuarioVerificado extends StatelessWidget {
 class _AyudaPrototipo extends StatelessWidget {
   const _AyudaPrototipo({
     required this.contrasena,
+    required this.conServidor,
     required this.perfiles,
     required this.onElegir,
     required this.simularFallas,
@@ -310,6 +316,7 @@ class _AyudaPrototipo extends StatelessWidget {
   });
 
   final String contrasena;
+  final bool conServidor;
   final List<PerfilPrototipo> perfiles;
   final ValueChanged<String> onElegir;
   final bool simularFallas;
@@ -331,9 +338,11 @@ class _AyudaPrototipo extends StatelessWidget {
                 color: ColoresVitalys.textoSecundario,
               ),
               children: [
-                const TextSpan(
-                  text: 'Prototipo sin servidor.',
-                  style: TextStyle(
+                TextSpan(
+                  text: conServidor
+                      ? 'Cuentas de prueba.'
+                      : 'Prototipo sin servidor.',
+                  style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     color: ColoresVitalys.tinta,
                   ),

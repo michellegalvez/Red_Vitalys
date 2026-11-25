@@ -147,6 +147,7 @@ extension _Paginas on _AppScreenState {
         mensajeError: _mensajeError,
         avisoInactividad: _avisoInactividad,
         contrasenaPrototipo: _datos.contrasenaPrototipo,
+        conServidor: _auth.isRemote,
         perfiles: [
           for (final u in _datos.usuarios)
             (
