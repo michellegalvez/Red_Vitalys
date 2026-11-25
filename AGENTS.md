@@ -64,7 +64,9 @@ La carpeta `docs/` tiene los documentos que guían el desarrollo (Spec Driven De
 - `docs/plans/`: un plan por funcionalidad o pieza técnica (metadatos, enfoque, componentes y cambios), con el formato en `docs/plans/README.md`.
 - `docs/tasks/`: las tareas de cada plan, con casilla `[ ]` y cómo se comprueba cada una (`docs/tasks/README.md`). Los commits citan el id: `feat(T-00.3): ...`.
 - `docs/specs/`: una spec funcional por funcionalidad, con el índice en `docs/specs/README.md` y el reporte de la crítica en `docs/specs/reporte.md`.
+- `docs/standard_code.md`: el estándar de código del curso (carpetas, quién guarda estado, cómo sube y baja, Supabase, navegación y escritura). Lo sigue el código nuevo; si una spec técnica lo contradice, gana el estándar. El código que ya existe no se reescribe por esto.
+- `docs/tecnicas/` y `docs/impl_progress.md`: las specs técnicas (`TS-xx`, una por spec funcional) y la lista de tareas `T-xx` con su avance, en el formato del profesor. Las escribe la skill `sdd-tecnicas` y las implementa la skill `sdd-implementar`, una tarea por vez.
 
-Las skills que crean y revisan esos documentos están en `.agents/skills/`.
+Las skills que crean y revisan esos documentos están en `.agents/skills/` (copia en `.claude/skills/`): `sdd-prd`, `sdd-requisitos`, `sdd-arquitectura`, `sdd-specs`, `sdd-critica`, `sdd-tecnicas` y `sdd-implementar`.
 
 Después de cambiar cualquiera de esos documentos, corre `bash docs/verificar.sh`. Comprueba que el PRD, los requisitos, la spine y las specs sean coherentes entre sí (versiones, índice, dependencias, formato, reglas compartidas y reporte) y no modifica ningún archivo. Si una regla nueva se repite en varios documentos, agrégala a la sección *Reglas compartidas* del script.
