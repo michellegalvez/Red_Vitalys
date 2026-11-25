@@ -2,6 +2,9 @@ import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/repositorios/auditoria_memoria.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/repositorios/auditoria_supabase.dart';
+import 'package:red_vitalys/repositorios/auth_memoria.dart';
+import 'package:red_vitalys/repositorios/auth_repositorio.dart';
+import 'package:red_vitalys/repositorios/auth_supabase.dart';
 import 'package:red_vitalys/repositorios/foto_memoria.dart';
 import 'package:red_vitalys/repositorios/foto_repositorio.dart';
 import 'package:red_vitalys/repositorios/foto_supabase.dart';
@@ -13,6 +16,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// cada quien pase los suyos a Supabase.
 DatosSimulados elegirFuenteDeDatos({required bool supabaseListo}) {
   return DatosSimulados.porDefecto;
+}
+
+/// Dónde se autentica el usuario: en Supabase Auth si hay [cliente];
+/// si no, en memoria (P-03).
+AuthRepositorio elegirAuth({
+  required DatosSimulados datos,
+  SupabaseClient? cliente,
+}) {
+  if (cliente == null) return AuthMemoria(datos);
+  return AuthSupabase(cliente: cliente, datos: datos);
 }
 
 /// Dónde se guarda la foto de perfil: en Supabase Storage si hay [cliente];
