@@ -27,10 +27,11 @@ import 'package:red_vitalys/reglas/indicadores.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/repositorios/auditoria_memoria.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
+import 'package:red_vitalys/repositorios/auth_memoria.dart';
+import 'package:red_vitalys/repositorios/auth_repositorio.dart';
 import 'package:red_vitalys/repositorios/foto_memoria.dart';
 import 'package:red_vitalys/repositorios/foto_repositorio.dart';
 import 'package:red_vitalys/repositorios/selector_foto.dart';
-import 'package:red_vitalys/repositorios/sesion_supabase.dart';
 import 'package:red_vitalys/screens/secciones.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
@@ -92,13 +93,16 @@ class AppScreen extends StatefulWidget {
     super.key,
     required this.datos,
     this.reloj = DateTime.now,
+    this.auth,
     this.auditoria,
-    this.sesion,
     this.fotos,
     this.selectorFoto,
   });
 
   final DatosSimulados datos;
+
+  /// Repositorio de autenticación (P-03). Sin él, en memoria.
+  final AuthRepositorio? auth;
 
   /// Dónde se guarda la foto de perfil. Sin él, en memoria (P-02).
   final FotoPerfilRepositorio? fotos;
@@ -108,9 +112,6 @@ class AppScreen extends StatefulWidget {
 
   /// Dónde se guardan los eventos de auditoría. Sin él, en memoria (P-01).
   final AuditoriaRepositorio? auditoria;
-
-  /// TEMPORAL (P-01): sesión de Supabase junto al inicio simulado.
-  final SesionSupabase? sesion;
 
   /// Hora real del dispositivo, para el bloqueo de 15 minutos (F-14).
   final DateTime Function() reloj;
@@ -148,6 +149,10 @@ class _AppScreenState extends State<AppScreen> {
   // Navegación y consultas.
   Seccion _seccion = Seccion.inicio;
   bool _listaDeclarada = false;
+
+  // Repositorio de autenticación (P-03).
+  late final AuthRepositorio _auth = widget.auth ?? AuthMemoria(_datos);
+  List<Sede> _sedesValidadas = [];
 
   /// La sección en la que estaba antes de que se pidiera el propósito de la
   /// lista: a ella vuelve *Cancelar* (F-16 A2).
@@ -256,19 +261,27 @@ class _AppScreenState extends State<AppScreen> {
     // vuelve a leer el campo.
     final correoEscrito = _correo.text.trim();
     final contrasenaEscrita = _contrasena.text;
-    final usuarioEscrito = _datos.usuarioPorCorreo(correoEscrito);
-    final resultado = evaluarIngreso(
-      correo: _correo.text,
-      contrasena: _contrasena.text,
-      usuario: usuarioEscrito,
-      contrasenaValida: _datos.contrasenaPrototipo,
-      bloqueado: _bloqueado,
-    );
-    if (resultado == ResultadoIngreso.camposVacios) {
+
+    if (correoEscrito.isEmpty || contrasenaEscrita.isEmpty) {
       setState(() {
-        _mensajeError = resultado.mensaje;
+        _mensajeError = mensajeCamposVacios;
         _avisoInactividad = null;
       });
+      return;
+    }
+
+    if (_bloqueado) {
+      setState(() {
+        _mensajeError = mensajeBloqueo;
+        _avisoInactividad = null;
+      });
+      _registrarEvento(
+        accion: AccionAuditoria.ingresar,
+        recurso: RecursoAuditoria.sesion,
+        resultado: ResultadoAuditoria.denegado,
+        correoIntento: correoEscrito,
+        ip: _datos.ipPrototipo,
+      );
       return;
     }
 
@@ -276,7 +289,10 @@ class _AppScreenState extends State<AppScreen> {
       _ingresando = true;
       _avisoInactividad = null;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 450));
+
+    if (!_auth.esRemoto) {
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+    }
     if (!mounted) return;
 
     if (_falla('ingresar')) {
@@ -290,52 +306,65 @@ class _AppScreenState extends State<AppScreen> {
       return;
     }
 
-    if (resultado == ResultadoIngreso.valido) {
-      await _abrirSesionDeSupabase(correoEscrito, contrasenaEscrita);
-      if (!mounted) return;
-    }
+    final resultadoAuth = await _auth.iniciarSesion(
+      correo: correoEscrito,
+      contrasena: contrasenaEscrita,
+    );
+    if (!mounted) return;
 
     setState(() {
       _ingresando = false;
-      if (resultado.cuentaComoFallo ||
-          resultado == ResultadoIngreso.bloqueado ||
-          resultado == ResultadoIngreso.sinSedes) {
-        // Inicio de sesión fallido, intento durante el bloqueo o cuenta sin
-        // sedes (F-13 A3, F-14 A3, F-20 A4): con el correo escrito, la IP y
-        // sin sede. La cuenta sin sedes no suma al bloqueo.
-        _registrarEvento(
-          accion: AccionAuditoria.ingresar,
-          recurso: RecursoAuditoria.sesion,
-          resultado: ResultadoAuditoria.denegado,
-          correoIntento: correoEscrito,
-          ip: _datos.ipPrototipo,
-        );
+      switch (resultadoAuth) {
+        case AuthErrorRed(:final mensaje):
+          _contrasena.clear();
+          _mensajeError = mensaje ?? _mensajeFallaIngreso;
+          return;
+
+        case AuthErrorCredenciales():
+        case AuthErrorDesconocido():
+          _registrarEvento(
+            accion: AccionAuditoria.ingresar,
+            recurso: RecursoAuditoria.sesion,
+            resultado: ResultadoAuditoria.denegado,
+            correoIntento: correoEscrito,
+            ip: _datos.ipPrototipo,
+          );
+          _fallosSeguidos++;
+          _contrasena.clear();
+          if (_fallosSeguidos >= intentosParaBloqueo) {
+            _bloqueadoDesde = widget.reloj();
+            _mensajeError = mensajeBloqueo;
+          } else {
+            _mensajeError = mensajeDatosIncorrectos;
+          }
+          return;
+
+        case AuthExito(:final usuario, :final sedes):
+          if (usuario.sedesAsignadas.isEmpty) {
+            // Cuenta sin sedes asignadas (F-13 A3).
+            _registrarEvento(
+              accion: AccionAuditoria.ingresar,
+              recurso: RecursoAuditoria.sesion,
+              resultado: ResultadoAuditoria.denegado,
+              correoIntento: correoEscrito,
+              ip: _datos.ipPrototipo,
+            );
+            _contrasena.clear();
+            _mensajeError = mensajeSinSedes;
+            return;
+          }
+
+          _mensajeError = null;
+          _usuarioValidado = usuario;
+          _sedesValidadas = sedes.isNotEmpty
+              ? sedes
+              : [for (final id in usuario.sedesAsignadas) _datos.sede(id)];
+          _paso = PasoAcceso.sede;
+          _errorSede = null;
+          _sedeElegida = usuario.sedesAsignadas.length == 1
+              ? usuario.sedesAsignadas.first
+              : null;
       }
-      if (resultado.cuentaComoFallo) {
-        _fallosSeguidos++;
-        _contrasena.clear();
-        if (_fallosSeguidos >= intentosParaBloqueo) {
-          _bloqueadoDesde = widget.reloj();
-          _mensajeError = mensajeBloqueo;
-        } else {
-          _mensajeError = resultado.mensaje;
-        }
-        return;
-      }
-      if (resultado != ResultadoIngreso.valido) {
-        _mensajeError = resultado.mensaje;
-        return;
-      }
-      final usuario = usuarioEscrito;
-      if (usuario == null) return;
-      _mensajeError = null;
-      _usuarioValidado = usuario;
-      _paso = PasoAcceso.sede;
-      _errorSede = null;
-      // Con una sola sede, esa aparece elegida (F-13 A4).
-      _sedeElegida = usuario.sedesAsignadas.length == 1
-          ? usuario.sedesAsignadas.first
-          : null;
     });
   }
 
@@ -386,6 +415,7 @@ class _AppScreenState extends State<AppScreen> {
       _errorSede = null;
       _usuario = usuario;
       _usuarioValidado = null;
+      _sedesValidadas = [];
       _paso = PasoAcceso.credenciales;
       _sedeSesion = sede;
       _contrasena.clear();
@@ -396,22 +426,12 @@ class _AppScreenState extends State<AppScreen> {
     _cargarEventosSiHaceFalta();
   }
 
-  /// TEMPORAL (P-01): abre una sesión en Supabase con el mismo correo y
-  /// contraseña. Si falla, la app sigue; el ingreso se detiene al guardar el
-  /// evento, que sí necesita la sesión.
-  Future<void> _abrirSesionDeSupabase(String correo, String contrasena) async {
-    try {
-      await widget.sesion?.iniciar(correo, contrasena);
-    } catch (error) {
-      debugPrint('No se pudo abrir la sesión en Supabase: $error');
-    }
-  }
-
   /// El usuario sale sin confirmar la sede: no se abre la sesión (F-13 A6).
   void _volverACredenciales() {
     setState(() {
       _paso = PasoAcceso.credenciales;
       _usuarioValidado = null;
+      _sedesValidadas = [];
       _sedeElegida = null;
       _errorSede = null;
       _contrasena.clear();
@@ -422,19 +442,17 @@ class _AppScreenState extends State<AppScreen> {
   /// sede, la consulta abierta y lo que no se había guardado.
   void _cerrarSesion({bool porInactividad = false}) {
     _temporizadorInactividad?.cancel();
-    final sesion = widget.sesion;
-    if (sesion != null) {
-      unawaited(
-        sesion.cerrar().catchError((Object error) {
-          debugPrint('No se pudo cerrar la sesión en Supabase: $error');
-        }),
-      );
-    }
+    unawaited(
+      _auth.cerrarSesion().catchError((Object error) {
+        debugPrint('No se pudo cerrar la sesión: $error');
+      }),
+    );
     setState(() {
       _cerrandoSesion = false;
       _errorCierre = null;
       _usuario = null;
       _usuarioValidado = null;
+      _sedesValidadas = [];
       _paso = PasoAcceso.credenciales;
       _sedeElegida = null;
       _sedeSesion = null;

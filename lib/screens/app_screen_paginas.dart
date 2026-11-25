@@ -157,7 +157,10 @@ extension _Paginas on _AppScreenState {
         usuario: validado,
         sedes: [
           if (validado != null)
-            for (final id in validado.sedesAsignadas) _datos.sede(id),
+            if (_sedesValidadas.isNotEmpty)
+              ..._sedesValidadas
+            else
+              for (final id in validado.sedesAsignadas) _datos.sede(id),
         ],
         sedeElegida: _sedeElegida,
         errorSede: _errorSede,
