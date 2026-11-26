@@ -23,6 +23,9 @@ class InicioPage extends StatelessWidget {
     required this.onVerTodos,
     required this.onVerIndicadores,
     required this.onAbrirPaciente,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
     this.simularFallas = false,
   });
 
@@ -44,6 +47,11 @@ class InicioPage extends StatelessWidget {
 
   /// Modo demo: muestra la carga y su error con *Reintentar*.
   final bool simularFallas;
+
+  /// La carga real de los pacientes desde Supabase.
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   @override
   Widget build(BuildContext context) {
@@ -103,25 +111,32 @@ class InicioPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        CargaSimulada(
-          simular: simularFallas,
+        CargaRemota(
+          cargando: cargando,
+          hayError: hayError,
+          onReintentar: onReintentar ?? () {},
           textoCargando: 'Cargando pacientes…',
           textoError: 'No se pudo cargar la lista',
-          child: prioridad.isEmpty
-              ? const EstadoVacio(
-                  titulo: 'Hoy no hay pacientes con alerta.',
-                  icono: Icons.check_circle_outline_rounded,
-                )
-              : RejillaTarjetas(
-                  children: [
-                    for (var i = 0; i < prioridad.length; i++)
-                      TarjetaPaciente(
-                        paciente: prioridad[i],
-                        sedeAlta: nombresSedes[prioridad[i].sedeAltaId] ?? '',
-                        onTap: () => onAbrirPaciente(prioridad[i]),
-                      ),
-                  ],
-                ),
+          child: CargaSimulada(
+            simular: simularFallas,
+            textoCargando: 'Cargando pacientes…',
+            textoError: 'No se pudo cargar la lista',
+            child: prioridad.isEmpty
+                ? const EstadoVacio(
+                    titulo: 'Hoy no hay pacientes con alerta.',
+                    icono: Icons.check_circle_outline_rounded,
+                  )
+                : RejillaTarjetas(
+                    children: [
+                      for (var i = 0; i < prioridad.length; i++)
+                        TarjetaPaciente(
+                          paciente: prioridad[i],
+                          sedeAlta: nombresSedes[prioridad[i].sedeAltaId] ?? '',
+                          onTap: () => onAbrirPaciente(prioridad[i]),
+                        ),
+                    ],
+                  ),
+          ),
         ),
       ],
     );

@@ -193,7 +193,9 @@ class _AppScreenState extends State<AppScreen> {
 
   // Pacientes y atenciones registradas en esta sesión. Viven aquí, en la
   // Screen anfitriona; las Pages solo las muestran.
-  late List<PacienteEnSeguimiento> _pacientes = [..._datos.pacientes];
+  late List<PacienteEnSeguimiento> _pacientes = _patients.isRemote
+      ? []
+      : [..._datos.pacientes];
   Map<String, List<Encounter>> _atenciones = {};
 
   // Mediciones de los indicadores. Las que registra el administrativo se
@@ -213,6 +215,8 @@ class _AppScreenState extends State<AppScreen> {
       ? []
       : [..._datos.eventos];
   bool _cargandoEventos = false;
+  bool _cargandoPacientes = false;
+  bool _errorPacientes = false;
   bool _errorEventos = false;
   bool _confirmandoSede = false;
   FiltroAuditoria _filtroAuditoria = FiltroAuditoria.todos;
@@ -421,13 +425,25 @@ class _AppScreenState extends State<AppScreen> {
   }
 
   Future<void> _cargarPacientes() async {
-    if (!_patients.isRemote) return;
+    if (!_patients.isRemote || _cargandoPacientes) return;
+    setState(() {
+      _cargandoPacientes = true;
+      _errorPacientes = false;
+    });
     try {
       final loaded = await _patients.listPatients(_datos.hoy);
       if (!mounted) return;
-      setState(() => _pacientes = loaded);
+      setState(() {
+        _pacientes = loaded;
+        _cargandoPacientes = false;
+      });
     } catch (error) {
       debugPrint('No se pudieron cargar los pacientes: $error');
+      if (!mounted) return;
+      setState(() {
+        _cargandoPacientes = false;
+        _errorPacientes = true;
+      });
     }
   }
 

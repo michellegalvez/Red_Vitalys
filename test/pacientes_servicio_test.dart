@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
@@ -14,7 +16,8 @@ class FakePatients implements PatientService {
   FakePatients(this.patients, {this.fails = false});
 
   final List<PacienteEnSeguimiento> patients;
-  final bool fails;
+  bool fails;
+  Completer<void>? hold;
   final todays = <DateTime>[];
 
   @override
@@ -23,6 +26,7 @@ class FakePatients implements PatientService {
   @override
   Future<List<PacienteEnSeguimiento>> listPatients(DateTime today) async {
     todays.add(today);
+    await hold?.future;
     if (fails) throw StateError('sin red');
     return patients;
   }
@@ -103,13 +107,46 @@ void main() {
       await cerrarAppAyuda(t);
     });
 
-    testWidgets('si el servicio falla la app sigue con la lista anterior', (
+    testWidgets('T-15 CA-8: si falla, la lista avisa y Reintentar la carga', (
       t,
     ) async {
-      final fake = FakePatients(const [], fails: true);
+      final fake = FakePatients([
+        _patient(88, DateTime(2026, 10, 30), 'Zoe'),
+      ], fails: true);
       await _enterAsCamila(t, fake);
-      expect(fake.todays.length, 1);
-      expect(find.text('Seguimiento de reingreso'), findsOneWidget);
+      await tocarAyuda(t, find.text('Seguimiento de reingreso'));
+      await tocarAyuda(t, find.text('Ver pacientes'));
+      expect(find.text('No se pudo cargar la lista'), findsOneWidget);
+      await tocarAyuda(t, find.text('Pacientes'));
+      expect(find.text('Pacientes con alta reciente'), findsOneWidget);
+      expect(find.text('No se pudo cargar la lista'), findsOneWidget);
+      expect(find.textContaining('Zoe'), findsNothing);
+
+      fake.fails = false;
+      await tocarAyuda(t, find.text('Reintentar'));
+      expect(fake.todays.length, 2);
+      expect(find.text('No se pudo cargar la lista'), findsNothing);
+      expect(find.textContaining('Zoe'), findsWidgets);
+      expect(find.text('1 paciente'), findsOneWidget);
+      await cerrarAppAyuda(t);
+    });
+
+    testWidgets('T-15: mientras el servicio responde se ve la carga', (
+      t,
+    ) async {
+      final fake = FakePatients([_patient(88, DateTime(2026, 10, 30), 'Zoe')])
+        ..hold = Completer<void>();
+      await _enterAsCamila(t, fake);
+      await tocarAyuda(t, find.text('Seguimiento de reingreso'));
+      await t.tap(find.text('Ver pacientes'));
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 100));
+      expect(find.text('Cargando pacientes…'), findsOneWidget);
+
+      fake.hold!.complete();
+      await t.pumpAndSettle();
+      expect(find.text('Cargando pacientes…'), findsNothing);
+      expect(find.textContaining('Zoe'), findsWidgets);
       await cerrarAppAyuda(t);
     });
   });

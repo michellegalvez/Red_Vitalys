@@ -293,6 +293,9 @@ extension _Paginas on _AppScreenState {
       onVerTodos: _verPacientes,
       onVerIndicadores: () => _elegirSeccion(Seccion.indicadores),
       onAbrirPaciente: _abrirPaciente,
+      cargando: _cargandoPacientes,
+      hayError: _errorPacientes,
+      onReintentar: _cargarPacientes,
       simularFallas: _simularFallas,
     );
   }
@@ -311,6 +314,9 @@ extension _Paginas on _AppScreenState {
           : 'Ningún paciente coincide con la búsqueda.',
       onBuscar: (texto) => _actualizar(() => _busqueda = texto),
       onAbrirPaciente: _abrirPaciente,
+      cargando: _cargandoPacientes,
+      hayError: _errorPacientes,
+      onReintentar: _cargarPacientes,
       simularFallas: _simularFallas,
     );
   }

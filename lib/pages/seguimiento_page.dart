@@ -21,6 +21,9 @@ class SeguimientoPage extends StatelessWidget {
     required this.mensajeVacio,
     required this.onBuscar,
     required this.onAbrirPaciente,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
     this.simularFallas = false,
   });
 
@@ -33,6 +36,11 @@ class SeguimientoPage extends StatelessWidget {
 
   final ValueChanged<String> onBuscar;
   final ValueChanged<PacienteEnSeguimiento> onAbrirPaciente;
+
+  /// La carga real de la lista desde Supabase (F-06 CA-8).
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   /// Modo demo: muestra la carga y su error con *Reintentar*.
   final bool simularFallas;
@@ -60,41 +68,48 @@ class SeguimientoPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 26),
-        CargaSimulada(
-          simular: simularFallas,
+        CargaRemota(
+          cargando: cargando,
+          hayError: hayError,
+          onReintentar: onReintentar ?? () {},
           textoCargando: 'Cargando pacientes…',
           textoError: 'No se pudo cargar la lista',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (pacientes.isEmpty)
-                EstadoVacio(
-                  titulo: mensajeVacio,
-                  icono: Icons.search_off_rounded,
-                )
-              else
-                RejillaTarjetas(
-                  children: [
-                    for (var i = 0; i < pacientes.length; i++)
-                      TarjetaPaciente(
-                        paciente: pacientes[i],
-                        sedeAlta: nombresSedes[pacientes[i].sedeAltaId] ?? '',
-                        onTap: () => onAbrirPaciente(pacientes[i]),
-                      ),
-                  ],
-                ),
-              const SizedBox(height: 26),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  cantidad == 1 ? '1 paciente' : '$cantidad pacientes',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: ColoresVitalys.textoSecundario,
+          child: CargaSimulada(
+            simular: simularFallas,
+            textoCargando: 'Cargando pacientes…',
+            textoError: 'No se pudo cargar la lista',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (pacientes.isEmpty)
+                  EstadoVacio(
+                    titulo: mensajeVacio,
+                    icono: Icons.search_off_rounded,
+                  )
+                else
+                  RejillaTarjetas(
+                    children: [
+                      for (var i = 0; i < pacientes.length; i++)
+                        TarjetaPaciente(
+                          paciente: pacientes[i],
+                          sedeAlta: nombresSedes[pacientes[i].sedeAltaId] ?? '',
+                          onTap: () => onAbrirPaciente(pacientes[i]),
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 26),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    cantidad == 1 ? '1 paciente' : '$cantidad pacientes',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: ColoresVitalys.textoSecundario,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
