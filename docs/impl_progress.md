@@ -1,6 +1,6 @@
 # Avance de la implementación · Red Vitalys
 
-Actualizado: 2026-11-26 · Hechas: 15 de 15
+Actualizado: 2026-11-26 · Hechas: 15 de 22
 
 Lo escribe la skill `sdd-tecnicas` (tareas nuevas, `[ ]`) y lo marca la skill `sdd-implementar` (`[x]`). Una tarea se marca cuando pasa `flutter analyze` sin errores. La prueba a mano la haces tú: si falla, desmárcala y vuelve a pedirla.
 
@@ -89,3 +89,13 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
   - Hecha: 2026-11-26
   - Archivos: `lib/services/access_control_service.dart`, `lib/screens/app_screen.dart`, `lib/screens/app_screen_paginas.dart`, `lib/services/patient_supabase.dart`, `supabase/migraciones/005_permisos_por_rol.sql` (nuevo), `test/control_acceso_test.dart`
   - Notas: `canDo` es la única tabla (usa `rolPermite`); la usan `intentarAcceso` y el perfil. `intentarAcceso` sigue en la Screen porque guarda el evento en su lista; el servicio solo decide. El script 005, ya aplicado a `red-vitalys`, repite la tabla en la base: el médico lee pacientes, atenciones, riesgo y factores; el administrativo lee pacientes y atenciones pero no el riesgo; el auditor no lee pacientes. Verificado con una prueba temporal (13/13/66, 13/0/0 y 0/0/0) y en el navegador (la búsqueda del administrativo encuentra a Hernán Quintero). Sin el riesgo, el paciente llega con riesgo 0 (el administrativo no lo ve).
+
+## P-04 · Pasar a Supabase lo que sigue en memoria
+
+- [ ] **T-18** La auditoría guarda y muestra el paciente de cada evento · F-20, F-21 · depende de: T-13
+- [ ] **T-19** Datos de la historia en la base: contacto, identificadores y atenciones anteriores · F-02, F-03 · depende de: T-13
+- [ ] **T-20** La historia, el riesgo y sus factores se leen de la base, con carga y error · F-02, F-03, F-07 · depende de: T-19
+- [ ] **T-21** Registrar una atención la guarda en la base y da la relación · F-04, F-05 · depende de: T-18, T-20
+- [ ] **T-22** Tablas de indicadores con sus mediciones de prueba · F-08 · depende de: ninguna
+- [ ] **T-23** El tablero y el detalle leen las mediciones de la base, con carga y error · F-08, F-09, F-10, F-11 · depende de: T-22
+- [ ] **T-24** Registrar una medición la guarda en la base, sin repetirla · F-12 · depende de: T-18, T-23
