@@ -19,4 +19,37 @@ class AccessControlService {
         ? ResultadoConsulta.permitido
         : ResultadoConsulta.rechazoProposito;
   }
+
+  bool canDo(Rol role, AccionPermitida action) => rolPermite(role, action);
+
+  bool hasRelationship(
+    Usuario doctor,
+    PacienteEnSeguimiento patient,
+    DateTime today,
+  ) => tieneRelacion(doctor, patient, today);
+
+  ResultadoConsulta decideConsultation({
+    required Usuario user,
+    required PacienteEnSeguimiento patient,
+    required Proposito purpose,
+    required DateTime today,
+    bool registering = false,
+  }) {
+    if (user.rol == Rol.administrativo && !registering) {
+      return evaluarDatosBasicos(usuario: user, proposito: purpose);
+    }
+    return registering
+        ? evaluarRegistro(
+            usuario: user,
+            paciente: patient,
+            proposito: purpose,
+            hoy: today,
+          )
+        : evaluarConsulta(
+            usuario: user,
+            paciente: patient,
+            proposito: purpose,
+            hoy: today,
+          );
+  }
 }

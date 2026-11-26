@@ -1,6 +1,6 @@
 # Avance de la implementación · Red Vitalys
 
-Actualizado: 2026-11-24 · Hechas: 12 de 15
+Actualizado: 2026-11-26 · Hechas: 15 de 15
 
 Lo escribe la skill `sdd-tecnicas` (tareas nuevas, `[ ]`) y lo marca la skill `sdd-implementar` (`[x]`). Una tarea se marca cuando pasa `flutter analyze` sin errores. La prueba a mano la haces tú: si falla, desmárcala y vuelve a pedirla.
 
@@ -56,7 +56,10 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
 
 ## TS-17 · Acceso de emergencia
 
-- [ ] **T-12** Marca y aviso de emergencia: Urgencia permitida, filtro *Emergencia* y aviso al ver y al guardar · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-7, CA-8, CA-9, CA-10 · depende de: T-11
+- [x] **T-12** Marca y aviso de emergencia: Urgencia permitida, filtro *Emergencia* y aviso al ver y al guardar · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-7, CA-8, CA-9, CA-10 · depende de: T-11
+  - Hecha: 2026-11-26
+  - Archivos: `test/control_acceso_test.dart` (nuevo)
+  - Notas: La marca de emergencia (`esEmergencia`), el filtro, la traducción al leer de Supabase y los avisos de la historia y del guardado ya existían. Se agregaron las pruebas de CA-1, CA-2, CA-6, CA-7, CA-8 y CA-9; CA-4, CA-5 y CA-10 ya tenían prueba. En Supabase ya hay eventos de *Urgencia* permitidos (por ejemplo el 25), así que no hizo falta sembrar uno a mano.
 
 ## TS-06 · Pacientes con alta reciente por riesgo de reingreso
 
@@ -75,8 +78,14 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
 
 ## TS-05 · Relación médico-paciente
 
-- [ ] **T-16** Relación con datos de la base: atención propia o alta de 30 días en una sede asignada, Urgencia sin dar relación y error de verificación · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-7, CA-8, CA-9 · depende de: T-11, T-13
+- [x] **T-16** Relación con datos de la base: atención propia o alta de 30 días en una sede asignada, Urgencia sin dar relación y error de verificación · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-7, CA-8, CA-9 · depende de: T-11, T-13
+  - Hecha: 2026-11-26
+  - Archivos: `lib/services/access_control_service.dart`, `lib/screens/app_screen.dart`, `test/control_acceso_test.dart`
+  - Notas: El servicio expone `hasRelationship` y `decideConsultation`, que reutilizan `tieneRelacion`, `evaluarConsulta`, `evaluarRegistro` y `evaluarDatosBasicos`; la Screen decide la historia, los datos básicos y el registro con el servicio. Los médicos con atención salen de la base desde T-13 (`atencion.proposito = atencion_paciente`) y las sedes del médico desde T-03. Una atención registrada en la app todavía solo se guarda en memoria, así que la relación que da no llega a la base hasta que el registro de atenciones pase a Supabase.
 
 ## TS-18 · Control de acceso por rol
 
-- [ ] **T-17** Una sola tabla de permisos y rechazos con su mensaje, su evento y sin datos del paciente · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-7, CA-8, CA-9, CA-10, CA-11 · depende de: T-11, T-16
+- [x] **T-17** Una sola tabla de permisos y rechazos con su mensaje, su evento y sin datos del paciente · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-7, CA-8, CA-9, CA-10, CA-11 · depende de: T-11, T-16
+  - Hecha: 2026-11-26
+  - Archivos: `lib/services/access_control_service.dart`, `lib/screens/app_screen.dart`, `lib/screens/app_screen_paginas.dart`, `lib/services/patient_supabase.dart`, `supabase/migraciones/005_permisos_por_rol.sql` (nuevo), `test/control_acceso_test.dart`
+  - Notas: `canDo` es la única tabla (usa `rolPermite`); la usan `intentarAcceso` y el perfil. `intentarAcceso` sigue en la Screen porque guarda el evento en su lista; el servicio solo decide. El script 005, ya aplicado a `red-vitalys`, repite la tabla en la base: el médico lee pacientes, atenciones, riesgo y factores; el administrativo lee pacientes y atenciones pero no el riesgo; el auditor no lee pacientes. Verificado con una prueba temporal (13/13/66, 13/0/0 y 0/0/0) y en el navegador (la búsqueda del administrativo encuentra a Hernán Quintero). Sin el riesgo, el paciente llega con riesgo 0 (el administrativo no lo ve).

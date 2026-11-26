@@ -617,7 +617,7 @@ extension _Paginas on _AppScreenState {
         ],
         permisos: [
           for (final a in AccionPermitida.values)
-            (accion: a.nombre, permitido: rolPermite(usuario.rol, a)),
+            (accion: a.nombre, permitido: _access.canDo(usuario.rol, a)),
         ],
         propositos: [
           for (final p in _access.purposesFor(usuario.rol)) p.nombreCorto,

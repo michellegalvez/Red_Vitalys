@@ -67,7 +67,6 @@ class PatientSupabase implements PatientService {
     final identifier = _mainIdentifier(person);
     final score = _latestScore(row['prediccion_reingreso']);
     if (person == null || siteId == null || identifier == null) return null;
-    if (score == null) return null;
 
     final dischargeUtc = DateTime.parse(row['fecha_fin'] as String);
     final startUtc = DateTime.parse(row['fecha_inicio'] as String);
@@ -98,7 +97,7 @@ class PatientSupabase implements PatientService {
         discharge.month,
         discharge.day,
       ).difference(DateTime(start.year, start.month, start.day)).inDays,
-      riesgo: score.round(),
+      riesgo: score?.round() ?? 0,
       medicosConAtencion: doctors,
     );
   }

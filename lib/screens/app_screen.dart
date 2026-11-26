@@ -672,7 +672,7 @@ class _AppScreenState extends State<AppScreen> {
   }) {
     final usuario = _usuario;
     if (usuario == null) return false;
-    if (rolPermite(usuario.rol, accion)) return true;
+    if (_access.canDo(usuario.rol, accion)) return true;
     final registra =
         accion == AccionPermitida.registrarAtencion ||
         accion == AccionPermitida.registrarMedicion;
@@ -788,7 +788,12 @@ class _AppScreenState extends State<AppScreen> {
       }
       if (usuario.rol == Rol.administrativo) {
         // El administrativo no ve la historia: solo los datos básicos (F-03).
-        final r = evaluarDatosBasicos(usuario: usuario, proposito: elegido);
+        final r = _access.decideConsultation(
+          user: usuario,
+          patient: paciente,
+          purpose: elegido,
+          today: _datos.hoy,
+        );
         final ok = r == ResultadoConsulta.permitido;
         _registrarEvento(
           usuario: usuario,
@@ -808,19 +813,13 @@ class _AppScreenState extends State<AppScreen> {
         }
         return;
       }
-      final resultado = s.registrar
-          ? evaluarRegistro(
-              usuario: usuario,
-              paciente: paciente,
-              proposito: elegido,
-              hoy: _datos.hoy,
-            )
-          : evaluarConsulta(
-              usuario: usuario,
-              paciente: paciente,
-              proposito: elegido,
-              hoy: _datos.hoy,
-            );
+      final resultado = _access.decideConsultation(
+        user: usuario,
+        patient: paciente,
+        purpose: elegido,
+        today: _datos.hoy,
+        registering: s.registrar,
+      );
       final permitido = resultado == ResultadoConsulta.permitido;
       if (s.registrar) {
         // Registrar una atención (F-04): el evento *Permitido* se crea al
