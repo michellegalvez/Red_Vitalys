@@ -23,15 +23,17 @@ class IndicatorSupabase implements IndicatorService {
         )
         .order('periodo_inicio')
         .order('id_medicion');
-    return [for (final row in rows) ?_toMeasurement(row)];
+    return [for (final row in rows) _toMeasurement(row)];
   }
 
-  Medicion? _toMeasurement(Map<String, dynamic> row) {
+  Medicion _toMeasurement(Map<String, dynamic> row) {
     final code = (row['indicador'] as Map?)?['codigo'] as String?;
     final siteId = sitesByName[(row['sede'] as Map?)?['nombre']];
-    if (code == null || siteId == null) return null;
     final indicator = IdIndicador.values.where((i) => i.name == code);
-    if (indicator.isEmpty) return null;
+    // A row that cannot be placed would change the network average unnoticed.
+    if (indicator.isEmpty || siteId == null) {
+      throw FormatException('Unknown indicator or site in a measurement: $row');
+    }
     return Medicion(
       indicador: indicator.first,
       sedeId: siteId,

@@ -35,10 +35,12 @@ class AuthSupabase implements AuthService {
       return const SignInResult(SignInStatus.networkError);
     } on AuthException {
       return const SignInResult(SignInStatus.wrongCredentials);
-    } on PostgrestException {
+    } on PostgrestException catch (error) {
+      debugPrint('Could not load the profile: $error');
       return _reject(SignInStatus.networkError);
-    } catch (_) {
-      return const SignInResult(SignInStatus.networkError);
+    } catch (error) {
+      debugPrint('Unexpected sign-in error: $error');
+      return _reject(SignInStatus.networkError);
     }
   }
 
@@ -69,7 +71,7 @@ class AuthSupabase implements AuthService {
 
     final mail = (row['correo'] as String?) ?? email;
     final name = row['nombre_completo'] as String;
-    final known = knownUsers[mail];
+    final known = knownUsers[mail] ?? knownUsers[mail.toLowerCase()];
     return SignInResult(
       SignInStatus.success,
       Usuario(
@@ -85,9 +87,11 @@ class AuthSupabase implements AuthService {
   }
 
   Future<SignInResult> _reject(SignInStatus status) async {
-    await client.auth.signOut().catchError(
-      (Object error) => debugPrint('Could not close the Auth session: $error'),
-    );
+    try {
+      await client.auth.signOut();
+    } catch (error) {
+      debugPrint('Could not close the Auth session: $error');
+    }
     return SignInResult(status);
   }
 

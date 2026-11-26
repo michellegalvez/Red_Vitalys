@@ -4,7 +4,9 @@ import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/modelos/indicadores.dart';
 import 'package:red_vitalys/pages/registrar_medicion_page.dart';
 import 'package:red_vitalys/reglas/indicadores.dart';
+import 'package:red_vitalys/models/sign_in_result.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
+import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/indicator_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/boton.dart';
@@ -37,7 +39,30 @@ class FakeIndicators implements IndicatorService {
   }
 }
 
-Future<void> _enterAsAdmin(WidgetTester t, FakeIndicators indicators) async {
+class FakeAuth implements AuthService {
+  var signIns = 0;
+
+  @override
+  bool get isRemote => true;
+
+  @override
+  Future<SignInResult> signIn(String email, String password) async {
+    signIns++;
+    return SignInResult(
+      SignInStatus.success,
+      DatosSimulados.porDefecto.usuarios[1],
+    );
+  }
+
+  @override
+  Future<void> signOut() async {}
+}
+
+Future<void> _enterAsAdmin(
+  WidgetTester t,
+  FakeIndicators indicators, {
+  AuthService? auth,
+}) async {
   final datos = DatosSimulados.porDefecto;
   t.view.physicalSize = celularAyuda;
   t.view.devicePixelRatio = 1;
@@ -47,6 +72,7 @@ Future<void> _enterAsAdmin(WidgetTester t, FakeIndicators indicators) async {
       theme: temaRedVitalys(),
       home: AppScreen(
         datos: datos,
+        auth: auth,
         indicators: indicators,
         reloj: () => datos.hoy,
       ),
@@ -71,6 +97,15 @@ Future<void> _register(WidgetTester t) async {
 
 void main() {
   group('Tablero desde el servicio (T-23 · F-08)', () {
+    testWidgets('el ingreso pasa por el servicio de autenticación', (t) async {
+      final indicators = FakeIndicators();
+      final auth = FakeAuth();
+      await _enterAsAdmin(t, indicators, auth: auth);
+      expect(auth.signIns, 1);
+      expect(indicators.loads, 1);
+      await cerrarAppAyuda(t);
+    });
+
     testWidgets('carga las mediciones al abrir la sesión', (t) async {
       final indicators = FakeIndicators();
       await _enterAsAdmin(t, indicators);

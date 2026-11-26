@@ -25,6 +25,7 @@ extension _Guardado on _AppScreenState {
     final usuario = _usuario;
     final valor = leerValor(nueva.valorTexto);
     if (usuario == null || valor == null) return null;
+    final sesion = _sesion;
     if (!_indicators.isRemote) {
       // Con los datos en memoria se nota el estado "Guardando medición…".
       await Future<void>.delayed(const Duration(milliseconds: 350));
@@ -60,7 +61,7 @@ extension _Guardado on _AppScreenState {
     if (!await _guardarEventosAntes([evento])) {
       return mounted ? _mensajeFallaAccion : null;
     }
-    if (!mounted) return null;
+    if (!mounted || sesion != _sesion) return null;
     if (_indicators.isRemote) {
       try {
         await _indicators.addMeasurement(
@@ -73,7 +74,7 @@ extension _Guardado on _AppScreenState {
         debugPrint('No se pudo guardar la medición: $error');
         return _mensajeFallaMedicion;
       }
-      if (!mounted) return null;
+      if (!mounted || sesion != _sesion) return null;
     }
     _actualizar(() {
       _mediciones = [..._mediciones, medicion];
@@ -92,6 +93,7 @@ extension _Guardado on _AppScreenState {
     final registro = _registro;
     final usuario = _usuario;
     if (registro == null || usuario == null) return null;
+    final sesion = _sesion;
     if (!_histories.isRemote) {
       // Con los datos en memoria se nota el estado "Guardando atención…".
       await Future<void>.delayed(const Duration(milliseconds: 350));
@@ -113,7 +115,8 @@ extension _Guardado on _AppScreenState {
     if (!await _guardarEventosAntes([evento])) {
       return mounted ? _mensajeFallaAccion : null;
     }
-    if (!mounted) return null;
+    // Si la sesión cambió, no se escribe a nombre de otro usuario.
+    if (!mounted || sesion != _sesion) return null;
     if (_histories.isRemote) {
       try {
         await _histories.addEncounter(
@@ -126,7 +129,7 @@ extension _Guardado on _AppScreenState {
         debugPrint('No se pudo registrar la atención: $error');
         return mounted ? _mensajeFallaAtencion : null;
       }
-      if (!mounted) return null;
+      if (!mounted || sesion != _sesion) return null;
     }
     final total = _atenciones.values.fold<int>(0, (a, l) => a + l.length);
     final atencion = atencionDeFormulario(
