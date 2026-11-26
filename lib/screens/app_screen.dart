@@ -25,12 +25,16 @@ import 'package:red_vitalys/reglas/busqueda.dart';
 import 'package:red_vitalys/reglas/indicadores.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/screens/secciones.dart';
+import 'package:red_vitalys/services/auth_service.dart';
+import 'package:red_vitalys/services/indicator_memory.dart';
+import 'package:red_vitalys/services/indicator_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
 
 part 'app_screen_paginas.dart';
 part 'app_screen_guardado.dart';
+part 'app_screen_indicadores.dart';
 
 /// Una declaración de propósito en curso. Sin paciente es la de la lista de
 /// pacientes con alta reciente (F-06); con paciente, la de abrirlo o, si
@@ -80,9 +84,17 @@ typedef _Denegado = ({
 /// Screen anfitriona: guarda todo el estado de la app con `setState` y se
 /// lo pasa a las Pages, que solo muestran y avisan por callbacks.
 class AppScreen extends StatefulWidget {
-  const AppScreen({super.key, required this.datos, this.reloj = DateTime.now});
+  const AppScreen({
+    super.key,
+    required this.datos,
+    this.auth,
+    this.indicators,
+    this.reloj = DateTime.now,
+  });
 
   final DatosSimulados datos;
+  final AuthService? auth;
+  final IndicatorService? indicators;
 
   /// Hora real del dispositivo, para el bloqueo de 15 minutos (F-14).
   final DateTime Function() reloj;
@@ -93,6 +105,8 @@ class AppScreen extends StatefulWidget {
 
 class _AppScreenState extends State<AppScreen> {
   DatosSimulados get _datos => widget.datos;
+  late final IndicatorService _indicators =
+      widget.indicators ?? IndicatorMemory(_datos);
 
   // Sesión (F-13, F-15, F-23).
   Usuario? _usuario;
@@ -157,7 +171,11 @@ class _AppScreenState extends State<AppScreen> {
 
   // Mediciones de los indicadores. Las que registra el administrativo se
   // agregan aquí y el tablero se recalcula (F-12).
-  late List<Medicion> _mediciones = [..._datos.mediciones];
+  late List<Medicion> _mediciones = _indicators.isRemote
+      ? []
+      : [..._datos.mediciones];
+  bool _cargandoMediciones = false;
+  bool _errorMediciones = false;
 
   // Filtros de Pacientes en seguimiento.
   String _busqueda = '';
@@ -188,9 +206,7 @@ class _AppScreenState extends State<AppScreen> {
     super.dispose();
   }
 
-  // ---------------------------------------------------------------------
-  // Inicio y cierre de sesión
-  // ---------------------------------------------------------------------
+  // Inicio y cierre de sesión.
 
   bool get _bloqueado {
     final desde = _bloqueadoDesde;
@@ -205,20 +221,19 @@ class _AppScreenState extends State<AppScreen> {
       _bloqueadoDesde = null;
       _fallosSeguidos = 0;
     }
-    // Se valida con lo que había al pulsar Ingresar; después del await no se
-    // vuelve a leer el campo.
+    // Se conserva el intento exacto enviado al servicio de autenticación.
     final correoEscrito = _correo.text.trim();
     final usuarioEscrito = _datos.usuarioPorCorreo(correoEscrito);
-    final resultado = evaluarIngreso(
+    final resultadoLocal = evaluarIngreso(
       correo: _correo.text,
       contrasena: _contrasena.text,
       usuario: usuarioEscrito,
       contrasenaValida: _datos.contrasenaPrototipo,
       bloqueado: _bloqueado,
     );
-    if (resultado == ResultadoIngreso.camposVacios) {
+    if (resultadoLocal == ResultadoIngreso.camposVacios) {
       setState(() {
-        _mensajeError = resultado.mensaje;
+        _mensajeError = resultadoLocal.mensaje;
         _avisoInactividad = null;
       });
       return;
@@ -228,7 +243,9 @@ class _AppScreenState extends State<AppScreen> {
       _ingresando = true;
       _avisoInactividad = null;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (widget.auth?.isRemote != true) {
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+    }
     if (!mounted) return;
 
     if (_falla('ingresar')) {
@@ -240,6 +257,36 @@ class _AppScreenState extends State<AppScreen> {
         _mensajeError = _mensajeFallaIngreso;
       });
       return;
+    }
+
+    var resultado = resultadoLocal;
+    Usuario? usuario = usuarioEscrito;
+    if (widget.auth?.isRemote == true) {
+      if (_bloqueado) {
+        resultado = ResultadoIngreso.bloqueado;
+      } else {
+        final respuesta = await widget.auth!.signIn(
+          correoEscrito,
+          _contrasena.text,
+        );
+        if (!mounted) return;
+        if (respuesta.status == AuthSignInStatus.networkError) {
+          setState(() {
+            _ingresando = false;
+            _contrasena.clear();
+            _mensajeError = _mensajeFallaIngreso;
+          });
+          return;
+        }
+        resultado = switch (respuesta.status) {
+          AuthSignInStatus.success => ResultadoIngreso.valido,
+          AuthSignInStatus.noSites => ResultadoIngreso.sinSedes,
+          AuthSignInStatus.wrongCredentials =>
+            ResultadoIngreso.datosIncorrectos,
+          AuthSignInStatus.networkError => ResultadoIngreso.datosIncorrectos,
+        };
+        usuario = respuesta.user;
+      }
     }
 
     setState(() {
@@ -273,15 +320,15 @@ class _AppScreenState extends State<AppScreen> {
         _mensajeError = resultado.mensaje;
         return;
       }
-      final usuario = usuarioEscrito;
-      if (usuario == null) return;
+      final usuarioAutenticado = usuario;
+      if (usuarioAutenticado == null) return;
       _mensajeError = null;
-      _usuarioValidado = usuario;
+      _usuarioValidado = usuarioAutenticado;
       _paso = PasoAcceso.sede;
       _errorSede = null;
       // Con una sola sede, esa aparece elegida (F-13 A4).
-      _sedeElegida = usuario.sedesAsignadas.length == 1
-          ? usuario.sedesAsignadas.first
+      _sedeElegida = usuarioAutenticado.sedesAsignadas.length == 1
+          ? usuarioAutenticado.sedesAsignadas.first
           : null;
     });
   }
@@ -323,10 +370,37 @@ class _AppScreenState extends State<AppScreen> {
       _irA(seccionesDe(usuario.rol).first);
     });
     _registrarActividad();
+    unawaited(_cargarMediciones());
+  }
+
+  Future<void> _cargarMediciones() async {
+    if (!_indicators.isRemote || _cargandoMediciones) return;
+    final usuarioId = _usuario?.id;
+    if (usuarioId == null) return;
+    setState(() {
+      _cargandoMediciones = true;
+      _errorMediciones = false;
+    });
+    try {
+      final mediciones = await _indicators.listMeasurements();
+      if (!mounted || _usuario?.id != usuarioId) return;
+      setState(() {
+        _mediciones = mediciones;
+        _cargandoMediciones = false;
+      });
+    } catch (error) {
+      debugPrint('No se pudieron cargar las mediciones: $error');
+      if (!mounted || _usuario?.id != usuarioId) return;
+      setState(() {
+        _cargandoMediciones = false;
+        _errorMediciones = true;
+      });
+    }
   }
 
   /// El usuario sale sin confirmar la sede: no se abre la sesión (F-13 A6).
   void _volverACredenciales() {
+    _cerrarSesionDeAuth();
     setState(() {
       _paso = PasoAcceso.credenciales;
       _usuarioValidado = null;
@@ -339,6 +413,7 @@ class _AppScreenState extends State<AppScreen> {
   /// Cierra la sesión a mano (F-23) o por inactividad (F-15). Se borran la
   /// sede, la consulta abierta y lo que no se había guardado.
   void _cerrarSesion({bool porInactividad = false}) {
+    _cerrarSesionDeAuth();
     _temporizadorInactividad?.cancel();
     setState(() {
       _cerrandoSesion = false;
@@ -357,6 +432,9 @@ class _AppScreenState extends State<AppScreen> {
       _busqueda = '';
       _busquedaPaciente = '';
       _seccion = Seccion.inicio;
+      _mediciones = _indicators.isRemote ? [] : [..._datos.mediciones];
+      _cargandoMediciones = false;
+      _errorMediciones = false;
       _correo.clear();
       _contrasena.clear();
       _mensajeError = null;

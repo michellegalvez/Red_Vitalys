@@ -42,6 +42,9 @@ class IndicadoresPage extends StatelessWidget {
     required this.periodo,
     required this.onAbrirDetalle,
     this.simularFallas = false,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
   });
 
   final List<ResumenIndicador> resumenes;
@@ -58,6 +61,9 @@ class IndicadoresPage extends StatelessWidget {
 
   /// El modo de demo *Simular fallas de red*.
   final bool simularFallas;
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +81,14 @@ class IndicadoresPage extends StatelessWidget {
           simular: simularFallas,
           textoCargando: 'Cargando indicadores…',
           textoError: 'No se pudo cargar el tablero',
-          child: _cuerpo(context),
+          child: CargaRemota(
+            cargando: cargando,
+            hayError: hayError,
+            onReintentar: onReintentar ?? () {},
+            textoCargando: 'Cargando indicadores…',
+            textoError: 'No se pudo cargar el tablero',
+            child: _cuerpo(context),
+          ),
         ),
       ],
     );
@@ -232,6 +245,9 @@ class DetalleIndicadorPage extends StatelessWidget {
     required this.onElegirSede,
     required this.onVolver,
     this.simularFallas = false,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
   });
 
   final Indicador indicador;
@@ -252,6 +268,9 @@ class DetalleIndicadorPage extends StatelessWidget {
 
   /// El modo de demo *Simular fallas de red*.
   final bool simularFallas;
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   @override
   Widget build(BuildContext context) {
@@ -309,7 +328,14 @@ class DetalleIndicadorPage extends StatelessWidget {
                 simular: simularFallas,
                 textoCargando: 'Cargando tendencia…',
                 textoError: 'No se pudo cargar la tendencia',
-                child: _tendencia(),
+                child: CargaRemota(
+                  cargando: cargando,
+                  hayError: hayError,
+                  onReintentar: onReintentar ?? () {},
+                  textoCargando: 'Cargando tendencia…',
+                  textoError: 'No se pudo cargar la tendencia',
+                  child: _tendencia(),
+                ),
               ),
             ],
           ),
@@ -325,7 +351,14 @@ class DetalleIndicadorPage extends StatelessWidget {
                 simular: simularFallas,
                 textoCargando: 'Cargando comparación…',
                 textoError: 'No se pudo cargar la comparación',
-                child: _comparacion(),
+                child: CargaRemota(
+                  cargando: cargando,
+                  hayError: hayError,
+                  onReintentar: onReintentar ?? () {},
+                  textoCargando: 'Cargando comparación…',
+                  textoError: 'No se pudo cargar la comparación',
+                  child: _comparacion(),
+                ),
               ),
             ],
           ),
@@ -337,18 +370,25 @@ class DetalleIndicadorPage extends StatelessWidget {
           simular: simularFallas,
           textoCargando: 'Cargando mediciones…',
           textoError: 'No se pudieron cargar las mediciones',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                mediciones.length == 1
-                    ? '1 medición'
-                    : '${mediciones.length} mediciones',
-                style: _estiloSecundario,
-              ),
-              const SizedBox(height: 10),
-              TablaMediciones(indicador: indicador, filas: mediciones),
-            ],
+          child: CargaRemota(
+            cargando: cargando,
+            hayError: hayError,
+            onReintentar: onReintentar ?? () {},
+            textoCargando: 'Cargando mediciones…',
+            textoError: 'No se pudieron cargar las mediciones',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  mediciones.length == 1
+                      ? '1 medición'
+                      : '${mediciones.length} mediciones',
+                  style: _estiloSecundario,
+                ),
+                const SizedBox(height: 10),
+                TablaMediciones(indicador: indicador, filas: mediciones),
+              ],
+            ),
           ),
         ),
       ],

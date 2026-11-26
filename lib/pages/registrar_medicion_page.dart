@@ -60,7 +60,7 @@ class RegistrarMedicionPage extends StatefulWidget {
 
   /// Guarda la medición y devuelve el mensaje de error, o `null` si se
   /// guardó (F-12). Con error se conserva lo escrito.
-  final String? Function(NuevaMedicion) onGuardar;
+  final FutureOr<String?> Function(NuevaMedicion) onGuardar;
 
   @override
   State<RegistrarMedicionPage> createState() => _RegistrarMedicionPageState();
@@ -112,10 +112,8 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
       _exito = null;
       _guardando = true;
     });
-    // El guardado es simulado; se nota el estado "Guardando medición…".
-    await Future<void>.delayed(const Duration(milliseconds: 350));
+    final fallo = await widget.onGuardar(nueva);
     if (!mounted) return;
-    final fallo = widget.onGuardar(nueva);
     if (fallo != null) {
       setState(() {
         _guardando = false;

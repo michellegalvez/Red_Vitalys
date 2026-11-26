@@ -41,6 +41,79 @@ class CargaSimulada extends StatefulWidget {
   State<CargaSimulada> createState() => _CargaSimuladaState();
 }
 
+/// Presenta los estados de una carga remota iniciada por la Screen anfitriona.
+class CargaRemota extends StatelessWidget {
+  const CargaRemota({
+    super.key,
+    required this.cargando,
+    required this.hayError,
+    required this.onReintentar,
+    required this.textoCargando,
+    required this.textoError,
+    required this.child,
+  });
+
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback onReintentar;
+  final String textoCargando;
+  final String textoError;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (cargando) {
+      return Semantics(
+        liveRegion: true,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox.square(
+                dimension: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  textoCargando,
+                  style: const TextStyle(
+                    color: ColoresVitalys.textoSecundario,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (hayError) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Aviso(tipo: TipoAviso.errores, texto: textoError),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: BotonVitalys(
+                texto: textoReintentar,
+                icono: Icons.refresh_rounded,
+                variante: VarianteBoton.secundario,
+                onPressed: onReintentar,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return child;
+  }
+}
+
 enum _Fase { cargando, error, listo }
 
 class _CargaSimuladaState extends State<CargaSimulada> {
