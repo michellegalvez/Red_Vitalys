@@ -581,7 +581,12 @@ extension _Paginas on _AppScreenState {
       eventos: eventosFiltrados(_eventos, _filtroAuditoria),
       filtro: _filtroAuditoria,
       nombresUsuarios: {for (final u in _datos.usuarios) u.id: u.nombre},
-      nombresPacientes: {for (final p in _pacientes) p.id: p.nombre},
+      // El auditor no lee las tablas de pacientes: sus nombres salen de los
+      // que la app ya conoce.
+      nombresPacientes: {
+        for (final p in _datos.pacientes) p.id: p.nombre,
+        for (final p in _pacientes) p.id: p.nombre,
+      },
       nombresSedes: {for (final s in _datos.sedes) s.id: s.nombre},
       onElegirFiltro: (f) => _actualizar(() => _filtroAuditoria = f),
       simularFallas: _simularFallas,

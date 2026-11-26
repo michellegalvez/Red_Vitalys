@@ -1,6 +1,6 @@
 # Avance de la implementación · Red Vitalys
 
-Actualizado: 2026-11-26 · Hechas: 15 de 22
+Actualizado: 2026-11-26 · Hechas: 16 de 22
 
 Lo escribe la skill `sdd-tecnicas` (tareas nuevas, `[ ]`) y lo marca la skill `sdd-implementar` (`[x]`). Una tarea se marca cuando pasa `flutter analyze` sin errores. La prueba a mano la haces tú: si falla, desmárcala y vuelve a pedirla.
 
@@ -92,7 +92,10 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
 
 ## P-04 · Pasar a Supabase lo que sigue en memoria
 
-- [ ] **T-18** La auditoría guarda y muestra el paciente de cada evento · F-20, F-21 · depende de: T-13
+- [x] **T-18** La auditoría guarda y muestra el paciente de cada evento · F-20, F-21 · depende de: T-13
+  - Hecha: 2026-11-26
+  - Archivos: `supabase/migraciones/006_auditoria_con_paciente.sql` (nuevo), `lib/repositorios/auditoria_supabase.dart`, `lib/datos/fuente_de_datos.dart`, `lib/screens/app_screen_paginas.dart`
+  - Notas: El evento se guarda con `id_paciente`, buscado por el documento principal; si no se encuentra, se guarda sin paciente en lugar de perderse. El auditor no lee las tablas de pacientes: la función `pacientes_de_auditoria()` le da solo el documento de los pacientes que aparecen en la auditoría. Los eventos anteriores a este cambio quedan sin paciente (la auditoría no se puede editar). Verificada en el navegador contra `red-vitalys` (eventos 31 y 32 con Jorge Pardo); no tiene prueba automática porque el repositorio habla directo con Supabase.
 - [ ] **T-19** Datos de la historia en la base: contacto, identificadores y atenciones anteriores · F-02, F-03 · depende de: T-13
 - [ ] **T-20** La historia, el riesgo y sus factores se leen de la base, con carga y error · F-02, F-03, F-07 · depende de: T-19
 - [ ] **T-21** Registrar una atención la guarda en la base y da la relación · F-04, F-05 · depende de: T-18, T-20

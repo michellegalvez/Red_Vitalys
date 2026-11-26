@@ -39,6 +39,9 @@ AuditoriaRepositorio elegirAuditoria({
     cliente: cliente,
     sedesPorNombre: {for (final s in datos.sedes) s.nombre: s.id},
     usuariosPorCorreo: {for (final u in datos.usuarios) u.correo: u.id},
+    pacientesPorDocumento: {
+      for (final p in datos.pacientes) p.numeroDocumento: p.id,
+    },
   );
 }
 

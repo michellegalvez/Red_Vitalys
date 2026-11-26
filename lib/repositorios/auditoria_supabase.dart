@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/repositorios/auditoria_traduccion.dart';
@@ -10,13 +11,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// sale de la sesión de Supabase y se vuelve a reconocer por su correo; la
 /// sede, por su nombre.
 ///
-/// No manda la IP ni la fecha: las pone la base (AD-15). Tampoco el paciente,
-/// porque la tabla `paciente` todavía no existe (P-01).
+/// El paciente se traduce por su documento principal. No manda la IP ni la
+/// fecha: las pone la base (AD-15).
 class AuditoriaSupabase implements AuditoriaRepositorio {
   AuditoriaSupabase({
     required this.cliente,
     required this.sedesPorNombre,
     required this.usuariosPorCorreo,
+    required this.pacientesPorDocumento,
   });
 
   final SupabaseClient cliente;
@@ -26,6 +28,10 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
 
   /// Correo del usuario → id que usa la app.
   final Map<String, String> usuariosPorCorreo;
+
+  /// Número de documento → id del paciente en la app. Un paciente que la app
+  /// no conoce se llama `db<id_paciente>`.
+  final Map<String, String> pacientesPorDocumento;
 
   /// Id de la app → `id_sede` de la base. Se pide una sola vez.
   Map<String, int>? _idsDeSede;
@@ -45,6 +51,39 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
     return _idsDeSede = ids;
   }
 
+  /// El `id_paciente` de la base, o `null` si no se puede saber: entonces el
+  /// evento se guarda sin paciente en lugar de perderse (AD-07).
+  Future<int?> _idDePaciente(String idApp) async {
+    if (idApp.startsWith('db')) return int.tryParse(idApp.substring(2));
+    final documento = pacientesPorDocumento.entries
+        .where((e) => e.value == idApp)
+        .map((e) => e.key)
+        .firstOrNull;
+    if (documento == null) return null;
+    final filas = await cliente
+        .from('identificador_paciente')
+        .select('id_paciente')
+        .eq('numero_identificacion', documento)
+        .eq('es_principal', true)
+        .limit(1);
+    if (filas.isEmpty) {
+      debugPrint('No se encontró el paciente del evento de auditoría');
+      return null;
+    }
+    return filas.first['id_paciente'] as int;
+  }
+
+  /// `id_paciente` → id de la app, para los pacientes de la auditoría.
+  Future<Map<int, String>> _pacientesDeLosEventos() async {
+    final filas = await cliente.rpc<List<dynamic>>('pacientes_de_auditoria');
+    return {
+      for (final fila in filas.cast<Map<String, dynamic>>())
+        fila['id_paciente'] as int:
+            pacientesPorDocumento[fila['numero_identificacion']] ??
+            'db${fila['id_paciente']}',
+    };
+  }
+
   @override
   Future<void> agregar(EventoAuditoria evento) async {
     String? idUsuario;
@@ -57,8 +96,13 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
     final sedeId = evento.sedeId;
     final idSede = sedeId == null ? null : (await _sedes())[sedeId];
     final proposito = evento.proposito;
+    final pacienteId = evento.pacienteId;
+    final idPaciente = pacienteId == null
+        ? null
+        : await _idDePaciente(pacienteId);
     await cliente.from('evento_auditoria').insert({
       'id_usuario': idUsuario,
+      'id_paciente': idPaciente,
       'accion': accionATexto(evento.accion),
       'tipo_recurso': recursoATexto(evento.recurso),
       'resultado': resultadoATexto(evento.resultado),
@@ -74,9 +118,13 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
         .from('evento_auditoria')
         .select(
           'id_evento, fecha_hora_evento, accion, tipo_recurso, resultado, '
-          'proposito_uso, correo_intento, ip, usuario(correo), sede(nombre)',
+          'proposito_uso, correo_intento, ip, id_paciente, usuario(correo), '
+          'sede(nombre)',
         )
         .order('fecha_hora_evento', ascending: false);
+    final pacientes = filas.any((f) => f['id_paciente'] != null)
+        ? await _pacientesDeLosEventos()
+        : const <int, String>{};
     return [
       for (final fila in filas)
         EventoAuditoria(
@@ -89,6 +137,7 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
           proposito: textoAProposito(fila['proposito_uso'] as String?),
           usuarioId: usuariosPorCorreo[(fila['usuario'] as Map?)?['correo']],
           sedeId: sedesPorNombre[(fila['sede'] as Map?)?['nombre']],
+          pacienteId: pacientes[fila['id_paciente']],
           correoIntento: fila['correo_intento'] as String?,
           ip: fila['ip'] as String?,
         ),
