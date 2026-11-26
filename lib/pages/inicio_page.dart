@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
+import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/bloque_inicio.dart';
 import 'package:red_vitalys/widgets/carga.dart';
 import 'package:red_vitalys/widgets/pacientes.dart';
@@ -26,6 +27,7 @@ class InicioPage extends StatelessWidget {
     this.cargando = false,
     this.hayError = false,
     this.onReintentar,
+    this.mensajeVacio = 'No hay pacientes dados de alta en los últimos 30 días',
     this.simularFallas = false,
   });
 
@@ -47,6 +49,9 @@ class InicioPage extends StatelessWidget {
 
   /// Modo demo: muestra la carga y su error con *Reintentar*.
   final bool simularFallas;
+
+  /// Lo que se ve si no hay altas recientes (F-06 A1).
+  final String mensajeVacio;
 
   /// La carga real de los pacientes desde Supabase.
   final bool cargando;
@@ -121,12 +126,16 @@ class InicioPage extends StatelessWidget {
             simular: simularFallas,
             textoCargando: 'Cargando pacientes…',
             textoError: 'No se pudo cargar la lista',
-            child: prioridad.isEmpty
-                ? const EstadoVacio(
-                    titulo: 'Hoy no hay pacientes con alerta.',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (prioridad.isEmpty)
+                  EstadoVacio(
+                    titulo: mensajeVacio,
                     icono: Icons.check_circle_outline_rounded,
                   )
-                : RejillaTarjetas(
+                else
+                  RejillaTarjetas(
                     children: [
                       for (var i = 0; i < prioridad.length; i++)
                         TarjetaPaciente(
@@ -136,6 +145,21 @@ class InicioPage extends StatelessWidget {
                         ),
                     ],
                   ),
+                const SizedBox(height: 26),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    prioridad.length == 1
+                        ? '1 paciente'
+                        : '${prioridad.length} pacientes',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: ColoresVitalys.textoSecundario,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

@@ -287,7 +287,10 @@ extension _Paginas on _AppScreenState {
         resumenes(_mediciones, _datos.hoy),
       ),
       totalIndicadores: indicadores.length,
-      prioridad: conAlertaLista,
+      // Inicio y Pacientes son la misma lista: todas las altas recientes, de
+      // mayor a menor riesgo (F-06).
+      prioridad: altas,
+      mensajeVacio: mensajeSinAltas,
       nombresSedes: _nombresSedes,
       onVerConAlerta: _verPacientes,
       onVerTodos: _verPacientes,

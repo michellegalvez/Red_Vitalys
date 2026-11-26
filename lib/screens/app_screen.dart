@@ -53,6 +53,14 @@ part 'app_screen_foto.dart';
 /// Una declaración de propósito en curso. Sin paciente es la de la lista de
 /// pacientes con alta reciente (F-06); con paciente, la de abrirlo o, si
 /// [registrar], la de registrarle una atención (F-04).
+/// Lo que se decide al declarar el propósito: sus eventos, si el acceso se
+/// permite y el cambio de pantalla que se hace cuando ya se guardaron.
+typedef _PlanConsulta = ({
+  List<EventoAuditoria> eventos,
+  bool permitido,
+  void Function() aplicar,
+});
+
 class _Solicitud {
   const _Solicitud({
     this.paciente,
@@ -247,6 +255,7 @@ class _AppScreenState extends State<AppScreen> {
   bool _errorPacientes = false;
   bool _errorEventos = false;
   bool _confirmandoSede = false;
+  bool _confirmandoProposito = false;
   FiltroAuditoria _filtroAuditoria = FiltroAuditoria.todos;
 
   // Foto de perfil (F-22).
@@ -634,14 +643,155 @@ class _AppScreenState extends State<AppScreen> {
       proposito: proposito,
       ip: ip,
     );
-    _eventos.add(evento);
-    if (_auditoria.esRemoto) {
-      unawaited(
-        _auditoria.agregar(evento).catchError((Object error) {
-          debugPrint('No se pudo guardar el evento: $error');
-        }),
+    _anotarEvento(evento, enviar: true);
+  }
+
+  /// Qué eventos deja declarar [elegido] para la solicitud [s], si el acceso
+  /// se permite y qué se muestra después (F-02, F-03, F-04, F-06, F-18).
+  /// Registrar una atención permitida no deja evento aquí: lo deja al
+  /// guardarla.
+  _PlanConsulta _planDeConsulta(
+    Usuario usuario,
+    _Solicitud s,
+    Proposito elegido,
+  ) {
+    EventoAuditoria evento(
+      AccionAuditoria accion,
+      RecursoAuditoria recurso,
+      bool permitido, {
+      PacienteEnSeguimiento? paciente,
+    }) => _armarEvento(
+      usuario: usuario,
+      sedeId: _sedeSesion,
+      accion: accion,
+      recurso: recurso,
+      resultado: permitido
+          ? ResultadoAuditoria.permitido
+          : ResultadoAuditoria.denegado,
+      paciente: paciente,
+      proposito: elegido,
+    );
+
+    final paciente = s.paciente;
+    if (paciente == null) {
+      // La lista de pacientes con alta reciente (F-06 paso 3), con el
+      // propósito validado por la matriz única (F-16, AD-06).
+      final permitida =
+          _access.decidePurpose(usuario, elegido) ==
+          ResultadoConsulta.permitido;
+      return (
+        eventos: [
+          evento(
+            AccionAuditoria.consultar,
+            RecursoAuditoria.pacientesAltaReciente,
+            permitida,
+          ),
+        ],
+        permitido: permitida,
+        aplicar: () {
+          _listaDeclarada = permitida;
+          if (!permitida) _irA(Seccion.indicadores);
+        },
       );
     }
+    final resultado = _access.decideConsultation(
+      user: usuario,
+      patient: paciente,
+      purpose: elegido,
+      today: _datos.hoy,
+      registering: s.registrar,
+    );
+    final permitido = resultado == ResultadoConsulta.permitido;
+    void denegar({required bool alRegistrar}) => _denegado = (
+      paciente: paciente,
+      resultado: resultado,
+      alRegistrar: alRegistrar,
+    );
+    if (usuario.rol == Rol.administrativo && !s.registrar) {
+      // El administrativo no ve la historia: solo los datos básicos (F-03).
+      return (
+        eventos: [
+          evento(
+            AccionAuditoria.consultar,
+            RecursoAuditoria.datosBasicos,
+            permitido,
+            paciente: paciente,
+          ),
+        ],
+        permitido: permitido,
+        aplicar: () => permitido
+            ? _datosBasicos = (paciente: paciente, proposito: elegido)
+            : denegar(alRegistrar: false),
+      );
+    }
+    if (s.registrar) {
+      return (
+        eventos: [
+          if (!permitido)
+            evento(
+              AccionAuditoria.registrar,
+              RecursoAuditoria.atencion,
+              false,
+              paciente: paciente,
+            ),
+        ],
+        permitido: permitido,
+        aplicar: () => permitido
+            ? _registro = (paciente: paciente, proposito: elegido)
+            : denegar(alRegistrar: true),
+      );
+    }
+    // La historia muestra también el riesgo: dos eventos, permitidos o
+    // denegados (F-02 paso 4, F-07). Con *Urgencia* permitida van al filtro
+    // Emergencia (F-17).
+    return (
+      eventos: [
+        evento(
+          AccionAuditoria.consultar,
+          RecursoAuditoria.historiaClinica,
+          permitido,
+          paciente: paciente,
+        ),
+        evento(
+          AccionAuditoria.consultar,
+          RecursoAuditoria.riesgoReingreso,
+          permitido,
+          paciente: paciente,
+        ),
+      ],
+      permitido: permitido,
+      aplicar: () => permitido
+          ? _historia = (paciente: paciente, proposito: elegido)
+          : denegar(alRegistrar: false),
+    );
+  }
+
+  /// Guarda en Supabase los eventos que dan acceso a algo y espera la
+  /// respuesta: si no se guardan, la acción no se hace (F-20, AD-07).
+  Future<bool> _guardarEventosAntes(List<EventoAuditoria> eventos) async {
+    if (!_auditoria.esRemoto) return true;
+    try {
+      for (final evento in eventos) {
+        await _auditoria.agregar(evento);
+      }
+      return true;
+    } catch (error) {
+      debugPrint('No se pudo guardar el evento: $error');
+      return false;
+    }
+  }
+
+  /// Deja [evento] en la lista de la sesión y, con [enviar], lo manda a
+  /// Supabase sin esperar (los rechazos no muestran nada que proteger).
+  /// Llamar dentro de `setState`.
+  void _anotarEvento(EventoAuditoria evento, {required bool enviar}) {
+    _eventos.add(evento);
+    if (!enviar || !_auditoria.esRemoto) return;
+    unawaited(
+      _auditoria.agregar(evento).catchError((Object error) {
+        debugPrint('No se pudo guardar el evento: $error');
+      }),
+    );
   }
 
   EventoAuditoria _armarEvento({
@@ -810,7 +960,8 @@ class _AppScreenState extends State<AppScreen> {
     });
   }
 
-  void _confirmarProposito() {
+  Future<void> _confirmarProposito() async {
+    if (_confirmandoProposito) return;
     final s = _solicitud;
     final usuario = _usuario;
     if (s == null || usuario == null) return;
@@ -847,121 +998,34 @@ class _AppScreenState extends State<AppScreen> {
         return;
       }
     }
+    final plan = _planDeConsulta(usuario, s, elegido);
+    _confirmandoProposito = true;
+    final guardados = await _guardarEventosAntes(
+      plan.permitido ? plan.eventos : const [],
+    );
+    _confirmandoProposito = false;
+    // Si mientras tanto se canceló el pop-up o se cerró la sesión, no se
+    // muestra nada.
+    if (!mounted || _solicitud != s || _usuario != usuario) return;
+    if (!guardados) {
+      // Sin evento no se muestra la información (F-20, AD-07).
+      setState(() {
+        _solicitud = _Solicitud(
+          paciente: paciente,
+          elegido: elegido,
+          error: _mensajeFallaAccion,
+          registrar: s.registrar,
+          reintentable: true,
+        );
+      });
+      return;
+    }
     setState(() {
       _solicitud = null;
-      if (paciente == null) {
-        // Abrir la lista de pacientes con alta reciente (F-06 paso 3). El
-        // propósito se valida con la matriz única (F-16, AD-06).
-        final listaPermitida =
-            _access.decidePurpose(usuario, elegido) ==
-            ResultadoConsulta.permitido;
-        _registrarEvento(
-          usuario: usuario,
-          sedeId: _sedeSesion,
-          accion: AccionAuditoria.consultar,
-          recurso: RecursoAuditoria.pacientesAltaReciente,
-          resultado: listaPermitida
-              ? ResultadoAuditoria.permitido
-              : ResultadoAuditoria.denegado,
-          proposito: elegido,
-        );
-        _listaDeclarada = listaPermitida;
-        if (!listaPermitida) _irA(Seccion.indicadores);
-        return;
+      for (final evento in plan.eventos) {
+        _anotarEvento(evento, enviar: !plan.permitido);
       }
-      if (usuario.rol == Rol.administrativo) {
-        // El administrativo no ve la historia: solo los datos básicos (F-03).
-        final r = _access.decideConsultation(
-          user: usuario,
-          patient: paciente,
-          purpose: elegido,
-          today: _datos.hoy,
-        );
-        final ok = r == ResultadoConsulta.permitido;
-        _registrarEvento(
-          usuario: usuario,
-          sedeId: _sedeSesion,
-          accion: AccionAuditoria.consultar,
-          recurso: RecursoAuditoria.datosBasicos,
-          resultado: ok
-              ? ResultadoAuditoria.permitido
-              : ResultadoAuditoria.denegado,
-          paciente: paciente,
-          proposito: elegido,
-        );
-        if (ok) {
-          _datosBasicos = (paciente: paciente, proposito: elegido);
-        } else {
-          _denegado = (paciente: paciente, resultado: r, alRegistrar: false);
-        }
-        return;
-      }
-      final resultado = _access.decideConsultation(
-        user: usuario,
-        patient: paciente,
-        purpose: elegido,
-        today: _datos.hoy,
-        registering: s.registrar,
-      );
-      final permitido = resultado == ResultadoConsulta.permitido;
-      if (s.registrar) {
-        // Registrar una atención (F-04): el evento *Permitido* se crea al
-        // guardarla; el rechazo queda registrado ya (F-18).
-        if (permitido) {
-          _registro = (paciente: paciente, proposito: elegido);
-        } else {
-          _registrarEvento(
-            usuario: usuario,
-            sedeId: _sedeSesion,
-            accion: AccionAuditoria.registrar,
-            recurso: RecursoAuditoria.atencion,
-            resultado: ResultadoAuditoria.denegado,
-            paciente: paciente,
-            proposito: elegido,
-          );
-          _denegado = (
-            paciente: paciente,
-            resultado: resultado,
-            alRegistrar: true,
-          );
-        }
-        return;
-      }
-      // Abrir a un paciente, se permita o se deniegue (F-02, F-17, F-18).
-      // Con *Urgencia* permitida queda en el filtro Emergencia.
-      _registrarEvento(
-        usuario: usuario,
-        sedeId: _sedeSesion,
-        accion: AccionAuditoria.consultar,
-        recurso: RecursoAuditoria.historiaClinica,
-        resultado: permitido
-            ? ResultadoAuditoria.permitido
-            : ResultadoAuditoria.denegado,
-        paciente: paciente,
-        proposito: elegido,
-      );
-      // La historia muestra también el riesgo de reingreso: es otro recurso
-      // y deja su propio evento, permitido o denegado (F-07 pasos 3-4, A2).
-      _registrarEvento(
-        usuario: usuario,
-        sedeId: _sedeSesion,
-        accion: AccionAuditoria.consultar,
-        recurso: RecursoAuditoria.riesgoReingreso,
-        resultado: permitido
-            ? ResultadoAuditoria.permitido
-            : ResultadoAuditoria.denegado,
-        paciente: paciente,
-        proposito: elegido,
-      );
-      if (permitido) {
-        _historia = (paciente: paciente, proposito: elegido);
-      } else {
-        _denegado = (
-          paciente: paciente,
-          resultado: resultado,
-          alRegistrar: false,
-        );
-      }
+      plan.aplicar();
     });
     if (s.paciente != null &&
         !s.registrar &&

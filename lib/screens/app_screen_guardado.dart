@@ -49,6 +49,18 @@ extension _Guardado on _AppScreenState {
       registradaPor: usuario.nombre,
       registradaEn: _datos.hoy,
     );
+    // Sin evento no se guarda la medición (F-12 paso 5, F-20).
+    final evento = _armarEvento(
+      usuario: usuario,
+      sedeId: _sedeSesion,
+      accion: AccionAuditoria.registrar,
+      recurso: RecursoAuditoria.medicionIndicador,
+      resultado: ResultadoAuditoria.permitido,
+    );
+    if (!await _guardarEventosAntes([evento])) {
+      return mounted ? _mensajeFallaAccion : null;
+    }
+    if (!mounted) return null;
     if (_indicators.isRemote) {
       try {
         await _indicators.addMeasurement(
@@ -65,13 +77,7 @@ extension _Guardado on _AppScreenState {
     }
     _actualizar(() {
       _mediciones = [..._mediciones, medicion];
-      _registrarEvento(
-        usuario: usuario,
-        sedeId: _sedeSesion,
-        accion: AccionAuditoria.registrar,
-        recurso: RecursoAuditoria.medicionIndicador,
-        resultado: ResultadoAuditoria.permitido,
-      );
+      _anotarEvento(evento, enviar: false);
     });
     return null;
   }
@@ -94,6 +100,20 @@ extension _Guardado on _AppScreenState {
     if (_falla('evento-atencion')) return _mensajeFallaAccion;
     if (_falla('guardar-atencion')) return _mensajeFallaAtencion;
     final paciente = registro.paciente;
+    // Sin evento no se guarda la atención (F-04 paso 4, F-20).
+    final evento = _armarEvento(
+      usuario: usuario,
+      sedeId: _sedeSesion,
+      accion: AccionAuditoria.registrar,
+      recurso: RecursoAuditoria.atencion,
+      resultado: ResultadoAuditoria.permitido,
+      paciente: paciente,
+      proposito: registro.proposito,
+    );
+    if (!await _guardarEventosAntes([evento])) {
+      return mounted ? _mensajeFallaAccion : null;
+    }
+    if (!mounted) return null;
     if (_histories.isRemote) {
       try {
         await _histories.addEncounter(
@@ -135,15 +155,7 @@ extension _Guardado on _AppScreenState {
           for (final p in _pacientes) p.id == paciente.id ? actualizado : p,
         ];
       }
-      _registrarEvento(
-        usuario: usuario,
-        sedeId: _sedeSesion,
-        accion: AccionAuditoria.registrar,
-        recurso: RecursoAuditoria.atencion,
-        resultado: ResultadoAuditoria.permitido,
-        paciente: paciente,
-        proposito: registro.proposito,
-      );
+      _anotarEvento(evento, enviar: false);
       _registro = null;
     });
     if (_histories.isRemote) unawaited(_cargarHistoria());
