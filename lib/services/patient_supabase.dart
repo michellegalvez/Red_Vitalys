@@ -42,7 +42,10 @@ class PatientSupabase implements PatientService {
     final doctors = <int, List<String>>{};
     for (final row in rows) {
       final patientId = row['id_paciente'] as int;
-      latest.putIfAbsent(patientId, () => row);
+      final current = latest[patientId];
+      if (current == null || _isBetterDischarge(row, current)) {
+        latest[patientId] = row;
+      }
       if (row['proposito'] != 'atencion_paciente') continue;
       final doctor = usersByEmail[(row['usuario'] as Map?)?['correo']];
       if (doctor == null) continue;
@@ -54,6 +57,26 @@ class PatientSupabase implements PatientService {
       for (final entry in latest.entries)
         ?_toPatient(entry.key, entry.value, doctors[entry.key] ?? [], today),
     ];
+  }
+
+  bool _isBetterDischarge(
+    Map<String, dynamic> candidate,
+    Map<String, dynamic> current,
+  ) {
+    final candidateDate = _predictionDate(candidate);
+    final currentDate = _predictionDate(current);
+    if (candidateDate == null) return false;
+    if (currentDate == null) return true;
+    return candidateDate.compareTo(currentDate) > 0;
+  }
+
+  String? _predictionDate(Map<String, dynamic> row) {
+    final predictions = row['prediccion_reingreso'];
+    if (predictions is! List || predictions.isEmpty) return null;
+    return [
+      for (final p in predictions.cast<Map<String, dynamic>>())
+        p['fecha_prediccion'] as String,
+    ].reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
   }
 
   PacienteEnSeguimiento? _toPatient(
