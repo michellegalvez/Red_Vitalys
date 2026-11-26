@@ -11,6 +11,9 @@ import 'package:red_vitalys/services/auth_supabase.dart';
 import 'package:red_vitalys/services/history_memory.dart';
 import 'package:red_vitalys/services/history_service.dart';
 import 'package:red_vitalys/services/history_supabase.dart';
+import 'package:red_vitalys/services/indicator_memory.dart';
+import 'package:red_vitalys/services/indicator_service.dart';
+import 'package:red_vitalys/services/indicator_supabase.dart';
 import 'package:red_vitalys/services/patient_memory.dart';
 import 'package:red_vitalys/services/patient_service.dart';
 import 'package:red_vitalys/services/patient_supabase.dart';
@@ -81,4 +84,16 @@ PatientService elegirPacientes({
 HistoryService elegirHistoria({SupabaseClient? cliente}) {
   if (cliente == null) return const HistoryMemory();
   return HistorySupabase(cliente);
+}
+
+/// El servicio de los indicadores: Supabase, o las mediciones simuladas (AD-02).
+IndicatorService elegirIndicadores({
+  required DatosSimulados datos,
+  SupabaseClient? cliente,
+}) {
+  if (cliente == null) return IndicatorMemory(datos);
+  return IndicatorSupabase(
+    client: cliente,
+    sitesByName: {for (final s in datos.sedes) s.nombre: s.id},
+  );
 }

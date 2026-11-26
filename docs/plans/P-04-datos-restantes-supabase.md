@@ -3,7 +3,7 @@ id: P-04
 titulo: Pasar a Supabase lo que sigue en memoria
 version: 0.1.0
 fecha: 2026-11-26
-estado: en curso
+estado: hecho
 autores: [Juan Diego Valverde Fierro]
 specs: [F-01, F-02, F-03, F-04, F-07, F-08, F-09, F-10, F-11, F-12, F-20, F-21]
 requisitos: []

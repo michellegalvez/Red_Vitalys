@@ -37,6 +37,8 @@ import 'package:red_vitalys/services/auth_memory.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/history_memory.dart';
 import 'package:red_vitalys/services/history_service.dart';
+import 'package:red_vitalys/services/indicator_memory.dart';
+import 'package:red_vitalys/services/indicator_service.dart';
 import 'package:red_vitalys/services/patient_memory.dart';
 import 'package:red_vitalys/services/patient_service.dart';
 import 'package:red_vitalys/services/session_service.dart';
@@ -104,6 +106,7 @@ class AppScreen extends StatefulWidget {
     this.auth,
     this.patients,
     this.history,
+    this.indicators,
     this.fotos,
     this.selectorFoto,
   });
@@ -127,6 +130,9 @@ class AppScreen extends StatefulWidget {
 
   /// De dónde sale la historia clínica. Sin él, la simulada.
   final HistoryService? history;
+
+  /// De dónde salen las mediciones. Sin él, las simuladas.
+  final IndicatorService? indicators;
 
   /// Hora real del dispositivo, para el bloqueo de 15 minutos (F-14).
   final DateTime Function() reloj;
@@ -216,7 +222,13 @@ class _AppScreenState extends State<AppScreen> {
 
   // Mediciones de los indicadores. Las que registra el administrativo se
   // agregan aquí y el tablero se recalcula (F-12).
-  late List<Medicion> _mediciones = [..._datos.mediciones];
+  late final IndicatorService _indicators =
+      widget.indicators ?? IndicatorMemory(widget.datos);
+  late List<Medicion> _mediciones = _indicators.isRemote
+      ? []
+      : [..._datos.mediciones];
+  bool _cargandoMediciones = false;
+  bool _errorMediciones = false;
 
   // Filtros de Pacientes en seguimiento.
   String _busqueda = '';
@@ -425,6 +437,7 @@ class _AppScreenState extends State<AppScreen> {
     _session.startInactivityTimer(() => _cerrarSesion(porInactividad: true));
     _cargarEventosSiHaceFalta();
     unawaited(_cargarPacientes());
+    unawaited(_cargarMediciones());
   }
 
   Future<void> _cargarHistoria() async {
@@ -456,6 +469,29 @@ class _AppScreenState extends State<AppScreen> {
       setState(() {
         _cargandoHistoria = false;
         _errorHistoria = true;
+      });
+    }
+  }
+
+  Future<void> _cargarMediciones() async {
+    if (!_indicators.isRemote || _cargandoMediciones) return;
+    setState(() {
+      _cargandoMediciones = true;
+      _errorMediciones = false;
+    });
+    try {
+      final loaded = await _indicators.listMeasurements();
+      if (!mounted) return;
+      setState(() {
+        _mediciones = loaded;
+        _cargandoMediciones = false;
+      });
+    } catch (error) {
+      debugPrint('No se pudieron cargar las mediciones: $error');
+      if (!mounted) return;
+      setState(() {
+        _cargandoMediciones = false;
+        _errorMediciones = true;
       });
     }
   }

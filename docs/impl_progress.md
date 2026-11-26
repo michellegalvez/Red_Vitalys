@@ -1,6 +1,6 @@
 # Avance de la implementación · Red Vitalys
 
-Actualizado: 2026-11-26 · Hechas: 19 de 22
+Actualizado: 2026-11-26 · Hechas: 22 de 22
 
 Lo escribe la skill `sdd-tecnicas` (tareas nuevas, `[ ]`) y lo marca la skill `sdd-implementar` (`[x]`). Una tarea se marca cuando pasa `flutter analyze` sin errores. La prueba a mano la haces tú: si falla, desmárcala y vuelve a pedirla.
 
@@ -108,6 +108,15 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
   - Hecha: 2026-11-26
   - Archivos: `supabase/migraciones/008_registrar_atencion.sql` (nuevo), `lib/services/history_service.dart`, `lib/services/history_memory.dart`, `lib/services/history_supabase.dart`, `lib/pages/registrar_atencion_page.dart`, `lib/screens/app_screen_guardado.dart`, `test/historia_servicio_test.dart`
   - Notas: La Page espera el guardado (`onGuardar` devuelve un `Future`). Con Supabase la atención se inserta a nombre del médico de la sesión y la historia se vuelve a traer; si falla, se ve "No se pudo registrar la atención" y no queda evento. La base solo deja insertar al médico, a su nombre y con *Atención del paciente* o *Urgencia*. Con *Atención del paciente* da relación: la lista la trae la próxima vez que se cargan los pacientes, y en la sesión se actualiza como antes. Verificada en el navegador: quedó la atención 41 de Jorge con *Urgencia* y su evento *Registrar*.
-- [ ] **T-22** Tablas de indicadores con sus mediciones de prueba · F-08 · depende de: ninguna
-- [ ] **T-23** El tablero y el detalle leen las mediciones de la base, con carga y error · F-08, F-09, F-10, F-11 · depende de: T-22
-- [ ] **T-24** Registrar una medición la guarda en la base, sin repetirla · F-12 · depende de: T-18, T-23
+- [x] **T-22** Tablas de indicadores con sus mediciones de prueba · F-08 · depende de: ninguna
+  - Hecha: 2026-11-26
+  - Archivos: `supabase/migraciones/009_indicadores.sql` (nuevo)
+  - Notas: Aplicado a `red-vitalys`: `indicador`, `indicador_tipo_sede` y `medicion_indicador` como en `docs/modelo.md`, con las 179 mediciones de `medicionesSimuladas` (generadas desde la misma función, así son idénticas). Una medición tiene 1 decimal como máximo, cubre un mes entero, no se repite y no se edita ni se borra (disparador). Los tres roles leen; solo el administrativo registra, a su nombre y de un mes ya terminado. Sigue faltando la de eventos adversos de Envigado en octubre (RF-26).
+- [x] **T-23** El tablero y el detalle leen las mediciones de la base, con carga y error · F-08, F-09, F-10, F-11 · depende de: T-22
+  - Hecha: 2026-11-26
+  - Archivos: `lib/services/indicator_service.dart`, `lib/services/indicator_memory.dart`, `lib/services/indicator_supabase.dart` (nuevos), `lib/datos/fuente_de_datos.dart`, `lib/main.dart`, `lib/screens/app_screen.dart`, `lib/screens/app_screen_paginas.dart`, `lib/pages/indicadores_page.dart`, `test/indicadores_servicio_test.dart` (nuevo)
+  - Notas: Las mediciones se cargan al abrir la sesión, para los tres roles; con Supabase el tablero empieza vacío. El tablero y el detalle muestran la carga y el error con *Reintentar*. Los cálculos (promedio, marca, cambio y tendencia) siguen en `lib/reglas/indicadores.dart`. Verificada en el navegador: el tablero del administrativo muestra los mismos valores que la simulación (8,3 %, 25,8 min, 86,9 % y 1,8 por 1.000).
+- [x] **T-24** Registrar una medición la guarda en la base, sin repetirla · F-12 · depende de: T-18, T-23
+  - Hecha: 2026-11-26
+  - Archivos: `lib/services/indicator_supabase.dart`, `lib/pages/registrar_medicion_page.dart`, `lib/screens/app_screen_guardado.dart`, `test/indicadores_servicio_test.dart`
+  - Notas: La Page espera el guardado. Si la base ya tiene esa medición (código `23505`) se ve el mensaje de medición repetida. Las mediciones de la base se cargan sin quién y cuándo, así la lista *Registradas en esta sesión* solo muestra las de la sesión. Verificada con una prueba temporal contra `red-vitalys` (no se sube): el administrativo guardó la de eventos adversos de Envigado en octubre (ya son 180), la repetida da el aviso y al médico la base lo rechaza. En el navegador no se pudo escribir el valor con Playwright, así que el formulario queda para la prueba a mano.

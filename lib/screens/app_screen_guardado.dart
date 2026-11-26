@@ -21,10 +21,15 @@ extension _Guardado on _AppScreenState {
   /// deja su evento sin paciente y con propósito *No aplica* (F-12, F-20).
   ///
   /// Devuelve el mensaje de error, o `null` si se guardó.
-  String? _guardarMedicion(NuevaMedicion nueva) {
+  Future<String?> _guardarMedicion(NuevaMedicion nueva) async {
     final usuario = _usuario;
     final valor = leerValor(nueva.valorTexto);
     if (usuario == null || valor == null) return null;
+    if (!_indicators.isRemote) {
+      // Con los datos en memoria se nota el estado "Guardando medición…".
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return null;
+    }
     if (!intentarAcceso(
       AccionPermitida.registrarMedicion,
       RecursoAuditoria.medicionIndicador,
@@ -36,18 +41,30 @@ extension _Guardado on _AppScreenState {
     if (rechazo != null) return rechazo;
     if (_falla('evento-medicion')) return _mensajeFallaAccion;
     if (_falla('guardar-medicion')) return _mensajeFallaMedicion;
+    final medicion = Medicion(
+      indicador: nueva.indicador,
+      sedeId: nueva.sedeId,
+      periodo: nueva.periodo,
+      valor: redondear1(valor),
+      registradaPor: usuario.nombre,
+      registradaEn: _datos.hoy,
+    );
+    if (_indicators.isRemote) {
+      try {
+        await _indicators.addMeasurement(
+          medicion,
+          siteName: _datos.sede(nueva.sedeId).nombre,
+        );
+      } on DuplicateMeasurement {
+        return mensajeMedicionRepetida;
+      } catch (error) {
+        debugPrint('No se pudo guardar la medición: $error');
+        return _mensajeFallaMedicion;
+      }
+      if (!mounted) return null;
+    }
     _actualizar(() {
-      _mediciones = [
-        ..._mediciones,
-        Medicion(
-          indicador: nueva.indicador,
-          sedeId: nueva.sedeId,
-          periodo: nueva.periodo,
-          valor: redondear1(valor),
-          registradaPor: usuario.nombre,
-          registradaEn: _datos.hoy,
-        ),
-      ];
+      _mediciones = [..._mediciones, medicion];
       _registrarEvento(
         usuario: usuario,
         sedeId: _sedeSesion,

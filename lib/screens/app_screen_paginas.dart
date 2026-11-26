@@ -404,6 +404,9 @@ extension _Paginas on _AppScreenState {
       },
       periodo: periodo,
       simularFallas: _simularFallas,
+      cargando: _cargandoMediciones,
+      hayError: _errorMediciones,
+      onReintentar: _cargarMediciones,
       onAbrirDetalle: (id) => _actualizar(() {
         _indicadorAbierto = id;
         _sedeTendencia = null;
@@ -448,6 +451,9 @@ extension _Paginas on _AppScreenState {
         ),
         onElegirSede: (sedeId) => _actualizar(() => _sedeTendencia = sedeId),
         simularFallas: _simularFallas,
+        cargando: _cargandoMediciones,
+        hayError: _errorMediciones,
+        onReintentar: _cargarMediciones,
         onVolver: () => _actualizar(() {
           _indicadorAbierto = null;
           _sedeTendencia = null;

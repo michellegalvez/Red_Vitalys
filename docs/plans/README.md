@@ -62,4 +62,4 @@ Reglas:
 - [P-00 · Conexión con Supabase](P-00-conexion-supabase.md) · v0.1.0 · hecho · transversal (AD-01, AD-02, AD-13) · tareas: [T-00](../tasks/T-00-conexion-supabase.md)
 - [P-01 · Auditoría de accesos guardada en Supabase](P-01-auditoria-supabase.md) · v0.1.0 · hecho · F-20, F-21 · tareas: [T-01](../tasks/T-01-auditoria-supabase.md)
 - [P-02 · Foto de perfil guardada en Supabase Storage](P-02-perfil-foto-storage.md) · v0.1.0 · hecho · F-22 · tareas: [T-02](../tasks/T-02-perfil-foto-storage.md)
-- [P-04 · Pasar a Supabase lo que sigue en memoria](P-04-datos-restantes-supabase.md) · v0.1.0 · en curso · F-01 a F-04, F-07 a F-12, F-20, F-21 · tareas: T-18 a T-24 en [impl_progress](../impl_progress.md)
+- [P-04 · Pasar a Supabase lo que sigue en memoria](P-04-datos-restantes-supabase.md) · v0.1.0 · hecho · F-01 a F-04, F-07 a F-12, F-20, F-21 · tareas: T-18 a T-24 en [impl_progress](../impl_progress.md)
