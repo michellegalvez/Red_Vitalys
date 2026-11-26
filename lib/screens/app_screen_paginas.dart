@@ -472,6 +472,7 @@ extension _Paginas on _AppScreenState {
       final quien = m.registradaPor;
       final cuando = m.registradaEn;
       if (quien == null || cuando == null) continue;
+      if (quien != _usuario?.nombre) continue;
       registradas.add((
         indicador: indicadorDe(m.indicador),
         sede: _datos.sede(m.sedeId).nombreCorto,
@@ -502,6 +503,9 @@ extension _Paginas on _AppScreenState {
           : 'Ver los datos básicos',
       onBuscar: (texto) => _actualizar(() => _busquedaPaciente = texto),
       onElegir: _abrirPaciente,
+      cargando: _cargandoPacientes,
+      hayError: _errorPacientes,
+      onReintentar: _cargarPacientes,
       simularFallas: _simularFallas,
     );
   }

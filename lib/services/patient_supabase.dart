@@ -35,15 +35,15 @@ class PatientSupabase implements PatientService {
           'identificador_paciente(tipo_documento, numero_identificacion, '
           'es_principal))',
         )
-        .not('fecha_fin', 'is', null)
-        .order('fecha_fin', ascending: false);
+        .order('fecha_fin', ascending: false, nullsFirst: false);
 
     final latest = <int, Map<String, dynamic>>{};
     final doctors = <int, List<String>>{};
     for (final row in rows) {
       final patientId = row['id_paciente'] as int;
       final current = latest[patientId];
-      if (current == null || _isBetterDischarge(row, current)) {
+      final discharged = row['fecha_fin'] != null;
+      if (discharged && (current == null || _isBetterDischarge(row, current))) {
         latest[patientId] = row;
       }
       if (row['proposito'] != 'atencion_paciente') continue;

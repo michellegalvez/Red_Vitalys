@@ -255,6 +255,9 @@ class _AppScreenState extends State<AppScreen> {
   bool _errorPacientes = false;
   bool _errorEventos = false;
   bool _confirmandoSede = false;
+  // Cambia al abrir y al cerrar cada sesión: una carga pedida en otra sesión
+  // no se aplica a la siguiente.
+  int _sesion = 0;
   bool _confirmandoProposito = false;
   FiltroAuditoria _filtroAuditoria = FiltroAuditoria.todos;
 
@@ -431,6 +434,7 @@ class _AppScreenState extends State<AppScreen> {
       if (!mounted) return;
     }
     setState(() {
+      _sesion++;
       _eventos.add(evento);
       _session.registerSuccess();
       _mensajeError = null;
@@ -488,16 +492,17 @@ class _AppScreenState extends State<AppScreen> {
       _cargandoMediciones = true;
       _errorMediciones = false;
     });
+    final sesion = _sesion;
     try {
       final loaded = await _indicators.listMeasurements();
-      if (!mounted) return;
+      if (!mounted || sesion != _sesion) return;
       setState(() {
         _mediciones = loaded;
         _cargandoMediciones = false;
       });
     } catch (error) {
       debugPrint('No se pudieron cargar las mediciones: $error');
-      if (!mounted) return;
+      if (!mounted || sesion != _sesion) return;
       setState(() {
         _cargandoMediciones = false;
         _errorMediciones = true;
@@ -511,16 +516,17 @@ class _AppScreenState extends State<AppScreen> {
       _cargandoPacientes = true;
       _errorPacientes = false;
     });
+    final sesion = _sesion;
     try {
       final loaded = await _patients.listPatients(_datos.hoy);
-      if (!mounted) return;
+      if (!mounted || sesion != _sesion) return;
       setState(() {
         _pacientes = loaded;
         _cargandoPacientes = false;
       });
     } catch (error) {
       debugPrint('No se pudieron cargar los pacientes: $error');
-      if (!mounted) return;
+      if (!mounted || sesion != _sesion) return;
       setState(() {
         _cargandoPacientes = false;
         _errorPacientes = true;
@@ -539,6 +545,7 @@ class _AppScreenState extends State<AppScreen> {
 
   /// El usuario sale sin confirmar la sede: no se abre la sesión (F-13 A6).
   void _volverACredenciales() {
+    if (_confirmandoSede) return;
     _cerrarSesionDeAuth();
     setState(() {
       _paso = PasoAcceso.credenciales;
@@ -579,6 +586,15 @@ class _AppScreenState extends State<AppScreen> {
       _contrasena.clear();
       _mensajeError = null;
       _avisoInactividad = porInactividad ? mensajeInactividad : null;
+      // Lo traído de la base es de quien tenía la sesión: el siguiente
+      // usuario lo vuelve a pedir con sus permisos.
+      _sesion++;
+      if (_patients.isRemote) _pacientes = [];
+      if (_indicators.isRemote) _mediciones = [];
+      _cargandoPacientes = false;
+      _errorPacientes = false;
+      _cargandoMediciones = false;
+      _errorMediciones = false;
     });
   }
 

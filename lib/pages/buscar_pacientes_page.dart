@@ -19,6 +19,9 @@ class BuscarPacientesPage extends StatelessWidget {
     required this.accionAlElegir,
     required this.onBuscar,
     required this.onElegir,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
     this.simularFallas = false,
   });
 
@@ -32,6 +35,12 @@ class BuscarPacientesPage extends StatelessWidget {
   final String accionAlElegir;
   final ValueChanged<String> onBuscar;
   final ValueChanged<PacienteEnSeguimiento> onElegir;
+
+  /// Con Supabase: la lista de pacientes en la que se busca todavía llega
+  /// o no se pudo traer (F-01).
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   /// Modo demo: muestra la carga y su error con *Reintentar*.
   final bool simularFallas;
@@ -68,12 +77,19 @@ class BuscarPacientesPage extends StatelessWidget {
           const _Pista()
         else if (buscando)
           // La carga se repite cada vez que cambia el texto buscado.
-          CargaSimulada(
-            key: ValueKey(texto),
-            simular: simularFallas,
+          CargaRemota(
+            cargando: cargando,
+            hayError: hayError,
+            onReintentar: onReintentar ?? () {},
             textoCargando: 'Buscando…',
             textoError: 'No se pudo buscar. Intente de nuevo.',
-            child: _resultados(),
+            child: CargaSimulada(
+              key: ValueKey(texto),
+              simular: simularFallas,
+              textoCargando: 'Buscando…',
+              textoError: 'No se pudo buscar. Intente de nuevo.',
+              child: _resultados(),
+            ),
           ),
       ],
     );
