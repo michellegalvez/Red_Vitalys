@@ -24,6 +24,9 @@ class DatosBasicosPage extends StatelessWidget {
     required this.fechaConsulta,
     required this.onVolver,
     this.simularFallas = false,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
   });
 
   /// Solo se usan sus datos básicos: nunca su historia ni su riesgo.
@@ -34,6 +37,11 @@ class DatosBasicosPage extends StatelessWidget {
 
   /// Modo demo: muestra la carga y su error con *Reintentar*.
   final bool simularFallas;
+
+  /// La carga real de la historia desde Supabase (F-02 CA-7).
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   @override
   Widget build(BuildContext context) {
@@ -90,11 +98,18 @@ class DatosBasicosPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                CargaSimulada(
-                  simular: simularFallas,
+                CargaRemota(
+                  cargando: cargando,
+                  hayError: hayError,
+                  onReintentar: onReintentar ?? () {},
                   textoCargando: 'Cargando datos del paciente…',
                   textoError: 'No se pudieron cargar los datos',
-                  child: _datos(),
+                  child: CargaSimulada(
+                    simular: simularFallas,
+                    textoCargando: 'Cargando datos del paciente…',
+                    textoError: 'No se pudieron cargar los datos',
+                    child: _datos(),
+                  ),
                 ),
               ],
             ),

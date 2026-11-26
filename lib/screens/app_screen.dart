@@ -35,6 +35,8 @@ import 'package:red_vitalys/screens/secciones.dart';
 import 'package:red_vitalys/services/access_control_service.dart';
 import 'package:red_vitalys/services/auth_memory.dart';
 import 'package:red_vitalys/services/auth_service.dart';
+import 'package:red_vitalys/services/history_memory.dart';
+import 'package:red_vitalys/services/history_service.dart';
 import 'package:red_vitalys/services/patient_memory.dart';
 import 'package:red_vitalys/services/patient_service.dart';
 import 'package:red_vitalys/services/session_service.dart';
@@ -101,6 +103,7 @@ class AppScreen extends StatefulWidget {
     this.auditoria,
     this.auth,
     this.patients,
+    this.history,
     this.fotos,
     this.selectorFoto,
   });
@@ -122,6 +125,9 @@ class AppScreen extends StatefulWidget {
   /// De dónde salen los pacientes. Sin él, los simulados.
   final PatientService? patients;
 
+  /// De dónde sale la historia clínica. Sin él, la simulada.
+  final HistoryService? history;
+
   /// Hora real del dispositivo, para el bloqueo de 15 minutos (F-14).
   final DateTime Function() reloj;
 
@@ -135,6 +141,14 @@ class _AppScreenState extends State<AppScreen> {
   late final AuthService _auth = widget.auth ?? AuthMemory(widget.datos);
 
   final _access = const AccessControlService();
+
+  late final HistoryService _histories =
+      widget.history ?? const HistoryMemory();
+
+  // La historia traída de Supabase para la consulta abierta.
+  Patient? _historiaRemota;
+  bool _cargandoHistoria = false;
+  bool _errorHistoria = false;
 
   late final PatientService _patients =
       widget.patients ?? PatientMemory(widget.datos);
@@ -411,6 +425,39 @@ class _AppScreenState extends State<AppScreen> {
     _session.startInactivityTimer(() => _cerrarSesion(porInactividad: true));
     _cargarEventosSiHaceFalta();
     unawaited(_cargarPacientes());
+  }
+
+  Future<void> _cargarHistoria() async {
+    final paciente = (_historia ?? _datosBasicos)?.paciente;
+    if (!_histories.isRemote || paciente == null) return;
+    setState(() {
+      _historiaRemota = null;
+      _cargandoHistoria = true;
+      _errorHistoria = false;
+    });
+    // Si mientras tanto se cerró la consulta o se abrió otra, la respuesta
+    // ya no sirve.
+    bool sigueAbierta() =>
+        mounted && (_historia ?? _datosBasicos)?.paciente.id == paciente.id;
+    try {
+      final historia = await _histories.historyOf(
+        paciente,
+        siteName: _nombresSedes[paciente.sedeAltaId] ?? '',
+        today: _datos.hoy,
+      );
+      if (!sigueAbierta()) return;
+      setState(() {
+        _historiaRemota = historia;
+        _cargandoHistoria = false;
+      });
+    } catch (error) {
+      debugPrint('No se pudo cargar la historia: $error');
+      if (!sigueAbierta()) return;
+      setState(() {
+        _cargandoHistoria = false;
+        _errorHistoria = true;
+      });
+    }
   }
 
   Future<void> _cargarPacientes() async {
@@ -880,6 +927,11 @@ class _AppScreenState extends State<AppScreen> {
         );
       }
     });
+    if (s.paciente != null &&
+        !s.registrar &&
+        (_historia != null || _datosBasicos != null)) {
+      unawaited(_cargarHistoria());
+    }
   }
 
   /// Cancelar no consulta nada (F-16 A2). Si era la lista, el médico queda
@@ -909,6 +961,9 @@ class _AppScreenState extends State<AppScreen> {
     _indicadorAbierto = null;
     _sedeTendencia = null;
     _datosBasicos = null;
+    _historiaRemota = null;
+    _cargandoHistoria = false;
+    _errorHistoria = false;
   }
 
   void _cerrarHistoria() => setState(() {

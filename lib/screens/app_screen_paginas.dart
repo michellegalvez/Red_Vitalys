@@ -497,6 +497,37 @@ extension _Paginas on _AppScreenState {
     );
   }
 
+  /// La historia que se muestra: con Supabase la traída de la base (vacía
+  /// mientras llega) y, sin él, la simulada.
+  Patient _historiaVisible(
+    PacienteEnSeguimiento paciente, {
+    List<Encounter> nuevas = const [],
+  }) {
+    if (!_histories.isRemote) {
+      return historiaDe(
+        paciente,
+        sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
+        hoy: _datos.hoy,
+        nuevas: nuevas,
+      );
+    }
+    final base = _historiaRemota;
+    return Patient(
+      id: 'pac-${paciente.id}',
+      fullName: paciente.nombre,
+      age: paciente.edad,
+      sex: paciente.sexo == 'M' ? 'Masculino' : 'Femenino',
+      documentType: paciente.tipoDocumento,
+      documentNumber: paciente.numeroDocumento,
+      birthDate: base?.birthDate ?? _datos.hoy,
+      phone: base?.phone ?? '',
+      address: base?.address ?? '',
+      systemIdentifiers: base?.systemIdentifiers ?? const [],
+      readmissionRisk: base?.readmissionRisk,
+      encounters: ordenarAtenciones([...nuevas, ...?base?.encounters]),
+    );
+  }
+
   /// Datos básicos de un paciente para el administrativo (F-03).
   Widget _paginaDatosBasicos(Usuario usuario, _ConsultaAbierta d) {
     final paciente = _pacientes.firstWhere(
@@ -509,11 +540,10 @@ extension _Paginas on _AppScreenState {
       escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
       onDestino: _irASeccion(usuario),
       body: DatosBasicosPage(
-        paciente: historiaDe(
-          paciente,
-          sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
-          hoy: _datos.hoy,
-        ),
+        paciente: _historiaVisible(paciente),
+        cargando: _cargandoHistoria,
+        hayError: _errorHistoria,
+        onReintentar: _cargarHistoria,
         propositoTexto: d.proposito.nombreCorto,
         fechaConsulta: formatoFechaHora(_datos.hoy),
         onVolver: () => _actualizar(() => _datosBasicos = null),
@@ -530,10 +560,8 @@ extension _Paginas on _AppScreenState {
       (p) => p.id == h.paciente.id,
       orElse: () => h.paciente,
     );
-    final historia = historiaDe(
+    final historia = _historiaVisible(
       paciente,
-      sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
-      hoy: _datos.hoy,
       nuevas: _atenciones[paciente.id] ?? const [],
     );
     return _marco(
@@ -548,6 +576,9 @@ extension _Paginas on _AppScreenState {
         puedeRegistrar: usuario.rol == Rol.medico,
         onVolver: _cerrarHistoria,
         onRegistrarAtencion: () => _pedirRegistro(paciente),
+        cargando: _cargandoHistoria,
+        hayError: _errorHistoria,
+        onReintentar: _cargarHistoria,
         simularFallas: _simularFallas,
       ),
     );

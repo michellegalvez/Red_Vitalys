@@ -1,6 +1,6 @@
 # Avance de la implementación · Red Vitalys
 
-Actualizado: 2026-11-26 · Hechas: 16 de 22
+Actualizado: 2026-11-26 · Hechas: 18 de 22
 
 Lo escribe la skill `sdd-tecnicas` (tareas nuevas, `[ ]`) y lo marca la skill `sdd-implementar` (`[x]`). Una tarea se marca cuando pasa `flutter analyze` sin errores. La prueba a mano la haces tú: si falla, desmárcala y vuelve a pedirla.
 
@@ -96,8 +96,14 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
   - Hecha: 2026-11-26
   - Archivos: `supabase/migraciones/006_auditoria_con_paciente.sql` (nuevo), `lib/repositorios/auditoria_supabase.dart`, `lib/datos/fuente_de_datos.dart`, `lib/screens/app_screen_paginas.dart`
   - Notas: El evento se guarda con `id_paciente`, buscado por el documento principal; si no se encuentra, se guarda sin paciente en lugar de perderse. El auditor no lee las tablas de pacientes: la función `pacientes_de_auditoria()` le da solo el documento de los pacientes que aparecen en la auditoría. Los eventos anteriores a este cambio quedan sin paciente (la auditoría no se puede editar). Verificada en el navegador contra `red-vitalys` (eventos 31 y 32 con Jorge Pardo); no tiene prueba automática porque el repositorio habla directo con Supabase.
-- [ ] **T-19** Datos de la historia en la base: contacto, identificadores y atenciones anteriores · F-02, F-03 · depende de: T-13
-- [ ] **T-20** La historia, el riesgo y sus factores se leen de la base, con carga y error · F-02, F-03, F-07 · depende de: T-19
+- [x] **T-19** Datos de la historia en la base: contacto, identificadores y atenciones anteriores · F-02, F-03 · depende de: T-13
+  - Hecha: 2026-11-26
+  - Archivos: `supabase/migraciones/007_datos_de_historia.sql` (nuevo)
+  - Notas: Aplicado a `red-vitalys`: teléfono, dirección y fecha de nacimiento de los 13 pacientes, sus identificadores en la HCE de la sede y en el laboratorio central (39 en total), el destino al alta, la fecha del cálculo del riesgo y las atenciones anteriores (27 en total) con los mismos datos que la historia simulada. Las atenciones anteriores van con *Seguimiento de reingreso*, que no da relación, salvo las de la Dra. Camila con Jorge.
+- [x] **T-20** La historia, el riesgo y sus factores se leen de la base, con carga y error · F-02, F-03, F-07 · depende de: T-19
+  - Hecha: 2026-11-26
+  - Archivos: `lib/services/history_service.dart`, `lib/services/history_memory.dart`, `lib/services/history_supabase.dart` (nuevos), `lib/datos/fuente_de_datos.dart`, `lib/main.dart`, `lib/screens/app_screen.dart`, `lib/screens/app_screen_paginas.dart`, `lib/pages/paciente_page.dart`, `lib/pages/datos_basicos_page.dart`, `test/historia_servicio_test.dart` (nuevo)
+  - Notas: La historia se pide al abrir la consulta, después del propósito y de sus eventos, y se descarta si mientras tanto se cerró. La historia y los datos básicos muestran la carga y el error con *Reintentar* (F-02 CA-7). El administrativo trae la historia sin el riesgo (la base no se lo da) y su pantalla no lo muestra. Verificada en el navegador: Jorge muestra sus 3 atenciones, los 6 factores y sus identificadores; los datos básicos de Andrés salen de la base.
 - [ ] **T-21** Registrar una atención la guarda en la base y da la relación · F-04, F-05 · depende de: T-18, T-20
 - [ ] **T-22** Tablas de indicadores con sus mediciones de prueba · F-08 · depende de: ninguna
 - [ ] **T-23** El tablero y el detalle leen las mediciones de la base, con carga y error · F-08, F-09, F-10, F-11 · depende de: T-22

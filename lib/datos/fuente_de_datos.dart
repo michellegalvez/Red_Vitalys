@@ -8,6 +8,9 @@ import 'package:red_vitalys/repositorios/foto_supabase.dart';
 import 'package:red_vitalys/services/auth_memory.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/auth_supabase.dart';
+import 'package:red_vitalys/services/history_memory.dart';
+import 'package:red_vitalys/services/history_service.dart';
+import 'package:red_vitalys/services/history_supabase.dart';
 import 'package:red_vitalys/services/patient_memory.dart';
 import 'package:red_vitalys/services/patient_service.dart';
 import 'package:red_vitalys/services/patient_supabase.dart';
@@ -72,4 +75,10 @@ PatientService elegirPacientes({
       for (final p in datos.pacientes) p.numeroDocumento: p.id,
     },
   );
+}
+
+/// El servicio de la historia clínica: Supabase, o la simulada (AD-02).
+HistoryService elegirHistoria({SupabaseClient? cliente}) {
+  if (cliente == null) return const HistoryMemory();
+  return HistorySupabase(cliente);
 }

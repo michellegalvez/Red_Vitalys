@@ -29,6 +29,9 @@ class PacientePage extends StatelessWidget {
     required this.onVolver,
     required this.onRegistrarAtencion,
     this.simularFallas = false,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
   });
 
   final Patient historia;
@@ -46,6 +49,11 @@ class PacientePage extends StatelessWidget {
   /// Modo demo: la historia y el riesgo muestran su carga y su error con
   /// *Reintentar*.
   final bool simularFallas;
+
+  /// La carga real de la historia desde Supabase (F-02 CA-7).
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   @override
   Widget build(BuildContext context) {
@@ -65,44 +73,51 @@ class PacientePage extends StatelessWidget {
           onPressed: onVolver,
         ),
         const SizedBox(height: 8),
-        CargaSimulada(
-          simular: simularFallas,
+        CargaRemota(
+          cargando: cargando,
+          hayError: hayError,
+          onReintentar: onReintentar ?? () {},
           textoCargando: 'Cargando historia…',
           textoError: 'No se pudo cargar la historia',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (proposito == Proposito.urgencia) ...[
-                const Aviso(
-                  tipo: TipoAviso.advertencia,
-                  texto: avisoAccesoEmergencia,
+          child: CargaSimulada(
+            simular: simularFallas,
+            textoCargando: 'Cargando historia…',
+            textoError: 'No se pudo cargar la historia',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (proposito == Proposito.urgencia) ...[
+                  const Aviso(
+                    tipo: TipoAviso.advertencia,
+                    texto: avisoAccesoEmergencia,
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                _Cabecera(
+                  paciente: historia,
+                  proposito: proposito,
+                  fechaConsulta: fechaConsulta,
+                  puedeRegistrar: puedeRegistrar,
+                  onRegistrarAtencion: onRegistrarAtencion,
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 18),
+                if (escritorio)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _apilar(columnaRiesgo)),
+                      const SizedBox(width: 18),
+                      Expanded(child: atenciones),
+                    ],
+                  )
+                else
+                  _apilar([
+                    ...columnaRiesgo.take(1),
+                    atenciones,
+                    ...columnaRiesgo.skip(1),
+                  ]),
               ],
-              _Cabecera(
-                paciente: historia,
-                proposito: proposito,
-                fechaConsulta: fechaConsulta,
-                puedeRegistrar: puedeRegistrar,
-                onRegistrarAtencion: onRegistrarAtencion,
-              ),
-              const SizedBox(height: 18),
-              if (escritorio)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _apilar(columnaRiesgo)),
-                    const SizedBox(width: 18),
-                    Expanded(child: atenciones),
-                  ],
-                )
-              else
-                _apilar([
-                  ...columnaRiesgo.take(1),
-                  atenciones,
-                  ...columnaRiesgo.skip(1),
-                ]),
-            ],
+            ),
           ),
         ),
       ],
