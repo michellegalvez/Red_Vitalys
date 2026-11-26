@@ -1,6 +1,6 @@
 # Avance de la implementación · Red Vitalys
 
-Actualizado: 2026-11-24 · Hechas: 8 de 15
+Actualizado: 2026-11-24 · Hechas: 12 de 15
 
 Lo escribe la skill `sdd-tecnicas` (tareas nuevas, `[ ]`) y lo marca la skill `sdd-implementar` (`[x]`). Una tarea se marca cuando pasa `flutter analyze` sin errores. La prueba a mano la haces tú: si falla, desmárcala y vuelve a pedirla.
 
@@ -27,13 +27,25 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
 
 ## TS-14 · Bloqueo del inicio de sesión por intentos fallidos
 
-- [ ] **T-07** Contador de fallos y bloqueo de 5 intentos por 15 minutos · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-9, CA-10 · depende de: T-03
-- [ ] **T-08** Intento durante el bloqueo: evento *Denegado*, sin alargar el bloqueo y sin forma de desbloquear · CA-7, CA-8 · depende de: T-05, T-07
+- [x] **T-07** Contador de fallos y bloqueo de 5 intentos por 15 minutos · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6, CA-9, CA-10 · depende de: T-03
+  - Hecha: 2026-11-25
+  - Archivos: `lib/services/session_service.dart` (nuevo), `lib/screens/app_screen.dart`, `test/sesion_servicio_test.dart` (nuevo)
+  - Notas: El conteo y el bloqueo pasaron de la Screen a `SessionService`; los límites siguen en `lib/reglas/reglas.dart`. La Screen pregunta `isLocked` antes de llamar al servicio de autenticación, en lugar de que lo haga `AuthService` como decía la TS: así `AuthService` solo habla con Supabase. El comportamiento no cambió: las pruebas que ya había de F-14 siguen pasando. El conteo vive en memoria y se pierde al recargar (pregunta abierta de TS-14).
+- [x] **T-08** Intento durante el bloqueo: evento *Denegado*, sin alargar el bloqueo y sin forma de desbloquear · CA-7, CA-8 · depende de: T-05, T-07
+  - Hecha: 2026-11-25
+  - Archivos: `lib/services/session_service.dart`, `test/sesion_servicio_test.dart`
+  - Notas: El evento *Denegado* del intento durante el bloqueo ya salía de `_ingresar` y tenía prueba (F-14 CA-7). Se agregó que `registerFailure` durante el bloqueo no lo alarga. Ningún rol tiene una opción para desbloquear.
 
 ## TS-15 · Cierre de sesión por inactividad
 
-- [ ] **T-09** Cierre a los 15 minutos, reiniciado por cualquier acción, con sede borrada y aviso · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6 · depende de: T-04, T-07
-- [ ] **T-10** Cierre que falla: la app igual oculta sus pantallas y muestra el inicio de sesión · CA-7 · depende de: T-09
+- [x] **T-09** Cierre a los 15 minutos, reiniciado por cualquier acción, con sede borrada y aviso · CA-1, CA-2, CA-3, CA-4, CA-5, CA-6 · depende de: T-04, T-07
+  - Hecha: 2026-11-25
+  - Archivos: `lib/services/session_service.dart` (nuevo), `lib/screens/app_screen.dart`, `test/sesion_servicio_test.dart` (nuevo)
+  - Notas: El temporizador pasó de la Screen a `SessionService` (`startInactivityTimer`, `registerActivity`, `stop`). La Screen sigue escuchando toques, teclas, rueda y arrastre. El cierre no crea evento, como antes.
+- [x] **T-10** Cierre que falla: la app igual oculta sus pantallas y muestra el inicio de sesión · CA-7 · depende de: T-09
+  - Hecha: 2026-11-25
+  - Archivos: `test/sesion_servicio_test.dart`
+  - Notas: El cierre de Auth ya se pedía sin esperar y su error solo se anota en consola. Se cubrió con una prueba en la que `signOut` falla: a los 15 minutos la app igual muestra el acceso con el aviso de inactividad.
 
 ## TS-16 · Declaración del propósito de consulta
 

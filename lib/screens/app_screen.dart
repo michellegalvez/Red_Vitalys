@@ -37,6 +37,7 @@ import 'package:red_vitalys/services/auth_memory.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/patient_memory.dart';
 import 'package:red_vitalys/services/patient_service.dart';
+import 'package:red_vitalys/services/session_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
@@ -141,7 +142,6 @@ class _AppScreenState extends State<AppScreen> {
   // Sesión (F-13, F-15, F-23).
   Usuario? _usuario;
   String? _sedeSesion;
-  Timer? _temporizadorInactividad;
 
   // El Navigator interno: el botón Atrás del sistema le llega por aquí.
   final _navegador = GlobalKey<NavigatorState>();
@@ -157,9 +157,8 @@ class _AppScreenState extends State<AppScreen> {
   String? _sedeElegida;
   String? _errorSede;
 
-  // Bloqueo del dispositivo (F-14).
-  int _fallosSeguidos = 0;
-  DateTime? _bloqueadoDesde;
+  // Bloqueo del dispositivo (F-14) e inactividad (F-15).
+  final _session = SessionService();
 
   // Navegación y consultas.
   Seccion _seccion = Seccion.inicio;
@@ -249,7 +248,7 @@ class _AppScreenState extends State<AppScreen> {
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_teclaPulsada);
-    _temporizadorInactividad?.cancel();
+    _session.stop();
     _correo.dispose();
     _contrasena.dispose();
     super.dispose();
@@ -259,19 +258,10 @@ class _AppScreenState extends State<AppScreen> {
   // Inicio y cierre de sesión
   // ---------------------------------------------------------------------
 
-  bool get _bloqueado {
-    final desde = _bloqueadoDesde;
-    if (desde == null) return false;
-    return widget.reloj().isBefore(desde.add(duracionBloqueo));
-  }
+  bool get _bloqueado => _session.isLocked(widget.reloj());
 
   Future<void> _ingresar() async {
     if (_ingresando) return;
-    if (!_bloqueado && _bloqueadoDesde != null) {
-      // Pasaron los 15 minutos: se desbloquea solo (F-14).
-      _bloqueadoDesde = null;
-      _fallosSeguidos = 0;
-    }
     // Se valida con lo que había al pulsar Ingresar; después del await no se
     // vuelve a leer el campo.
     final correoEscrito = _correo.text.trim();
@@ -342,14 +332,10 @@ class _AppScreenState extends State<AppScreen> {
         );
       }
       if (resultado.cuentaComoFallo) {
-        _fallosSeguidos++;
         _contrasena.clear();
-        if (_fallosSeguidos >= intentosParaBloqueo) {
-          _bloqueadoDesde = widget.reloj();
-          _mensajeError = mensajeBloqueo;
-        } else {
-          _mensajeError = resultado.mensaje;
-        }
+        _mensajeError = _session.registerFailure(widget.reloj())
+            ? mensajeBloqueo
+            : resultado.mensaje;
         return;
       }
       if (resultado != ResultadoIngreso.valido) {
@@ -411,7 +397,7 @@ class _AppScreenState extends State<AppScreen> {
     }
     setState(() {
       _eventos.add(evento);
-      _fallosSeguidos = 0;
+      _session.registerSuccess();
       _mensajeError = null;
       _errorSede = null;
       _usuario = usuario;
@@ -422,7 +408,7 @@ class _AppScreenState extends State<AppScreen> {
       _busqueda = '';
       _irA(seccionesDe(usuario.rol).first);
     });
-    _registrarActividad();
+    _session.startInactivityTimer(() => _cerrarSesion(porInactividad: true));
     _cargarEventosSiHaceFalta();
     unawaited(_cargarPacientes());
   }
@@ -474,7 +460,7 @@ class _AppScreenState extends State<AppScreen> {
   /// Cierra la sesión a mano (F-23) o por inactividad (F-15). Se borran la
   /// sede, la consulta abierta y lo que no se había guardado.
   void _cerrarSesion({bool porInactividad = false}) {
-    _temporizadorInactividad?.cancel();
+    _session.stop();
     _cerrarSesionDeAuth();
     setState(() {
       _cerrandoSesion = false;
@@ -533,11 +519,7 @@ class _AppScreenState extends State<AppScreen> {
 
   void _registrarActividad() {
     if (_usuario == null) return;
-    _temporizadorInactividad?.cancel();
-    _temporizadorInactividad = Timer(
-      limiteInactividad,
-      () => _cerrarSesion(porInactividad: true),
-    );
+    _session.registerActivity();
   }
 
   /// Agrega un evento de acceso con la hora de los datos simulados, la
