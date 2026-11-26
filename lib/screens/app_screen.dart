@@ -891,6 +891,20 @@ class _AppScreenState extends State<AppScreen> {
     _cargarEventosSiHaceFalta();
   }
 
+  /// La consulta de [paciente] con [proposito] tal como la recibe el sistema,
+  /// aunque la pantalla no ofrezca ese propósito al rol (F-16 CA-7, F-18
+  /// CA-5): pasa por la misma decisión y deja su evento.
+  @visibleForTesting
+  Future<void> consultarConProposito(
+    PacienteEnSeguimiento paciente,
+    Proposito proposito,
+  ) {
+    setState(
+      () => _solicitud = _Solicitud(paciente: paciente, elegido: proposito),
+    );
+    return _confirmarProposito();
+  }
+
   /// La puerta del sistema para lo que el rol no tiene en la tabla de F-18:
   /// si el rol lo permite no hace nada y devuelve `true`; si no, registra el
   /// evento *Denegado* (F-20), avisa con [rechazoRol] y devuelve `false`.
