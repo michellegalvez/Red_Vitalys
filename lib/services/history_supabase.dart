@@ -2,6 +2,7 @@ import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/atencion.dart';
+import 'package:red_vitalys/repositorios/auditoria_traduccion.dart';
 import 'package:red_vitalys/services/history_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -54,6 +55,39 @@ class HistorySupabase implements HistoryService {
       readmissionRisk: _latestRisk(rows),
       encounters: ordenarAtenciones([for (final row in rows) _encounter(row)]),
     );
+  }
+
+  @override
+  Future<void> addEncounter(
+    PacienteEnSeguimiento patient,
+    NuevaAtencion encounter, {
+    required String siteName,
+    required Proposito purpose,
+  }) async {
+    final doctorId = client.auth.currentUser?.id;
+    if (doctorId == null) {
+      throw StateError('No hay sesión de Supabase para registrar la atención');
+    }
+    final site = await client
+        .from('sede')
+        .select('id_sede')
+        .eq('nombre', siteName)
+        .single();
+    final end = encounter.alta;
+    await client.from('atencion').insert({
+      'id_paciente': await _patientId(patient),
+      'id_sede': site['id_sede'],
+      'id_usuario': doctorId,
+      'tipo_atencion': switch (encounter.tipo) {
+        EncounterType.hospitalizacion => 'hospitalizacion',
+        EncounterType.urgencias => 'urgencias',
+        EncounterType.consultaExterna => 'consulta_externa',
+      },
+      'fecha_inicio': encounter.inicio.toUtc().toIso8601String(),
+      'fecha_fin': end?.toUtc().toIso8601String(),
+      'destino_alta': end == null ? null : encounter.destino,
+      'proposito': propositoATexto(purpose),
+    });
   }
 
   Future<int> _patientId(PacienteEnSeguimiento patient) async {

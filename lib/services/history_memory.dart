@@ -1,6 +1,7 @@
 import 'package:red_vitalys/datos/historia_simulada.dart';
 import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
+import 'package:red_vitalys/reglas/atencion.dart';
 import 'package:red_vitalys/services/history_service.dart';
 
 /// Builds the simulated history, for the tests and for running without Supabase.
@@ -16,4 +17,12 @@ class HistoryMemory implements HistoryService {
     required String siteName,
     required DateTime today,
   }) async => historiaDe(patient, sedeAlta: siteName, hoy: today);
+
+  @override
+  Future<void> addEncounter(
+    PacienteEnSeguimiento patient,
+    NuevaAtencion encounter, {
+    required String siteName,
+    required Proposito purpose,
+  }) async {}
 }

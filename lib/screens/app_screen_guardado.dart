@@ -65,13 +65,32 @@ extension _Guardado on _AppScreenState {
   ///
   /// Devuelve el mensaje de error, o `null` si se guardó. Con error no se
   /// guarda la atención ni se crea el evento (F-20).
-  String? _guardarAtencion(NuevaAtencion nueva) {
+  Future<String?> _guardarAtencion(NuevaAtencion nueva) async {
     final registro = _registro;
     final usuario = _usuario;
     if (registro == null || usuario == null) return null;
+    if (!_histories.isRemote) {
+      // Con los datos en memoria se nota el estado "Guardando atención…".
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return null;
+    }
     if (_falla('evento-atencion')) return _mensajeFallaAccion;
     if (_falla('guardar-atencion')) return _mensajeFallaAtencion;
     final paciente = registro.paciente;
+    if (_histories.isRemote) {
+      try {
+        await _histories.addEncounter(
+          paciente,
+          nueva,
+          siteName: _datos.sede(nueva.sedeId).nombre,
+          purpose: registro.proposito,
+        );
+      } catch (error) {
+        debugPrint('No se pudo registrar la atención: $error');
+        return mounted ? _mensajeFallaAtencion : null;
+      }
+      if (!mounted) return null;
+    }
     final total = _atenciones.values.fold<int>(0, (a, l) => a + l.length);
     final atencion = atencionDeFormulario(
       id: 'enc-n${total + 1}',
@@ -80,13 +99,16 @@ extension _Guardado on _AppScreenState {
       medico: usuario.nombre,
     );
     _actualizar(() {
-      _atenciones = {
-        ..._atenciones,
-        paciente.id: ordenarAtenciones([
-          atencion,
-          ...?_atenciones[paciente.id],
-        ]),
-      };
+      // Con Supabase la atención ya está en la base y llega con la historia.
+      if (!_histories.isRemote) {
+        _atenciones = {
+          ..._atenciones,
+          paciente.id: ordenarAtenciones([
+            atencion,
+            ...?_atenciones[paciente.id],
+          ]),
+        };
+      }
       if (registro.proposito == Proposito.atencionPaciente &&
           !paciente.medicosConAtencion.contains(usuario.id)) {
         final actualizado = paciente.copyWith(
@@ -107,6 +129,7 @@ extension _Guardado on _AppScreenState {
       );
       _registro = null;
     });
+    if (_histories.isRemote) unawaited(_cargarHistoria());
     // Con *Urgencia* también se avisa que queda registrado (F-17 CA-10).
     final esUrgencia = registro.proposito == Proposito.urgencia;
     ScaffoldMessenger.of(context).showSnackBar(

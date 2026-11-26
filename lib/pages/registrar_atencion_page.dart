@@ -57,7 +57,7 @@ class RegistrarAtencionPage extends StatefulWidget {
 
   /// Guarda la atención y devuelve el mensaje de error, o `null` si se
   /// guardó (F-04, F-20). Con error se conserva lo escrito.
-  final String? Function(NuevaAtencion) onGuardar;
+  final Future<String?> Function(NuevaAtencion) onGuardar;
   final VoidCallback onCancelar;
 
   @override
@@ -126,10 +126,8 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
       _errorGuardado = null;
       _guardando = true;
     });
-    // El guardado es simulado; se nota el estado "Guardando atención…".
-    await Future<void>.delayed(const Duration(milliseconds: 350));
+    final error = await widget.onGuardar(nueva);
     if (!mounted) return;
-    final error = widget.onGuardar(nueva);
     if (error != null) {
       setState(() {
         _errorGuardado = error;

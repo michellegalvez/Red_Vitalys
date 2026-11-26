@@ -1,6 +1,6 @@
 # Avance de la implementación · Red Vitalys
 
-Actualizado: 2026-11-26 · Hechas: 18 de 22
+Actualizado: 2026-11-26 · Hechas: 19 de 22
 
 Lo escribe la skill `sdd-tecnicas` (tareas nuevas, `[ ]`) y lo marca la skill `sdd-implementar` (`[x]`). Una tarea se marca cuando pasa `flutter analyze` sin errores. La prueba a mano la haces tú: si falla, desmárcala y vuelve a pedirla.
 
@@ -104,7 +104,10 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
   - Hecha: 2026-11-26
   - Archivos: `lib/services/history_service.dart`, `lib/services/history_memory.dart`, `lib/services/history_supabase.dart` (nuevos), `lib/datos/fuente_de_datos.dart`, `lib/main.dart`, `lib/screens/app_screen.dart`, `lib/screens/app_screen_paginas.dart`, `lib/pages/paciente_page.dart`, `lib/pages/datos_basicos_page.dart`, `test/historia_servicio_test.dart` (nuevo)
   - Notas: La historia se pide al abrir la consulta, después del propósito y de sus eventos, y se descarta si mientras tanto se cerró. La historia y los datos básicos muestran la carga y el error con *Reintentar* (F-02 CA-7). El administrativo trae la historia sin el riesgo (la base no se lo da) y su pantalla no lo muestra. Verificada en el navegador: Jorge muestra sus 3 atenciones, los 6 factores y sus identificadores; los datos básicos de Andrés salen de la base.
-- [ ] **T-21** Registrar una atención la guarda en la base y da la relación · F-04, F-05 · depende de: T-18, T-20
+- [x] **T-21** Registrar una atención la guarda en la base y da la relación · F-04, F-05 · depende de: T-18, T-20
+  - Hecha: 2026-11-26
+  - Archivos: `supabase/migraciones/008_registrar_atencion.sql` (nuevo), `lib/services/history_service.dart`, `lib/services/history_memory.dart`, `lib/services/history_supabase.dart`, `lib/pages/registrar_atencion_page.dart`, `lib/screens/app_screen_guardado.dart`, `test/historia_servicio_test.dart`
+  - Notas: La Page espera el guardado (`onGuardar` devuelve un `Future`). Con Supabase la atención se inserta a nombre del médico de la sesión y la historia se vuelve a traer; si falla, se ve "No se pudo registrar la atención" y no queda evento. La base solo deja insertar al médico, a su nombre y con *Atención del paciente* o *Urgencia*. Con *Atención del paciente* da relación: la lista la trae la próxima vez que se cargan los pacientes, y en la sesión se actualiza como antes. Verificada en el navegador: quedó la atención 41 de Jorge con *Urgencia* y su evento *Registrar*.
 - [ ] **T-22** Tablas de indicadores con sus mediciones de prueba · F-08 · depende de: ninguna
 - [ ] **T-23** El tablero y el detalle leen las mediciones de la base, con carga y error · F-08, F-09, F-10, F-11 · depende de: T-22
 - [ ] **T-24** Registrar una medición la guarda en la base, sin repetirla · F-12 · depende de: T-18, T-23
