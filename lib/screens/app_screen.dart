@@ -32,6 +32,7 @@ import 'package:red_vitalys/repositorios/foto_memoria.dart';
 import 'package:red_vitalys/repositorios/foto_repositorio.dart';
 import 'package:red_vitalys/repositorios/selector_foto.dart';
 import 'package:red_vitalys/screens/secciones.dart';
+import 'package:red_vitalys/services/access_control_service.dart';
 import 'package:red_vitalys/services/auth_memory.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/patient_memory.dart';
@@ -131,6 +132,8 @@ class _AppScreenState extends State<AppScreen> {
   DatosSimulados get _datos => widget.datos;
 
   late final AuthService _auth = widget.auth ?? AuthMemory(widget.datos);
+
+  final _access = const AccessControlService();
 
   late final PatientService _patients =
       widget.patients ?? PatientMemory(widget.datos);
@@ -782,16 +785,23 @@ class _AppScreenState extends State<AppScreen> {
     setState(() {
       _solicitud = null;
       if (paciente == null) {
-        // Abrir la lista de pacientes con alta reciente (F-06 paso 3).
+        // Abrir la lista de pacientes con alta reciente (F-06 paso 3). El
+        // propósito se valida con la matriz única (F-16, AD-06).
+        final listaPermitida =
+            _access.decidePurpose(usuario, elegido) ==
+            ResultadoConsulta.permitido;
         _registrarEvento(
           usuario: usuario,
           sedeId: _sedeSesion,
           accion: AccionAuditoria.consultar,
           recurso: RecursoAuditoria.pacientesAltaReciente,
-          resultado: ResultadoAuditoria.permitido,
+          resultado: listaPermitida
+              ? ResultadoAuditoria.permitido
+              : ResultadoAuditoria.denegado,
           proposito: elegido,
         );
-        _listaDeclarada = true;
+        _listaDeclarada = listaPermitida;
+        if (!listaPermitida) _irA(Seccion.indicadores);
         return;
       }
       if (usuario.rol == Rol.administrativo) {

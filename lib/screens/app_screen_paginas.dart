@@ -332,7 +332,7 @@ extension _Paginas on _AppScreenState {
       fecha: formatoFechaHora(_datos.hoy),
       totalPacientes: altas.length,
       conAlerta: altas.where((p) => conAlerta(p.riesgo)).length,
-      propositos: propositosDe(usuario.rol),
+      propositos: _access.purposesFor(usuario.rol),
       elegido: solicitud.elegido,
       error: solicitud.error,
       quedaraRegistrado: _quedaraRegistrado(usuario, sede),
@@ -362,9 +362,10 @@ extension _Paginas on _AppScreenState {
                 ? AccionDialogo.verDatosBasicos
                 : AccionDialogo.abrirHistoria),
       // Al registrar solo sirven *Atención del paciente* y *Urgencia* (F-04).
-      propositos: solicitud.registrar
-          ? propositosParaRegistrar(usuario.rol)
-          : propositosDe(usuario.rol),
+      propositos: _access.purposesFor(
+        usuario.rol,
+        registering: solicitud.registrar,
+      ),
       elegido: solicitud.elegido,
       error: solicitud.error,
       quedaraRegistrado: _quedaraRegistrado(usuario, sede),
@@ -618,7 +619,9 @@ extension _Paginas on _AppScreenState {
           for (final a in AccionPermitida.values)
             (accion: a.nombre, permitido: rolPermite(usuario.rol, a)),
         ],
-        propositos: [for (final p in propositosDe(usuario.rol)) p.nombreCorto],
+        propositos: [
+          for (final p in _access.purposesFor(usuario.rol)) p.nombreCorto,
+        ],
         onCerrarSesion: _pedirCierreDeSesion,
         iniciales: usuario.iniciales,
         foto: _foto,
