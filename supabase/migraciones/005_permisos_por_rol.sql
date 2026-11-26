@@ -4,11 +4,16 @@
 --   médico: pacientes, documentos, atenciones, riesgo y factores;
 --   administrativo: pacientes, documentos y atenciones (datos básicos), sin riesgo;
 --   auditor: ningún dato de pacientes.
+-- Una cuenta sin sedes asignadas no lee nada: no puede ingresar (F-13 A3) y
+-- así una cuenta recién registrada no ve pacientes aunque tenga rol.
 
 create or replace function public.rol_actual()
 returns text language sql stable security definer set search_path = public as $$
   select r.nombre from public.usuario u join public.rol r using (id_rol)
-  where u.id_usuario = auth.uid() and u.activo;
+  where u.id_usuario = auth.uid() and u.activo
+    and exists (
+      select 1 from public.usuario_sede us where us.id_usuario = u.id_usuario
+    );
 $$;
 
 drop policy if exists paciente_leer on public.paciente;
