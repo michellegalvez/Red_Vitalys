@@ -190,6 +190,8 @@ enum RecursoAuditoria {
   medicionIndicador,
   pacientesAltaReciente,
   auditoriaAccesos,
+  // Los cambios de una cuenta (F-24). Se lee aunque esta versión no los cree.
+  usuario,
 }
 
 extension RecursoAuditoriaTexto on RecursoAuditoria {
@@ -202,6 +204,7 @@ extension RecursoAuditoriaTexto on RecursoAuditoria {
     RecursoAuditoria.medicionIndicador => 'Medición de indicador',
     RecursoAuditoria.pacientesAltaReciente => 'Pacientes con alta reciente',
     RecursoAuditoria.auditoriaAccesos => 'Auditoría de accesos',
+    RecursoAuditoria.usuario => 'Usuario',
   };
 }
 
