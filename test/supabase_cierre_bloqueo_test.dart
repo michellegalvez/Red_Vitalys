@@ -28,13 +28,18 @@ void main() {
   group('Cerrar sesión con Supabase Auth (F-23 CA-5)', () {
     late bool offline;
     late List<String> calls;
+    late List<String?> scopes;
     late SupabaseClient client;
 
     setUp(() async {
       offline = false;
       calls = [];
+      scopes = [];
       final http.Client mock = MockClient((request) async {
         calls.add(request.url.path);
+        if (request.url.path.endsWith('/logout')) {
+          scopes.add(request.url.queryParameters['scope']);
+        }
         if (request.url.path.endsWith('/logout')) {
           if (offline) throw http.ClientException('sin red', request.url);
           return http.Response('', 204, request: request);
@@ -89,6 +94,9 @@ void main() {
         await auth.signOut();
         expect(client.auth.currentSession, isNull);
         expect(calls.where((p) => p.endsWith('/logout')), isNotEmpty);
+        // Solo cierra esta sesión: las de otros equipos con la misma cuenta
+        // siguen abiertas.
+        expect(scopes, everyElement('local'));
       },
     );
   });

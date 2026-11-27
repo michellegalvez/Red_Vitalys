@@ -52,7 +52,8 @@ class AuthSupabase implements AuthService {
     final token = client.auth.currentSession?.accessToken;
     if (token != null) {
       try {
-        await client.auth.admin.signOut(token);
+        // Only this session: the same account may be open on other devices.
+        await client.auth.admin.signOut(token, scope: SignOutScope.local);
       } on AuthException catch (error) {
         // An expired or unknown token is already signed out on the server.
         const gone = {'401', '403', '404'};
