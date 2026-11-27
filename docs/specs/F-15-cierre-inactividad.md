@@ -1,7 +1,7 @@
 ---
 id: F-15
 titulo: Cierre de sesión por inactividad
-version: 0.2.4
+version: 0.2.5
 fecha: 2026-11-27
 estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -78,3 +78,4 @@ El sistema cierra la sesión de un usuario que lleva 15 minutos sin usar la app,
 - 0.2.2 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
 - 0.2.3 · 2026-11-08 · CA-6 ya no supone que el médico vuelve a la historia al iniciar sesión: entra a su pantalla inicial (RF-37, F-13).
 - 0.2.4 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: en el celular, escribir con el teclado en pantalla no cuenta como actividad (CA-2).
+- 0.2.5 · 2026-11-27 · Resuelto lo pendiente: escribir en un campo cuenta como actividad, también con el teclado en pantalla del celular (CA-2).

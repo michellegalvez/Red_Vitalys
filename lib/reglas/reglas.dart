@@ -177,18 +177,22 @@ ResultadoConsulta evaluarDatosBasicos({
 }
 
 /// Decide si se permite abrir la historia de un paciente (F-05, F-17, F-18).
+///
+/// Con [relacion] se usa la que confirmó la base en lugar de calcularla con
+/// los datos cargados (F-05).
 ResultadoConsulta evaluarConsulta({
   required Usuario usuario,
   required PacienteEnSeguimiento paciente,
   required Proposito proposito,
   required DateTime hoy,
+  bool? relacion,
 }) {
   if (usuario.rol != Rol.medico) return ResultadoConsulta.rechazoRol;
   if (!propositosDe(usuario.rol).contains(proposito)) {
     return ResultadoConsulta.rechazoProposito;
   }
   if (proposito == Proposito.urgencia) return ResultadoConsulta.permitido;
-  return tieneRelacion(usuario, paciente, hoy)
+  return (relacion ?? tieneRelacion(usuario, paciente, hoy))
       ? ResultadoConsulta.permitido
       : ResultadoConsulta.rechazoRelacion;
 }
@@ -201,6 +205,7 @@ ResultadoConsulta evaluarRegistro({
   required PacienteEnSeguimiento paciente,
   required Proposito proposito,
   required DateTime hoy,
+  bool? relacion,
 }) {
   if (!rolPermite(usuario.rol, AccionPermitida.registrarAtencion)) {
     return ResultadoConsulta.rechazoRol;
@@ -213,6 +218,7 @@ ResultadoConsulta evaluarRegistro({
     paciente: paciente,
     proposito: proposito,
     hoy: hoy,
+    relacion: relacion,
   );
 }
 

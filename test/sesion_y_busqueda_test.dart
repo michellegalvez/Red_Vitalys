@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
+import 'package:red_vitalys/reglas/busqueda.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
@@ -139,11 +140,22 @@ Map<String, Object?> _encounter({
   };
 }
 
-PatientSupabase _serviceAnswering(List<Map<String, Object?>> rows) {
+PatientSupabase _serviceAnswering(
+  List<Map<String, Object?>> rows, {
+  List<Map<String, Object?>> extraPeople = const [],
+}) {
   final client = MockClient((request) async {
-    final filtered = request.url.query.contains('fecha_fin=not.is.null')
-        ? rows.where((r) => r['fecha_fin'] != null).toList()
-        : rows;
+    final Object filtered;
+    if (request.url.path.endsWith('/paciente')) {
+      filtered = [
+        for (final r in rows) {...r['paciente'] as Map, 'id_paciente': 7},
+        ...extraPeople,
+      ];
+    } else {
+      filtered = request.url.query.contains('fecha_fin=not.is.null')
+          ? rows.where((r) => r['fecha_fin'] != null).toList()
+          : rows;
+    }
     return http.Response(
       jsonEncode(filtered),
       200,
@@ -184,11 +196,46 @@ void main() {
       expect(tieneRelacion(camila, rosa, _datos.hoy), isTrue);
     });
 
-    test('un paciente con solo una atención en curso no sale en la lista', () {
-      final service = _serviceAnswering([
-        _encounter(start: '2026-11-05T08:00:00Z', purpose: 'atencion_paciente'),
-      ]);
-      expect(service.listPatients(_datos.hoy), completion(isEmpty));
+    test('F-01 y F-02: un paciente sin ningún alta se encuentra, pero no '
+        'entra en la lista de altas recientes', () async {
+      final camila = _datos.usuarioPorCorreo('camila.martinez@vitalys.co')!;
+      final service = _serviceAnswering(
+        [
+          _encounter(
+            start: '2026-11-05T08:00:00Z',
+            purpose: 'atencion_paciente',
+          ),
+        ],
+        extraPeople: [
+          {
+            'id_paciente': 8,
+            'primer_nombre': 'Luis',
+            'segundo_nombre': null,
+            'primer_apellido': 'Mora',
+            'segundo_apellido': null,
+            'fecha_nacimiento': '1970-03-01',
+            'sexo': 'M',
+            'identificador_paciente': [
+              {
+                'tipo_documento': 'CC',
+                'numero_identificacion': '777',
+                'es_principal': true,
+              },
+            ],
+          },
+        ],
+      );
+      final patients = await service.listPatients(_datos.hoy);
+      expect(
+        patients.map((p) => p.nombre),
+        unorderedEquals(['Rosa Lema', 'Luis Mora']),
+      );
+      expect(buscarPacientes(patients, '777').single.nombre, 'Luis Mora');
+      expect(pacientesConAltaReciente(patients, _datos.hoy), isEmpty);
+      final rosa = patients.firstWhere((p) => p.nombre == 'Rosa Lema');
+      expect(tieneRelacion(camila, rosa, _datos.hoy), isTrue);
+      final luis = patients.firstWhere((p) => p.nombre == 'Luis Mora');
+      expect(tieneRelacion(camila, luis, _datos.hoy), isFalse);
     });
   });
 

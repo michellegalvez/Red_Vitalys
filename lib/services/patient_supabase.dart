@@ -37,10 +37,22 @@ class PatientSupabase implements PatientService {
         )
         .order('fecha_fin', ascending: false, nullsFirst: false);
 
+    final people = await client
+        .from('paciente')
+        .select(
+          'id_paciente, primer_nombre, segundo_nombre, primer_apellido, '
+          'segundo_apellido, fecha_nacimiento, sexo, '
+          'identificador_paciente(tipo_documento, numero_identificacion, '
+          'es_principal)',
+        );
+
     final latest = <int, Map<String, dynamic>>{};
+    final lastSite = <int, String>{};
     final doctors = <int, List<String>>{};
     for (final row in rows) {
       final patientId = row['id_paciente'] as int;
+      final site = (row['sede'] as Map?)?['nombre'] as String?;
+      if (site != null) lastSite.putIfAbsent(patientId, () => site);
       final current = latest[patientId];
       final discharged = row['fecha_fin'] != null;
       if (discharged && (current == null || _isBetterDischarge(row, current))) {
@@ -56,8 +68,60 @@ class PatientSupabase implements PatientService {
     return [
       for (final entry in latest.entries)
         ?_toPatient(entry.key, entry.value, doctors[entry.key] ?? [], today),
+      // Without any discharge the patient is still found by the search and can
+      // be opened, but never enters the recent-discharge list (F-01, F-02).
+      for (final person in people)
+        if (!latest.containsKey(person['id_paciente']))
+          ?_withoutDischarge(
+            person,
+            lastSite[person['id_paciente']],
+            doctors[person['id_paciente']] ?? [],
+            today,
+          ),
     ];
   }
+
+  /// A date far enough back that it never counts as a recent discharge.
+  static final _noDischarge = DateTime(1900);
+
+  PacienteEnSeguimiento? _withoutDischarge(
+    Map<String, dynamic> person,
+    String? siteName,
+    List<String> doctors,
+    DateTime today,
+  ) {
+    final identifier = _mainIdentifier(person);
+    if (identifier == null) return null;
+    final number = identifier['numero_identificacion'] as String;
+    final patientId = person['id_paciente'] as int;
+    return PacienteEnSeguimiento(
+      id: patientIdsByDocument[number] ?? 'db$patientId',
+      nombre: _fullName(person),
+      iniciales: _initials(person),
+      edad: _ageAt(DateTime.parse(person['fecha_nacimiento'] as String), today),
+      sexo: person['sexo'] as String,
+      tipoDocumento: identifier['tipo_documento'] as String,
+      numeroDocumento: number,
+      sedeAltaId: sitesByName[siteName] ?? '',
+      tipoAtencion: TipoAtencion.hospitalizacion,
+      fechaAlta: _noDischarge,
+      diasEstancia: 0,
+      riesgo: 0,
+      medicosConAtencion: doctors,
+    );
+  }
+
+  String _fullName(Map<String, dynamic> person) => [
+    person['primer_nombre'],
+    person['segundo_nombre'],
+    person['primer_apellido'],
+    person['segundo_apellido'],
+  ].whereType<String>().where((part) => part.isNotEmpty).join(' ');
+
+  String _initials(Map<String, dynamic> person) =>
+      '${(person['primer_nombre'] as String)[0]}'
+              '${(person['primer_apellido'] as String)[0]}'
+          .toUpperCase();
 
   bool _isBetterDischarge(
     Map<String, dynamic> candidate,
@@ -96,18 +160,11 @@ class PatientSupabase implements PatientService {
     final discharge = dischargeUtc.toLocal();
     final start = startUtc.toLocal();
     final number = identifier['numero_identificacion'] as String;
-    final firstName = person['primer_nombre'] as String;
-    final lastName = person['primer_apellido'] as String;
 
     return PacienteEnSeguimiento(
       id: patientIdsByDocument[number] ?? 'db$patientId',
-      nombre: [
-        firstName,
-        person['segundo_nombre'],
-        lastName,
-        person['segundo_apellido'],
-      ].whereType<String>().where((part) => part.isNotEmpty).join(' '),
-      iniciales: '${firstName[0]}${lastName[0]}'.toUpperCase(),
+      nombre: _fullName(person),
+      iniciales: _initials(person),
       edad: _ageAt(DateTime.parse(person['fecha_nacimiento'] as String), today),
       sexo: person['sexo'] as String,
       tipoDocumento: identifier['tipo_documento'] as String,

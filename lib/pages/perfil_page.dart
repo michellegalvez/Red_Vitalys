@@ -38,6 +38,9 @@ class PerfilPage extends StatelessWidget {
     this.simularFallas = false,
     this.cerrandoSesion = false,
     this.errorCierre,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
   });
 
   final List<DatoPerfil> datos;
@@ -64,6 +67,11 @@ class PerfilPage extends StatelessWidget {
 
   /// Por qué no se pudo cerrar la sesión, si falló (F-23).
   final String? errorCierre;
+
+  /// La carga real del perfil desde la base (F-22 CA-8).
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   @override
   Widget build(BuildContext context) {
@@ -157,13 +165,23 @@ class PerfilPage extends StatelessWidget {
           Aviso(tipo: TipoAviso.errores, texto: errorCierre!),
         ],
         const SizedBox(height: 24),
-        CargaSimulada(
-          simular: simularFallas,
-          textoCargando: 'Cargando perfil…',
-          textoError: 'No se pudo cargar su perfil',
-          accionesEnError: [botonCerrar],
-          child: contenido,
-        ),
+        if (hayError)
+          // Aunque no cargue, puede cerrar la sesión (F-22 CA-8).
+          ErrorCarga(
+            texto: 'No se pudo cargar su perfil',
+            onReintentar: onReintentar ?? () {},
+            acciones: [botonCerrar],
+          )
+        else if (cargando)
+          const IndicadorCarga(texto: 'Cargando perfil…')
+        else
+          CargaSimulada(
+            simular: simularFallas,
+            textoCargando: 'Cargando perfil…',
+            textoError: 'No se pudo cargar su perfil',
+            accionesEnError: [botonCerrar],
+            child: contenido,
+          ),
       ],
     );
   }

@@ -1,7 +1,7 @@
 ---
 id: F-23
 titulo: Cierre de sesión
-version: 0.1.2
+version: 0.1.3
 fecha: 2026-11-27
 estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -70,3 +70,4 @@ Cualquier usuario (médico, administrativo o auditor) termina su sesión para qu
 - 0.1.0 · 2026-11-06 · Primera versión, alineada con los requisitos 0.1.0: depende de F-13 y remite el cierre por inactividad a F-15.
 - 0.1.1 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
 - 0.1.2 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: el error al cerrar la sesión (CA-5) solo se ve en el modo de demostración.
+- 0.1.3 · 2026-11-27 · Resuelto lo pendiente: con Supabase, si el servidor no responde, el usuario sigue en el perfil con "No se pudo cerrar la sesión. Intente de nuevo." y puede reintentar (CA-5).

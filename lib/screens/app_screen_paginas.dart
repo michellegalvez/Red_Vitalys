@@ -20,113 +20,122 @@ extension _Paginas on _AppScreenState {
         _registrarActividad();
         return KeyEventResult.ignored;
       },
-      child: Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) => _registrarActividad(),
-        // La rueda del mouse, el trackpad y arrastrar también son uso (F-15).
-        onPointerSignal: (_) => _registrarActividad(),
-        onPointerPanZoomStart: (_) => _registrarActividad(),
-        onPointerPanZoomUpdate: (_) => _registrarActividad(),
-        onPointerMove: (_) => _registrarActividad(),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ExcludeSemantics(
-                excluding: dialogoArriba,
-                child: ExcludeFocus(
+      child: AvisoActividad(
+        onActividad: _registrarActividad,
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => _registrarActividad(),
+          // La rueda del mouse, el trackpad y arrastrar también son uso (F-15).
+          onPointerSignal: (_) => _registrarActividad(),
+          onPointerPanZoomStart: (_) => _registrarActividad(),
+          onPointerPanZoomUpdate: (_) => _registrarActividad(),
+          onPointerMove: (_) => _registrarActividad(),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: ExcludeSemantics(
                   excluding: dialogoArriba,
-                  child: NavigatorPopHandler(
-                    enabled: _atrasPendiente,
-                    // Atrás cierra primero el pop-up de propósito que esté abierto y,
-                    // si no hay, la pantalla de arriba.
-                    onPopWithResult: (_) {
-                      if (_solicitud != null) {
-                        _cancelarProposito();
-                      } else {
-                        _navegador.currentState?.maybePop();
-                      }
-                    },
-                    child: Navigator(
-                      key: _navegador,
-                      pages: [
-                        if (usuario == null)
-                          MaterialPage<void>(
-                            key: const ValueKey('acceso'),
-                            child: _acceso(),
-                          )
-                        else ...[
-                          MaterialPage<void>(
-                            key: const ValueKey('app'),
-                            child: _aplicacion(usuario),
-                          ),
-                          if (_indicadorAbierto case final indicador?)
-                            MaterialPage<void>(
-                              key: const ValueKey('indicador'),
-                              child: _detalleIndicador(usuario, indicador),
-                            ),
-                          if (_datosBasicos case final datos?)
-                            MaterialPage<void>(
-                              key: ValueKey('datos-${datos.paciente.id}'),
-                              child: _paginaDatosBasicos(usuario, datos),
-                            ),
-                          if (_historia case final historia?)
-                            MaterialPage<void>(
-                              key: ValueKey('historia-${historia.paciente.id}'),
-                              child: _paginaHistoria(usuario, historia),
-                            ),
-                          if (_registro case final registro?)
-                            MaterialPage<void>(
-                              key: ValueKey('registro-${registro.paciente.id}'),
-                              child: _paginaRegistro(usuario, registro),
-                            ),
-                          if (_denegado case final denegado?)
-                            MaterialPage<void>(
-                              key: ValueKey('denegado-${denegado.paciente.id}'),
-                              child: ConsultaPage(
-                                resultado: denegado.resultado,
-                                alRegistrar: denegado.alRegistrar,
-                                onVolver: _cerrarDenegado,
-                                onDeclararUrgencia: _declararUrgencia,
-                              ),
-                            ),
-                          if (_verPerfil)
-                            MaterialPage<void>(
-                              key: const ValueKey('perfil'),
-                              child: _perfil(),
-                            ),
-                        ],
-                      ],
-                      onDidRemovePage: (page) {
-                        final clave = page.key;
-                        if (clave is! ValueKey<String>) return;
-                        final id = clave.value;
-                        if (id.startsWith('historia')) {
-                          _cerrarHistoria();
-                        } else if (id.startsWith('datos')) {
-                          _actualizar(() => _datosBasicos = null);
-                        } else if (id.startsWith('registro')) {
-                          _actualizar(() => _registro = null);
-                        } else if (id.startsWith('denegado')) {
-                          _cerrarDenegado();
-                        } else if (id == 'indicador') {
-                          _actualizar(() {
-                            _indicadorAbierto = null;
-                            _sedeTendencia = null;
-                          });
-                        } else if (id == 'perfil') {
-                          _actualizar(() => _verPerfil = false);
+                  child: ExcludeFocus(
+                    excluding: dialogoArriba,
+                    child: NavigatorPopHandler(
+                      enabled: _atrasPendiente,
+                      // Atrás cierra primero el pop-up de propósito que esté abierto y,
+                      // si no hay, la pantalla de arriba.
+                      onPopWithResult: (_) {
+                        if (_solicitud != null) {
+                          _cancelarProposito();
+                        } else {
+                          _navegador.currentState?.maybePop();
                         }
                       },
+                      child: Navigator(
+                        key: _navegador,
+                        pages: [
+                          if (usuario == null)
+                            MaterialPage<void>(
+                              key: const ValueKey('acceso'),
+                              child: _acceso(),
+                            )
+                          else ...[
+                            MaterialPage<void>(
+                              key: const ValueKey('app'),
+                              child: _aplicacion(usuario),
+                            ),
+                            if (_indicadorAbierto case final indicador?)
+                              MaterialPage<void>(
+                                key: const ValueKey('indicador'),
+                                child: _detalleIndicador(usuario, indicador),
+                              ),
+                            if (_datosBasicos case final datos?)
+                              MaterialPage<void>(
+                                key: ValueKey('datos-${datos.paciente.id}'),
+                                child: _paginaDatosBasicos(usuario, datos),
+                              ),
+                            if (_historia case final historia?)
+                              MaterialPage<void>(
+                                key: ValueKey(
+                                  'historia-${historia.paciente.id}',
+                                ),
+                                child: _paginaHistoria(usuario, historia),
+                              ),
+                            if (_registro case final registro?)
+                              MaterialPage<void>(
+                                key: ValueKey(
+                                  'registro-${registro.paciente.id}',
+                                ),
+                                child: _paginaRegistro(usuario, registro),
+                              ),
+                            if (_denegado case final denegado?)
+                              MaterialPage<void>(
+                                key: ValueKey(
+                                  'denegado-${denegado.paciente.id}',
+                                ),
+                                child: ConsultaPage(
+                                  resultado: denegado.resultado,
+                                  alRegistrar: denegado.alRegistrar,
+                                  onVolver: _cerrarDenegado,
+                                  onDeclararUrgencia: _declararUrgencia,
+                                ),
+                              ),
+                            if (_verPerfil)
+                              MaterialPage<void>(
+                                key: const ValueKey('perfil'),
+                                child: _perfil(),
+                              ),
+                          ],
+                        ],
+                        onDidRemovePage: (page) {
+                          final clave = page.key;
+                          if (clave is! ValueKey<String>) return;
+                          final id = clave.value;
+                          if (id.startsWith('historia')) {
+                            _cerrarHistoria();
+                          } else if (id.startsWith('datos')) {
+                            _actualizar(() => _datosBasicos = null);
+                          } else if (id.startsWith('registro')) {
+                            _actualizar(() => _registro = null);
+                          } else if (id.startsWith('denegado')) {
+                            _cerrarDenegado();
+                          } else if (id == 'indicador') {
+                            _actualizar(() {
+                              _indicadorAbierto = null;
+                              _sedeTendencia = null;
+                            });
+                          } else if (id == 'perfil') {
+                            _actualizar(() => _verPerfil = false);
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            if (dialogoArriba) ...[
-              const Positioned.fill(child: FondoDialogo()),
-              Positioned.fill(child: _dialogo(usuario, solicitud)),
+              if (dialogoArriba) ...[
+                const Positioned.fill(child: FondoDialogo()),
+                Positioned.fill(child: _dialogo(usuario, solicitud)),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -654,14 +663,16 @@ extension _Paginas on _AppScreenState {
   /// Perfil (F-22) con las mismas barras de la app. Tocar un destino cierra
   /// el perfil y va a esa sección; *Cerrar sesión* es el de F-23.
   Widget _perfil() {
-    final usuario = _usuario;
-    if (usuario == null) return const SizedBox.shrink();
-    final sede = _datos.sede(_sedeSesion ?? usuario.sedesAsignadas.first);
+    final enSesion = _usuario;
+    if (enSesion == null) return const SizedBox.shrink();
+    final sede = _datos.sede(_sedeSesion ?? enSesion.sedesAsignadas.first);
+    // Lo que se muestra es lo leído de la base, si ya llegó (F-22).
+    final usuario = _perfilRemoto ?? enSesion;
     return _marco(
-      usuario: usuario,
+      usuario: enSesion,
       sede: sede,
       escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
-      onDestino: _irASeccion(usuario),
+      onDestino: _irASeccion(enSesion),
       body: PerfilPage(
         datos: [
           (etiqueta: 'Nombre', valor: usuario.nombre),
@@ -695,6 +706,9 @@ extension _Paginas on _AppScreenState {
         simularFallas: _simularFallas,
         cerrandoSesion: _cerrandoSesion,
         errorCierre: _errorCierre,
+        cargando: _cargandoPerfil,
+        hayError: _errorPerfil,
+        onReintentar: _cargarPerfil,
       ),
     );
   }

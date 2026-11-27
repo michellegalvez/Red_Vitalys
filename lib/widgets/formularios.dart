@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/actividad.dart';
 import 'package:red_vitalys/widgets/foco.dart';
 
 const _radioCampo = BorderRadius.all(Radius.circular(18));
@@ -142,6 +143,8 @@ class CampoTexto extends StatelessWidget {
           maxLength,
         }) => null,
         onSubmitted: onSubmitted,
+        // Escribir es uso, también con el teclado en pantalla (F-15).
+        onChanged: (_) => AvisoActividad.avisar(context),
         decoration: _decoracion(
           hint: hint,
           error: error,
@@ -266,7 +269,10 @@ class _BuscadorState extends State<Buscador> {
           textField: true,
           child: TextField(
             controller: _controller,
-            onChanged: widget.onChanged,
+            onChanged: (texto) {
+              AvisoActividad.avisar(context);
+              widget.onChanged(texto);
+            },
             maxLength: 100,
             maxLengthEnforcement: MaxLengthEnforcement.enforced,
             buildCounter: (

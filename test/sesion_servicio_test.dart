@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/models/sign_in_result.dart';
+import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
 import 'package:red_vitalys/services/auth_service.dart';
@@ -27,6 +28,9 @@ class FailingSignOutAuth implements AuthService {
     signOutCalls++;
     throw StateError('sin red');
   }
+
+  @override
+  Future<Usuario> reloadProfile(Usuario current) async => current;
 }
 
 final _now = DateTime(2026, 11, 6, 10, 42);

@@ -34,6 +34,7 @@ class AccessControlService {
     required Proposito purpose,
     required DateTime today,
     bool registering = false,
+    bool? relationship,
   }) {
     if (user.rol == Rol.administrativo && !registering) {
       return evaluarDatosBasicos(usuario: user, proposito: purpose);
@@ -44,12 +45,14 @@ class AccessControlService {
             paciente: patient,
             proposito: purpose,
             hoy: today,
+            relacion: relationship,
           )
         : evaluarConsulta(
             usuario: user,
             paciente: patient,
             proposito: purpose,
             hoy: today,
+            relacion: relationship,
           );
   }
 }

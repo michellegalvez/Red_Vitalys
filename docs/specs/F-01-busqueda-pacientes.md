@@ -1,7 +1,7 @@
 ---
 id: F-01
 titulo: Búsqueda de pacientes
-version: 0.1.4
+version: 0.1.5
 fecha: 2026-11-27
 estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -82,3 +82,4 @@ El médico y el administrativo encuentran a un paciente de cualquier sede escrib
 - 0.1.2 · 2026-11-06 · La búsqueda no crea evento, y RF-14 lo exceptúa. Depende también de F-16. Se cierra esa pregunta abierta.
 - 0.1.3 · 2026-11-06 · Se confirman el mínimo de 3 caracteres, la búsqueda por documento completo y los textos de los estados. Se cierran 2 preguntas abiertas.
 - 0.1.4 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: con Supabase, un paciente sin ningún alta no aparece al buscarlo.
+- 0.1.5 · 2026-11-27 · Resuelto lo pendiente: con Supabase, un paciente sin ningún alta también se encuentra al buscarlo.

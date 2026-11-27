@@ -1,7 +1,7 @@
 ---
 id: F-14
 titulo: Bloqueo del inicio de sesión por intentos fallidos
-version: 0.2.4
+version: 0.2.5
 fecha: 2026-11-27
 estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -87,3 +87,4 @@ Después de 5 intentos fallidos seguidos en un dispositivo, el sistema bloquea e
 - 0.2.2 · 2026-11-08 · El ingreso de una cuenta sin sedes no suma al conteo ni lo reinicia (regla y CA-10).
 - 0.2.3 · 2026-11-08 · Validar las credenciales y abandonar antes de elegir la sede no reinicia el conteo.
 - 0.2.4 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: el bloqueo se pierde al recargar la página.
+- 0.2.5 · 2026-11-27 · Resuelto lo pendiente: el bloqueo se guarda en el equipo y sigue al recargar la página o al cerrar y abrir la app.

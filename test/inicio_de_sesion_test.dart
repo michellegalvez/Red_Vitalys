@@ -30,6 +30,9 @@ class FakeAuth implements AuthService {
 
   @override
   Future<void> signOut() async => signOuts++;
+
+  @override
+  Future<Usuario> reloadProfile(Usuario current) async => current;
 }
 
 final _datos = DatosSimulados.porDefecto;

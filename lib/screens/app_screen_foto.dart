@@ -5,7 +5,36 @@ part of 'app_screen.dart';
 extension _Foto on _AppScreenState {
   void _abrirPerfil() {
     _actualizar(() => _verPerfil = true);
+    _cargarPerfil();
     _cargarFoto();
+  }
+
+  /// Vuelve a leer el perfil de la base (F-22 CA-8). En memoria no hay nada
+  /// que traer.
+  Future<void> _cargarPerfil() async {
+    final usuario = _usuario;
+    if (!_auth.isRemote || usuario == null) return;
+    final pedido = ++_pedidoPerfil;
+    _actualizar(() {
+      _cargandoPerfil = true;
+      _errorPerfil = false;
+    });
+    bool vigente() => mounted && pedido == _pedidoPerfil && _usuario == usuario;
+    try {
+      final perfil = await _auth.reloadProfile(usuario);
+      if (!vigente()) return;
+      _actualizar(() {
+        _perfilRemoto = perfil;
+        _cargandoPerfil = false;
+      });
+    } catch (error) {
+      debugPrint('No se pudo cargar el perfil: $error');
+      if (!vigente()) return;
+      _actualizar(() {
+        _cargandoPerfil = false;
+        _errorPerfil = true;
+      });
+    }
   }
 
   /// Trae la foto del usuario con sesión. Con [_simularFallas] la primera

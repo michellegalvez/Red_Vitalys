@@ -1,7 +1,7 @@
 ---
 id: F-05
 titulo: Relación médico-paciente
-version: 0.2.7
+version: 0.2.8
 fecha: 2026-11-27
 estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -92,3 +92,4 @@ Esta funcionalidad no tiene pantalla propia. Lo que el médico ve de ella es la 
 - 0.2.5 · 2026-11-08 · Coherencia con F-02: abrir la historia crea dos eventos, el de la historia y el del riesgo, y se permiten o se deniegan juntos.
 - 0.2.6 · 2026-11-08 · Una atención registrada con Urgencia no da relación aunque lleve fecha de alta en una sede del médico.
 - 0.2.7 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: "No se pudo verificar el acceso" (CA-8) solo se ve en el modo de demostración, porque la relación se calcula en la app.
+- 0.2.8 · 2026-11-27 · Resuelto lo pendiente: con Supabase la relación la confirma la base (script 012) y, si no responde, se ve "No se pudo verificar el acceso" con Reintentar (CA-8). La base también exige la relación para registrar una atención con Atención del paciente.

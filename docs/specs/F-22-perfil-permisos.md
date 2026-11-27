@@ -1,7 +1,7 @@
 ---
 id: F-22
 titulo: Perfil del usuario
-version: 0.3.1
+version: 0.3.2
 fecha: 2026-11-27
 estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -120,3 +120,4 @@ Ninguna.
 - 0.2.3 · 2026-11-06 · Formato: línea en blanco antes de los encabezados y lista de criterios sin cortes.
 - 0.3.0 · 2026-11-24 · Foto de perfil guardada en Supabase Storage (A2 a A6, CA-12 a CA-18) y requisito RF-38.
 - 0.3.1 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: el error al cargar el perfil (CA-8) solo se ve en el modo de demostración.
+- 0.3.2 · 2026-11-27 · Resuelto lo pendiente: con Supabase el perfil se vuelve a leer de la base y, si falla, se ve "No se pudo cargar su perfil" con Reintentar y Cerrar sesión (CA-8).

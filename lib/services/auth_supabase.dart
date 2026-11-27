@@ -44,8 +44,58 @@ class AuthSupabase implements AuthService {
     }
   }
 
+  /// Closes the session on the server first and only then on the device: if
+  /// the server cannot be reached the session stays whole, the app keeps
+  /// working and the user can try again (F-23 CA-5).
   @override
-  Future<void> signOut() => client.auth.signOut();
+  Future<void> signOut() async {
+    final token = client.auth.currentSession?.accessToken;
+    if (token != null) {
+      try {
+        await client.auth.admin.signOut(token);
+      } on AuthException catch (error) {
+        // An expired or unknown token is already signed out on the server.
+        const gone = {'401', '403', '404'};
+        if (!gone.contains(error.statusCode)) rethrow;
+      }
+    }
+    try {
+      await client.auth.signOut();
+    } catch (error) {
+      // The server session is already closed; the device one is gone too.
+      debugPrint('Could not tell the server again about the sign-out: $error');
+    }
+  }
+
+  @override
+  Future<Usuario> reloadProfile(Usuario current) async {
+    final id = client.auth.currentUser?.id;
+    if (id == null) throw StateError('No Supabase session to read the profile');
+    final row = await client
+        .from('usuario')
+        .select(
+          'nombre_completo, correo, activo, rol(nombre), usuario_sede(sede(nombre))',
+        )
+        .eq('id_usuario', id)
+        .single();
+    final role = _roleFrom((row['rol'] as Map?)?['nombre'] as String?);
+    final sites = [
+      for (final link in (row['usuario_sede'] as List? ?? const []))
+        ?sitesByName[((link as Map)['sede'] as Map?)?['nombre']],
+    ];
+    if (row['activo'] == false || role == null || sites.isEmpty) {
+      throw StateError('The profile is no longer valid');
+    }
+    return Usuario(
+      id: current.id,
+      nombre: row['nombre_completo'] as String,
+      saludo: current.saludo,
+      iniciales: current.iniciales,
+      correo: (row['correo'] as String?) ?? current.correo,
+      rol: role,
+      sedesAsignadas: sites,
+    );
+  }
 
   Future<SignInResult> _loadProfile(String id, String email) async {
     final row = await client

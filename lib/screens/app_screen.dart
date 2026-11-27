@@ -41,8 +41,11 @@ import 'package:red_vitalys/services/indicator_memory.dart';
 import 'package:red_vitalys/services/indicator_service.dart';
 import 'package:red_vitalys/services/patient_memory.dart';
 import 'package:red_vitalys/services/patient_service.dart';
+import 'package:red_vitalys/services/lock_store.dart';
+import 'package:red_vitalys/services/relationship_service.dart';
 import 'package:red_vitalys/services/session_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/actividad.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
 
@@ -116,6 +119,8 @@ class AppScreen extends StatefulWidget {
     this.history,
     this.indicators,
     this.fotos,
+    this.lockStore,
+    this.relationships,
     this.selectorFoto,
   });
 
@@ -123,6 +128,14 @@ class AppScreen extends StatefulWidget {
 
   /// Dónde se guarda la foto de perfil. Sin él, en memoria (P-02).
   final FotoPerfilRepositorio? fotos;
+
+  /// Dónde guarda el equipo el bloqueo del inicio de sesión. Sin él, en
+  /// memoria (F-14).
+  final LockStore? lockStore;
+
+  /// Quién confirma la relación médico-paciente. Sin él, los datos cargados
+  /// (F-05).
+  final RelationshipService? relationships;
 
   /// Cómo se elige la foto en el dispositivo. Sin él, el selector real.
   final SelectorFoto? selectorFoto;
@@ -155,6 +168,9 @@ class _AppScreenState extends State<AppScreen> {
   late final AuthService _auth = widget.auth ?? AuthMemory(widget.datos);
 
   final _access = const AccessControlService();
+  // Quién confirma la relación médico-paciente: la base o los datos cargados.
+  late final RelationshipService _relaciones =
+      widget.relationships ?? const RelationshipMemory();
 
   late final HistoryService _histories =
       widget.history ?? const HistoryMemory();
@@ -196,7 +212,7 @@ class _AppScreenState extends State<AppScreen> {
   String? _errorSede;
 
   // Bloqueo del dispositivo (F-14) e inactividad (F-15).
-  final _session = SessionService();
+  late final _session = SessionService(store: widget.lockStore);
 
   // Navegación y consultas.
   Seccion _seccion = Seccion.inicio;
@@ -230,6 +246,12 @@ class _AppScreenState extends State<AppScreen> {
   // Cierre de sesión en curso o fallido (F-23, solo en modo demo).
   bool _cerrandoSesion = false;
   String? _errorCierre;
+
+  // El perfil se vuelve a leer de la base al abrirlo (F-22 CA-8).
+  Usuario? _perfilRemoto;
+  bool _cargandoPerfil = false;
+  bool _errorPerfil = false;
+  int _pedidoPerfil = 0;
 
   // Pacientes y atenciones registradas en esta sesión. Viven aquí, en la
   // Screen anfitriona; las Pages solo las muestran.
@@ -288,6 +310,8 @@ class _AppScreenState extends State<AppScreen> {
     super.initState();
     // Cualquier tecla cuenta como uso, tenga o no el foco la app (F-15).
     HardwareKeyboard.instance.addHandler(_teclaPulsada);
+    // El bloqueo es del equipo: sigue aunque se recargue la página (F-14).
+    unawaited(_session.restore());
   }
 
   bool _teclaPulsada(KeyEvent _) {
@@ -615,9 +639,9 @@ class _AppScreenState extends State<AppScreen> {
 
   /// Cierra la sesión a mano (F-23) o por inactividad (F-15). Se borran la
   /// sede, la consulta abierta y lo que no se había guardado.
-  void _cerrarSesion({bool porInactividad = false}) {
+  void _cerrarSesion({bool porInactividad = false, bool cerrarAuth = true}) {
     _session.stop();
-    _cerrarSesionDeAuth();
+    if (cerrarAuth) _cerrarSesionDeAuth();
     setState(() {
       _cerrandoSesion = false;
       _errorCierre = null;
@@ -635,6 +659,10 @@ class _AppScreenState extends State<AppScreen> {
       _foto = null;
       _errorFoto = false;
       _avisoFoto = null;
+      _perfilRemoto = null;
+      _cargandoPerfil = false;
+      _errorPerfil = false;
+      _pedidoPerfil++;
       // Lo escrito en las búsquedas no pasa al siguiente usuario (F-15).
       _busqueda = '';
       _busquedaPaciente = '';
@@ -659,8 +687,31 @@ class _AppScreenState extends State<AppScreen> {
   /// puede fallar una vez; el usuario sigue en el perfil. Sin el modo, cierra
   /// al instante.
   Future<void> _pedirCierreDeSesion() async {
-    if (!_simularFallas) {
+    if (!_simularFallas && !_auth.isRemote) {
       _cerrarSesion();
+      return;
+    }
+    if (!_simularFallas) {
+      // Con Supabase se espera el cierre: si falla, sigue en el perfil con su
+      // mensaje y puede intentarlo otra vez (F-23 CA-5).
+      if (_cerrandoSesion) return;
+      setState(() {
+        _cerrandoSesion = true;
+        _errorCierre = null;
+      });
+      try {
+        await _auth.signOut();
+      } catch (error) {
+        debugPrint('No se pudo cerrar la sesión de Auth: $error');
+        if (!mounted || _usuario == null) return;
+        setState(() {
+          _cerrandoSesion = false;
+          _errorCierre = _mensajeFallaCierre;
+        });
+        return;
+      }
+      if (!mounted) return;
+      _cerrarSesion(cerrarAuth: false);
       return;
     }
     if (_cerrandoSesion) return;
@@ -726,8 +777,9 @@ class _AppScreenState extends State<AppScreen> {
   _PlanConsulta _planDeConsulta(
     Usuario usuario,
     _Solicitud s,
-    Proposito elegido,
-  ) {
+    Proposito elegido, {
+    bool? relacion,
+  }) {
     EventoAuditoria evento(
       AccionAuditoria accion,
       RecursoAuditoria recurso,
@@ -773,6 +825,7 @@ class _AppScreenState extends State<AppScreen> {
       purpose: elegido,
       today: _datos.hoy,
       registering: s.registrar,
+      relationship: relacion,
     );
     final permitido = resultado == ResultadoConsulta.permitido;
     void denegar({required bool alRegistrar}) => _denegado = (
@@ -1088,7 +1141,39 @@ class _AppScreenState extends State<AppScreen> {
         return;
       }
     }
-    final plan = _planDeConsulta(usuario, s, elegido);
+    // Con Supabase, la relación la confirma la base. Si no responde, no se
+    // abre nada y se puede reintentar (F-05 CA-8, F-18 CA-9).
+    bool? relacion;
+    if (paciente != null &&
+        usuario.rol == Rol.medico &&
+        elegido != Proposito.urgencia &&
+        _relaciones.isRemote) {
+      _confirmandoProposito = true;
+      try {
+        relacion = await _relaciones.hasRelationship(
+          usuario,
+          paciente,
+          _datos.hoy,
+        );
+      } catch (error) {
+        debugPrint('No se pudo verificar la relación: $error');
+        _confirmandoProposito = false;
+        if (!mounted || _solicitud != s || _usuario != usuario) return;
+        setState(() {
+          _solicitud = _Solicitud(
+            paciente: paciente,
+            elegido: elegido,
+            error: _mensajeFallaVerificar,
+            registrar: s.registrar,
+            reintentable: true,
+          );
+        });
+        return;
+      }
+      _confirmandoProposito = false;
+      if (!mounted || _solicitud != s || _usuario != usuario) return;
+    }
+    final plan = _planDeConsulta(usuario, s, elegido, relacion: relacion);
     _confirmandoProposito = true;
     final guardados = await _guardarEventosAntes(
       plan.permitido ? plan.eventos : const [],

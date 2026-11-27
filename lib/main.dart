@@ -9,6 +9,8 @@ import 'package:red_vitalys/screens/app_screen.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/history_service.dart';
 import 'package:red_vitalys/services/indicator_service.dart';
+import 'package:red_vitalys/services/lock_store.dart';
+import 'package:red_vitalys/services/relationship_service.dart';
 import 'package:red_vitalys/services/patient_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -27,6 +29,8 @@ Future<void> main() async {
       history: elegirHistoria(cliente: cliente),
       indicators: elegirIndicadores(datos: datos, cliente: cliente),
       fotos: elegirFotos(cliente: cliente),
+      lockStore: LockDevice(),
+      relationships: elegirRelaciones(cliente: cliente),
     ),
   );
 }
@@ -68,6 +72,8 @@ class RedVitalysApp extends StatelessWidget {
     this.history,
     this.indicators,
     this.fotos,
+    this.lockStore,
+    this.relationships,
   });
 
   final DatosSimulados datos;
@@ -77,6 +83,8 @@ class RedVitalysApp extends StatelessWidget {
   final HistoryService? history;
   final IndicatorService? indicators;
   final FotoPerfilRepositorio? fotos;
+  final LockStore? lockStore;
+  final RelationshipService? relationships;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +103,8 @@ class RedVitalysApp extends StatelessWidget {
         history: history,
         indicators: indicators,
         fotos: fotos,
+        lockStore: lockStore,
+        relationships: relationships,
       ),
     );
   }

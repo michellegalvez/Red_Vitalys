@@ -15,6 +15,7 @@ import 'package:red_vitalys/services/indicator_service.dart';
 import 'package:red_vitalys/services/indicator_supabase.dart';
 import 'package:red_vitalys/services/patient_memory.dart';
 import 'package:red_vitalys/services/patient_service.dart';
+import 'package:red_vitalys/services/relationship_service.dart';
 import 'package:red_vitalys/services/patient_supabase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -95,4 +96,11 @@ IndicatorService elegirIndicadores({
     client: cliente,
     sitesByName: {for (final s in datos.sedes) s.nombre: s.id},
   );
+}
+
+/// Quién confirma la relación médico-paciente: la base si hay [cliente]; si
+/// no, los datos cargados (F-05).
+RelationshipService elegirRelaciones({SupabaseClient? cliente}) {
+  if (cliente == null) return const RelationshipMemory();
+  return RelationshipSupabase(cliente);
 }
