@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
@@ -13,6 +15,9 @@ import 'package:red_vitalys/widgets/boton.dart';
 import 'ayudas.dart';
 
 class FakeHistory implements HistoryService {
+  var riskFails = false;
+  var riskCalls = 0;
+  Completer<void>? riskHold;
   var fails = false;
   var failsSaving = false;
   var calls = 0;
@@ -30,6 +35,18 @@ class FakeHistory implements HistoryService {
     calls++;
     if (fails) throw StateError('sin red');
     return historiaDe(patient, sedeAlta: 'Sede de la base', hoy: today);
+  }
+
+  @override
+  Future<ReadmissionRisk?> riskOf(
+    PacienteEnSeguimiento patient, {
+    required String siteName,
+    required DateTime today,
+  }) async {
+    riskCalls++;
+    await riskHold?.future;
+    if (riskFails) throw StateError('sin red');
+    return historiaDe(patient, sedeAlta: siteName, hoy: today).readmissionRisk;
   }
 
   @override
@@ -83,6 +100,52 @@ void main() {
       expect(history.calls, 2);
       expect(find.text('No se pudo cargar la historia'), findsNothing);
       expect(find.textContaining('Sede de la base'), findsWidgets);
+      await cerrarAppAyuda(t);
+    });
+  });
+
+  group('El riesgo se carga aparte (F-07)', () {
+    testWidgets('CA-8: si el riesgo falla se ve su error, la historia sigue y '
+        'Reintentar lo trae', (t) async {
+      final history = FakeHistory()..riskFails = true;
+      await _openJorge(t, history);
+      expect(find.text('No se pudo cargar el riesgo'), findsOneWidget);
+      expect(find.text('No se pudo cargar la historia'), findsNothing);
+      expect(find.textContaining('Sede de la base'), findsWidgets);
+      expect(find.text('RIESGO ALTO'), findsNothing);
+
+      history.riskFails = false;
+      await tocarAyuda(t, find.text('Reintentar'));
+      expect(history.riskCalls, 2);
+      expect(find.text('No se pudo cargar el riesgo'), findsNothing);
+      expect(find.text('RIESGO ALTO'), findsWidgets);
+      await cerrarAppAyuda(t);
+    });
+
+    testWidgets('al abrir otro paciente no queda el riesgo del anterior', (
+      t,
+    ) async {
+      const jorgeRisk = 'Riesgo alto: 91 (la alerta empieza en 70).';
+      final history = FakeHistory();
+      await _openJorge(t, history);
+      expect(find.text(jorgeRisk), findsOneWidget);
+      await t.binding.handlePopRoute();
+      await t.pumpAndSettle();
+      history.riskHold = Completer<void>();
+      await tocarAyuda(t, find.text('Valentina Ortiz Salazar'));
+      await tocarAyuda(t, find.text('Seguimiento de reingreso'));
+      await t.tap(find.text('Abrir historia clínica'));
+      for (var i = 0; i < 10; i++) {
+        await t.pump(const Duration(milliseconds: 100));
+      }
+      expect(history.riskCalls, 2);
+      expect(find.textContaining('Valentina'), findsWidgets);
+      expect(find.text('Cargando riesgo…'), findsOneWidget);
+      expect(find.text(jorgeRisk), findsNothing);
+      history.riskHold!.complete();
+      await t.pumpAndSettle();
+      expect(find.text('Cargando riesgo…'), findsNothing);
+      expect(find.text(jorgeRisk), findsNothing);
       await cerrarAppAyuda(t);
     });
   });

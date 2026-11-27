@@ -8,6 +8,7 @@ import 'package:red_vitalys/reglas/indicadores.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/aviso.dart';
 import 'package:red_vitalys/widgets/boton.dart';
+import 'package:red_vitalys/widgets/carga.dart';
 import 'package:red_vitalys/widgets/formularios.dart';
 import 'package:red_vitalys/widgets/pagina.dart';
 import 'package:red_vitalys/widgets/tarjeta.dart';
@@ -45,6 +46,9 @@ class RegistrarMedicionPage extends StatefulWidget {
     required this.registradas,
     required this.validar,
     required this.onGuardar,
+    this.cargando = false,
+    this.hayError = false,
+    this.onReintentar,
   });
 
   /// Todas las sedes de la red: puede registrar en cualquiera (F-12). Si el
@@ -61,6 +65,12 @@ class RegistrarMedicionPage extends StatefulWidget {
   /// Guarda la medición y devuelve el mensaje de error, o `null` si se
   /// guardó (F-12). Con error se conserva lo escrito.
   final Future<String?> Function(NuevaMedicion) onGuardar;
+
+  /// Con Supabase, las mediciones de la base todavía llegan o no se pudieron
+  /// traer: sin ellas no se puede saber si una ya existe (F-12 A2).
+  final bool cargando;
+  final bool hayError;
+  final VoidCallback? onReintentar;
 
   @override
   State<RegistrarMedicionPage> createState() => _RegistrarMedicionPageState();
@@ -149,7 +159,14 @@ class _RegistrarMedicionPageState extends State<RegistrarMedicionPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _formulario(indicador),
+                CargaRemota(
+                  cargando: widget.cargando,
+                  hayError: widget.hayError,
+                  onReintentar: widget.onReintentar ?? () {},
+                  textoCargando: 'Cargando mediciones…',
+                  textoError: 'No se pudieron cargar las mediciones',
+                  child: _formulario(indicador),
+                ),
                 if (widget.registradas.isNotEmpty) ...[
                   const SizedBox(height: 26),
                   Semantics(

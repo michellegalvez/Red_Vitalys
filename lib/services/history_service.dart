@@ -12,6 +12,14 @@ abstract interface class HistoryService {
     required DateTime today,
   });
 
+  /// The latest stored readmission risk, loaded apart from the history so its
+  /// own error can be shown (F-07 CA-8).
+  Future<ReadmissionRisk?> riskOf(
+    PacienteEnSeguimiento patient, {
+    required String siteName,
+    required DateTime today,
+  });
+
   Future<void> addEncounter(
     PacienteEnSeguimiento patient,
     NuevaAtencion encounter, {

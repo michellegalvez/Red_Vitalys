@@ -407,6 +407,8 @@ class _PanelVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Un celular acostado es ancho pero bajo: el lema grande no cabe.
+    final grande = escritorio && MediaQuery.sizeOf(context).height >= 600;
     final lema = Text.rich(
       TextSpan(
         children: [
@@ -424,10 +426,10 @@ class _PanelVisual extends StatelessWidget {
         ],
       ),
       style: TextStyle(
-        fontSize: escritorio ? 64 : 34,
+        fontSize: grande ? 64 : 34,
         height: 1.05,
         fontWeight: FontWeight.w800,
-        letterSpacing: escritorio ? -2.2 : -1.2,
+        letterSpacing: grande ? -2.2 : -1.2,
         color: Colors.white,
       ),
     );
@@ -435,7 +437,7 @@ class _PanelVisual extends StatelessWidget {
       'Seis clínicas, cuarenta centros ambulatorios y una cadena de laboratorios, con un '
       'solo paciente, un solo índice y cada acceso auditado.',
       style: TextStyle(
-        fontSize: escritorio ? 18 : 14.5,
+        fontSize: grande ? 18 : 14.5,
         height: 1.5,
         color: Colors.white.withValues(alpha: 0.92),
       ),

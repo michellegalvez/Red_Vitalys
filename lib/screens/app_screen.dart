@@ -166,6 +166,13 @@ class _AppScreenState extends State<AppScreen> {
   // Cambia con cada pedido de la historia: solo se aplica la respuesta del
   // último (T-04).
   int _pedidoHistoria = 0;
+  // El riesgo se trae aparte para mostrar su propio error (F-07 CA-8).
+  ReadmissionRisk? _riesgoRemoto;
+  bool _cargandoRiesgo = false;
+  bool _errorRiesgo = false;
+  int _pedidoRiesgo = 0;
+  // Solo se aplica la última carga de la auditoría (F-21).
+  int _pedidoEventos = 0;
 
   late final PatientService _patients =
       widget.patients ?? PatientMemory(widget.datos);
@@ -265,7 +272,9 @@ class _AppScreenState extends State<AppScreen> {
   FiltroAuditoria _filtroAuditoria = FiltroAuditoria.todos;
 
   // Foto de perfil (F-22).
-  late final FotoPerfilRepositorio _fotos = widget.fotos ?? FotoMemoria();
+  // En memoria, cada usuario tiene su propia foto (F-22 CA-12, CA-17).
+  late final FotoPerfilRepositorio _fotos =
+      widget.fotos ?? FotoMemoria(dueno: () => _usuario?.id);
   late final SelectorFoto _selectorFoto =
       widget.selectorFoto ?? SelectorFotoDispositivo();
   Uint8List? _foto;
@@ -456,9 +465,48 @@ class _AppScreenState extends State<AppScreen> {
     unawaited(_cargarMediciones());
   }
 
+  /// Trae el riesgo del paciente de la historia abierta. Solo el médico lo
+  /// ve, así que con los datos básicos no se pide (F-03, F-07).
+  Future<void> _cargarRiesgo() async {
+    final paciente = _historia?.paciente;
+    if (!_histories.isRemote || paciente == null) return;
+    final pedido = ++_pedidoRiesgo;
+    final sesion = _sesion;
+    setState(() {
+      _riesgoRemoto = null;
+      _cargandoRiesgo = true;
+      _errorRiesgo = false;
+    });
+    bool sigueAbierta() =>
+        mounted &&
+        pedido == _pedidoRiesgo &&
+        sesion == _sesion &&
+        _historia?.paciente.id == paciente.id;
+    try {
+      final riesgo = await _histories.riskOf(
+        paciente,
+        siteName: _nombresSedes[paciente.sedeAltaId] ?? '',
+        today: _datos.hoy,
+      );
+      if (!sigueAbierta()) return;
+      setState(() {
+        _riesgoRemoto = riesgo;
+        _cargandoRiesgo = false;
+      });
+    } catch (error) {
+      debugPrint('No se pudo cargar el riesgo: $error');
+      if (!sigueAbierta()) return;
+      setState(() {
+        _cargandoRiesgo = false;
+        _errorRiesgo = true;
+      });
+    }
+  }
+
   Future<void> _cargarHistoria() async {
     final paciente = (_historia ?? _datosBasicos)?.paciente;
     if (!_histories.isRemote || paciente == null) return;
+    if (_historia != null) unawaited(_cargarRiesgo());
     final pedido = ++_pedidoHistoria;
     final sesion = _sesion;
     setState(() {
@@ -849,13 +897,16 @@ class _AppScreenState extends State<AppScreen> {
   /// En memoria no hace nada: la lista ya está al día (F-21).
   Future<void> _cargarEventosSiHaceFalta() async {
     if (!_auditoria.esRemoto || _seccion != Seccion.auditoria) return;
+    final sesion = _sesion;
+    final pedido = ++_pedidoEventos;
+    bool vigente() => mounted && sesion == _sesion && pedido == _pedidoEventos;
     setState(() {
       _cargandoEventos = true;
       _errorEventos = false;
     });
     try {
       final eventos = await _auditoria.listar();
-      if (!mounted) return;
+      if (!vigente()) return;
       setState(() {
         _eventos
           ..clear()
@@ -864,7 +915,7 @@ class _AppScreenState extends State<AppScreen> {
       });
     } catch (error) {
       debugPrint('No se pudieron cargar los eventos: $error');
-      if (!mounted) return;
+      if (!vigente()) return;
       setState(() {
         _cargandoEventos = false;
         _errorEventos = true;
@@ -1104,6 +1155,10 @@ class _AppScreenState extends State<AppScreen> {
     _cargandoHistoria = false;
     _errorHistoria = false;
     _pedidoHistoria++;
+    _riesgoRemoto = null;
+    _cargandoRiesgo = false;
+    _errorRiesgo = false;
+    _pedidoRiesgo++;
   }
 
   void _cerrarHistoria() => setState(() {

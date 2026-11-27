@@ -19,6 +19,14 @@ class HistoryMemory implements HistoryService {
   }) async => historiaDe(patient, sedeAlta: siteName, hoy: today);
 
   @override
+  Future<ReadmissionRisk?> riskOf(
+    PacienteEnSeguimiento patient, {
+    required String siteName,
+    required DateTime today,
+  }) async =>
+      historiaDe(patient, sedeAlta: siteName, hoy: today).readmissionRisk;
+
+  @override
   Future<void> addEncounter(
     PacienteEnSeguimiento patient,
     NuevaAtencion encounter, {

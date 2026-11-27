@@ -382,10 +382,15 @@ extension _Paginas on _AppScreenState {
   /// Las acciones que cierran lo abierto y llevan a una sección.
   ValueChanged<int> _irASeccion(Usuario usuario) {
     final secciones = seccionesDe(usuario.rol);
-    return (i) => _actualizar(() {
-      _cerrarDetalles();
-      _irA(secciones[i]);
-    });
+    return (i) {
+      _actualizar(() {
+        _cerrarDetalles();
+        _irA(secciones[i]);
+      });
+      // Al llegar a la auditoría desde el perfil o un detalle también se
+      // trae de nuevo (F-21 CA-1).
+      _cargarEventosSiHaceFalta();
+    };
   }
 
   Sede _sedeDe(Usuario usuario) =>
@@ -488,6 +493,9 @@ extension _Paginas on _AppScreenState {
       registradas: registradas,
       validar: _validarMedicion,
       onGuardar: _guardarMedicion,
+      cargando: _cargandoMediciones,
+      hayError: _errorMediciones,
+      onReintentar: _cargarMediciones,
     );
   }
 
@@ -536,7 +544,7 @@ extension _Paginas on _AppScreenState {
       phone: base?.phone ?? '',
       address: base?.address ?? '',
       systemIdentifiers: base?.systemIdentifiers ?? const [],
-      readmissionRisk: base?.readmissionRisk,
+      readmissionRisk: _riesgoRemoto,
       encounters: ordenarAtenciones([...nuevas, ...?base?.encounters]),
     );
   }
@@ -592,6 +600,9 @@ extension _Paginas on _AppScreenState {
         cargando: _cargandoHistoria,
         hayError: _errorHistoria,
         onReintentar: _cargarHistoria,
+        cargandoRiesgo: _cargandoRiesgo,
+        errorRiesgo: _errorRiesgo,
+        onReintentarRiesgo: _cargarRiesgo,
         simularFallas: _simularFallas,
       ),
     );

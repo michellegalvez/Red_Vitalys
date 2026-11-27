@@ -32,6 +32,9 @@ class PacientePage extends StatelessWidget {
     this.cargando = false,
     this.hayError = false,
     this.onReintentar,
+    this.cargandoRiesgo = false,
+    this.errorRiesgo = false,
+    this.onReintentarRiesgo,
   });
 
   final Patient historia;
@@ -55,12 +58,26 @@ class PacientePage extends StatelessWidget {
   final bool hayError;
   final VoidCallback? onReintentar;
 
+  /// La carga real del riesgo, aparte de la historia (F-07 CA-8).
+  final bool cargandoRiesgo;
+  final bool errorRiesgo;
+  final VoidCallback? onReintentarRiesgo;
+
   @override
   Widget build(BuildContext context) {
     final escritorio = MediaQuery.sizeOf(context).width >= anchoEscritorio;
     final riesgo = historia.readmissionRisk;
     final columnaRiesgo = [
-      if (riesgo != null)
+      if (cargandoRiesgo || errorRiesgo)
+        CargaRemota(
+          cargando: cargandoRiesgo,
+          hayError: errorRiesgo,
+          onReintentar: onReintentarRiesgo ?? () {},
+          textoCargando: 'Cargando riesgo…',
+          textoError: 'No se pudo cargar el riesgo',
+          child: const SizedBox.shrink(),
+        )
+      else if (riesgo != null)
         SeccionRiesgo(riesgo: riesgo, simularFallas: simularFallas),
       _DatosBasicos(paciente: historia),
     ];

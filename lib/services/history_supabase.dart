@@ -35,9 +35,7 @@ class HistorySupabase implements HistoryService {
         .from('atencion')
         .select(
           'id_atencion, tipo_atencion, fecha_inicio, fecha_fin, destino_alta, '
-          'sede(nombre_corto), usuario(nombre_completo), '
-          'prediccion_reingreso(score_riesgo, fecha_prediccion, '
-          'factor_riesgo(id_factor, variable, contribucion))',
+          'sede(nombre_corto), usuario(nombre_completo)',
         )
         .eq('id_paciente', patientId)
         // Ties on the start date keep this order: the latest saved goes first.
@@ -54,9 +52,26 @@ class HistorySupabase implements HistoryService {
       phone: person['telefono'] as String? ?? 'No registrado',
       address: person['direccion'] as String? ?? 'No registrada',
       systemIdentifiers: _identifiers(person['identificador_paciente'] as List),
-      readmissionRisk: _latestRisk(rows),
+      readmissionRisk: null,
       encounters: ordenarAtenciones([for (final row in rows) _encounter(row)]),
     );
+  }
+
+  @override
+  Future<ReadmissionRisk?> riskOf(
+    PacienteEnSeguimiento patient, {
+    required String siteName,
+    required DateTime today,
+  }) async {
+    final rows = await client
+        .from('atencion')
+        .select(
+          'fecha_inicio, fecha_fin, '
+          'prediccion_reingreso(score_riesgo, fecha_prediccion, '
+          'factor_riesgo(id_factor, variable, contribucion))',
+        )
+        .eq('id_paciente', await _patientId(patient));
+    return _latestRisk(rows);
   }
 
   @override

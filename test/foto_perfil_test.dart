@@ -108,7 +108,7 @@ void main() {
     });
 
     test('sin Supabase la fuente de fotos es la de memoria', () {
-      expect(elegirFotos().esRemoto, isFalse);
+      expect(elegirFotos(), isNull);
     });
   });
 

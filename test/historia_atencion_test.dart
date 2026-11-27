@@ -24,6 +24,8 @@ const _falla = 'No se pudo completar la acción';
 const _fallaGuardar = 'No se pudo registrar la atención';
 
 class QueuedHistory implements HistoryService {
+  var riskFails = false;
+  var riskCalls = 0;
   final loads = <Completer<Patient>>[];
   Completer<void>? saving;
   var failsSaving = false;
@@ -41,6 +43,17 @@ class QueuedHistory implements HistoryService {
     final load = Completer<Patient>();
     loads.add(load);
     return load.future;
+  }
+
+  @override
+  Future<ReadmissionRisk?> riskOf(
+    PacienteEnSeguimiento patient, {
+    required String siteName,
+    required DateTime today,
+  }) async {
+    riskCalls++;
+    if (riskFails) throw StateError('sin red');
+    return historiaDe(patient, sedeAlta: siteName, hoy: today).readmissionRisk;
   }
 
   @override
