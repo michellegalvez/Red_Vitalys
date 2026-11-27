@@ -124,7 +124,8 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
 
   @override
   Future<List<EventoAuditoria>> listar() async {
-    final filas = await _guardia.run(
+    // Todas las páginas: la auditoría no tiene paginación (F-21).
+    final filas = await _guardia.fetchAll(
       () => cliente
           .from('evento_auditoria')
           .select(
@@ -132,7 +133,8 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
             'proposito_uso, correo_intento, ip, id_paciente, usuario(correo), '
             'sede(nombre)',
           )
-          .order('fecha_hora_evento', ascending: false),
+          .order('fecha_hora_evento', ascending: false)
+          .order('id_evento', ascending: false),
     );
     final pacientes = filas.any((f) => f['id_paciente'] != null)
         ? await _pacientesDeLosEventos()

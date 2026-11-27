@@ -98,7 +98,8 @@ class PatientSupabase implements PatientService {
     ];
   }
 
-  Future<List<Map<String, dynamic>>> _encounters() => _guard.run(
+  // Every page: the search covers the whole network (F-01).
+  Future<List<Map<String, dynamic>>> _encounters() => _guard.fetchAll(
     () => client
         .from('atencion')
         .select(
@@ -106,10 +107,11 @@ class PatientSupabase implements PatientService {
           'sede(nombre), usuario(correo), '
           'prediccion_reingreso(score_riesgo, fecha_prediccion)',
         )
-        .order('fecha_fin', ascending: false, nullsFirst: false),
+        .order('fecha_fin', ascending: false, nullsFirst: false)
+        .order('id_atencion'),
   );
 
-  Future<List<Map<String, dynamic>>> _people() => _guard.run(
+  Future<List<Map<String, dynamic>>> _people() => _guard.fetchAll(
     () => client
         .from('paciente')
         .select(
@@ -117,7 +119,8 @@ class PatientSupabase implements PatientService {
           'segundo_apellido, fecha_nacimiento, sexo, '
           'identificador_paciente(tipo_documento, numero_identificacion, '
           'es_principal)',
-        ),
+        )
+        .order('id_paciente'),
   );
 
   /// A row that cannot be read is skipped and logged instead of leaving the

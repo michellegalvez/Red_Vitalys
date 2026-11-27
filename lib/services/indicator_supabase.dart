@@ -28,7 +28,7 @@ class IndicatorSupabase implements IndicatorService {
 
   @override
   Future<List<Medicion>> listMeasurements() async {
-    final rows = await _guard.run(
+    final rows = await _guard.fetchAll(
       () => client
           .from('medicion_indicador')
           .select(
