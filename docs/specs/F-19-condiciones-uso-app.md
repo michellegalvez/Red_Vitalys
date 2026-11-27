@@ -1,9 +1,9 @@
 ---
 id: F-19
 titulo: Condiciones de uso de la app
-version: 0.2.1
-fecha: 2026-11-08
-estado: borrador
+version: 0.2.2
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RNF-01, RNF-03, RNF-05, RNF-07]
 depende_de: []
@@ -84,3 +84,4 @@ Esta spec no describe una función con su propio flujo. Reúne las condiciones q
 - 0.1.0 · 2026-11-06 · Primera versión.
 - 0.2.0 · 2026-11-06 · Navegadores: Chrome y Edge en su versión actual. Android 10 o superior. Se cierran 2 preguntas abiertas.
 - 0.2.1 · 2026-11-08 · CA-1 lista las pantallas de cada rol, como la tabla de F-22.
+- 0.2.2 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: no se probó en un celular físico, solo en un emulador con Android 16.

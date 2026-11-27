@@ -1,9 +1,9 @@
 ---
 id: F-21
 titulo: Consulta de la auditoría de accesos
-version: 0.1.9
-fecha: 2026-11-08
-estado: borrador
+version: 0.1.10
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-15, RF-16]
 depende_de: [F-18, F-20]
@@ -110,3 +110,4 @@ Además:
 - 0.1.7 · 2026-11-08 · Los eventos sin paciente incluyen la búsqueda rechazada por el rol (F-20).
 - 0.1.8 · 2026-11-08 · El filtro Emergencia es Urgencia con resultado Permitido; CA-2 incluye la IP del ingreso fallido.
 - 0.1.9 · 2026-11-08 · CA-11 pide un evento de emergencia, como RNF-04 y F-17 CA-8.
+- 0.1.10 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

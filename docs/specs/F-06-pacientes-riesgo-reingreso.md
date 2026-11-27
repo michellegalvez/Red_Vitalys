@@ -1,9 +1,9 @@
 ---
 id: F-06
 titulo: Pacientes con alta reciente por riesgo de reingreso
-version: 0.3.6
-fecha: 2026-11-08
-estado: borrador
+version: 0.3.7
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-05, RF-06]
 depende_de: [F-13, F-16, F-18, F-20]
@@ -95,3 +95,4 @@ El médico ve a los pacientes dados de alta en los últimos 30 días en toda la 
 - 0.3.4 · 2026-11-08 · Segundo desempate por nombre (CA-14) y los eventos al abrir un paciente quedan como en F-02 y F-07: historia y riesgo.
 - 0.3.5 · 2026-11-08 · Inicio y Pacientes son una sola lista para el propósito y el evento; se aclara el título de la pantalla frente al recurso de la auditoría.
 - 0.3.6 · 2026-11-08 · Un solo nombre para la pantalla: Pacientes con alta reciente (RF-37, F-13, F-16, PRD). Nuevo CA-15: abrir la lista con Urgencia es de emergencia.
+- 0.3.7 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

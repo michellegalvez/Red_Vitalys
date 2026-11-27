@@ -1,9 +1,9 @@
 ---
 id: F-22
 titulo: Perfil del usuario
-version: 0.3.0
-fecha: 2026-11-24
-estado: borrador
+version: 0.3.1
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-22, RF-38]
 depende_de: [F-18]
@@ -119,3 +119,4 @@ Ninguna.
 - 0.2.2 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
 - 0.2.3 · 2026-11-06 · Formato: línea en blanco antes de los encabezados y lista de criterios sin cortes.
 - 0.3.0 · 2026-11-24 · Foto de perfil guardada en Supabase Storage (A2 a A6, CA-12 a CA-18) y requisito RF-38.
+- 0.3.1 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: el error al cargar el perfil (CA-8) solo se ve en el modo de demostración.

@@ -1,9 +1,9 @@
 ---
 id: F-13
 titulo: Inicio de sesión con la sede asignada
-version: 0.4.3
-fecha: 2026-11-08
-estado: borrador
+version: 0.4.4
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-32, RF-33, RF-18, RF-37]
 depende_de: [F-20]
@@ -93,3 +93,4 @@ Ninguna.
 - 0.4.1 · 2026-11-06 · El evento se crea antes de ejecutar la acción, y si no se puede crear la acción no se hace, como RF-14 0.6.1 y AD-07 0.6.1.
 - 0.4.2 · 2026-11-08 · El usuario sin sedes asignadas deja un evento Denegado, sin sede y con el correo y la IP, y no suma al bloqueo. Se cierra esa pregunta abierta.
 - 0.4.3 · 2026-11-08 · A3 aclara que el ingreso sin sedes ni suma ni reinicia el conteo; CA-11 cuenta la cuenta sin sedes de prueba.
+- 0.4.4 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

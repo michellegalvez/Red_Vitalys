@@ -1,9 +1,9 @@
 ---
 id: F-03
 titulo: Datos básicos del paciente
-version: 0.1.3
-fecha: 2026-11-06
-estado: borrador
+version: 0.1.4
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-03]
 depende_de: [F-01, F-16, F-18]
@@ -76,3 +76,4 @@ El administrativo consulta los datos básicos de un paciente de cualquier sede, 
 - 0.1.1 · 2026-11-06 · CA-5 se redacta a nivel del sistema, porque un administrativo no puede declarar *Urgencia* desde la app.
 - 0.1.2 · 2026-11-06 · Se confirman los datos básicos, y los mensajes de rechazo quedan definidos en F-18. Se cierran 2 preguntas abiertas.
 - 0.1.3 · 2026-11-06 · El evento se crea antes de ejecutar la acción, y si no se puede crear la acción no se hace, como RF-14 0.6.1 y AD-07 0.6.1.
+- 0.1.4 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

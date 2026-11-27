@@ -1,9 +1,9 @@
 ---
 id: F-12
 titulo: Registro de la medición mensual de una sede
-version: 0.2.3
-fecha: 2026-11-06
-estado: borrador
+version: 0.2.4
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-13, RF-28, RF-29, RF-30]
 depende_de: [F-08, F-18]
@@ -104,3 +104,4 @@ Cuando cierra el mes, el administrativo registra el valor de un indicador para u
 - 0.2.1 · 2026-11-06 · El evento se crea antes de ejecutar la acción, y si no se puede crear la acción no se hace, como RF-14 0.6.1 y AD-07 0.6.1. Una medición rechazada por la validación no crea evento.
 - 0.2.2 · 2026-11-06 · Formato: línea en blanco antes de los encabezados y lista de criterios sin cortes.
 - 0.2.3 · 2026-11-06 · La red tiene una cadena de laboratorios clínicos propia: "el laboratorio" pasa a plural.
+- 0.2.4 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

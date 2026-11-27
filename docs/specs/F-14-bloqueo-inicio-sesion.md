@@ -1,9 +1,9 @@
 ---
 id: F-14
 titulo: Bloqueo del inicio de sesión por intentos fallidos
-version: 0.2.3
-fecha: 2026-11-08
-estado: borrador
+version: 0.2.4
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-36]
 depende_de: [F-13]
@@ -86,3 +86,4 @@ Después de 5 intentos fallidos seguidos en un dispositivo, el sistema bloquea e
 - 0.2.1 · 2026-11-06 · Un intento con el correo o la contraseña vacíos no cuenta ni crea un evento (regla y CA-9), como F-13.
 - 0.2.2 · 2026-11-08 · El ingreso de una cuenta sin sedes no suma al conteo ni lo reinicia (regla y CA-10).
 - 0.2.3 · 2026-11-08 · Validar las credenciales y abandonar antes de elegir la sede no reinicia el conteo.
+- 0.2.4 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: el bloqueo se pierde al recargar la página.

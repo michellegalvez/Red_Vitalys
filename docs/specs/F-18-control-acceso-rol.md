@@ -1,9 +1,9 @@
 ---
 id: F-18
 titulo: Control de acceso por rol
-version: 0.2.5
-fecha: 2026-11-08
-estado: borrador
+version: 0.2.6
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-34, RF-21]
 depende_de: []
@@ -102,3 +102,4 @@ Ninguna.
 - 0.2.3 · 2026-11-06 · El evento se crea antes de ejecutar la acción, y si no se puede crear la acción no se hace, como RF-14 0.6.1 y AD-07 0.6.1.
 - 0.2.4 · 2026-11-08 · Coherencia con F-20: la regla de los eventos denegados es para usuarios con sesión; el inicio de sesión fallido no lleva sede.
 - 0.2.5 · 2026-11-08 · Un rechazo sin propósito declarado lleva No aplica, y las pantallas no ofrecen las acciones que el rol no tiene.
+- 0.2.6 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: "No se pudo verificar el acceso" (CA-9) solo se ve en el modo de demostración.

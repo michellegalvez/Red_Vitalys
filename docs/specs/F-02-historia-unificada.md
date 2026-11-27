@@ -1,9 +1,9 @@
 ---
 id: F-02
 titulo: Historia unificada del paciente
-version: 0.1.9
-fecha: 2026-11-08
-estado: borrador
+version: 0.1.10
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-02]
 depende_de: [F-01, F-05, F-16, F-18]
@@ -98,3 +98,4 @@ El médico ve en un solo lugar los datos de un paciente, su identificador en cad
 - 0.1.7 · 2026-11-08 · Una sola regla de eventos: abrir la historia crea dos (historia y riesgo) y se permiten o se deniegan juntos; el rechazo por rol crea uno. El documento enmascarado solo vale en la historia, las atenciones tienen su clave de orden y los datos del paciente remiten a F-03.
 - 0.1.8 · 2026-11-08 · Los identificadores por sistema se enmascaran como el documento y la sede de la atención se muestra con su nombre corto.
 - 0.1.9 · 2026-11-08 · Criterios nuevos para los identificadores enmascarados (CA-13) y la sede con nombre corto (CA-14).
+- 0.1.10 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: con Supabase, un paciente sin atenciones (CA-3) no se puede abrir, porque no aparece en la lista.

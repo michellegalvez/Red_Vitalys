@@ -1,9 +1,9 @@
 ---
 id: F-17
 titulo: Acceso de emergencia
-version: 0.2.7
-fecha: 2026-11-08
-estado: borrador
+version: 0.2.8
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-20]
 depende_de: [F-04, F-05, F-16, F-18]
@@ -90,3 +90,4 @@ El médico puede ver la historia de un paciente, o registrarle una atención, cu
 - 0.2.5 · 2026-11-08 · Coherencia con F-02: abrir la historia crea dos eventos, el de la historia y el del riesgo.
 - 0.2.6 · 2026-11-08 · Un evento es de emergencia con propósito Urgencia y resultado Permitido; Urgencia con relación también se permite al registrar; al guardar una atención con Urgencia el médico ve el aviso de emergencia (CA-10).
 - 0.2.7 · 2026-11-08 · La apertura de la lista con Urgencia también es de emergencia (F-06 CA-15) y el aviso al guardar vale con o sin relación.
+- 0.2.8 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

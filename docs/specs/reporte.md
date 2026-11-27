@@ -4,7 +4,9 @@ Fecha: 2026-11-24 · Revisado: prd 0.8.0 · requisitos 0.8.0 · spine 0.7.0 · 2
 
 Este reporte reemplaza al anterior. Se hicieron cuatro pasadas de la crítica sobre los documentos y se corrigió en cada una lo que encontró. La primera dejó la consistencia en rojo con 5 contradicciones; la segunda, con 8 (nacidas de los cambios de esa misma ronda: la historia con el riesgo y sus dos eventos, el formulario de la atención, el orden de las sedes); la tercera, con 2; la cuarta, con 3. Las 3 de la cuarta pasada se corrigieron en el texto, pero la crítica no se volvió a ejecutar después de esa última ronda, así que no hay una quinta lectura que lo confirme. El script de verificación pasa.
 
-Versiones de las specs: F-01 0.1.3 · F-02 0.1.9 · F-03 0.1.3 · F-04 0.3.6 · F-05 0.2.6 · F-06 0.3.6 · F-07 0.2.8 · F-08 0.1.6 · F-09 0.1.3 · F-10 0.1.3 · F-11 0.1.1 · F-12 0.2.3 · F-13 0.4.3 · F-14 0.2.3 · F-15 0.2.3 · F-16 0.3.6 · F-17 0.2.7 · F-18 0.2.5 · F-19 0.2.1 · F-20 0.4.6 · F-21 0.1.9 · F-22 0.3.0 · F-23 0.1.1.
+Versiones de las specs: F-01 0.1.4 · F-02 0.1.10 · F-03 0.1.4 · F-04 0.3.7 · F-05 0.2.7 · F-06 0.3.7 · F-07 0.2.9 · F-08 0.1.7 · F-09 0.1.4 · F-10 0.1.4 · F-11 0.1.2 · F-12 0.2.4 · F-13 0.4.4 · F-14 0.2.4 · F-15 0.2.4 · F-16 0.3.7 · F-17 0.2.8 · F-18 0.2.6 · F-19 0.2.2 · F-20 0.4.7 · F-21 0.1.10 · F-22 0.3.1 · F-23 0.1.2.
+
+El 27 nov las 23 specs pasaron a *implementada*. Ese cambio solo tocó el estado y una línea del historial, así que las métricas de abajo siguen valiendo; la crítica no se volvió a ejecutar.
 
 ## Métricas
 

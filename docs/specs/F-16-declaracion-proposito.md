@@ -1,9 +1,9 @@
 ---
 id: F-16
 titulo: Declaración del propósito de consulta
-version: 0.3.6
-fecha: 2026-11-08
-estado: borrador
+version: 0.3.7
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-19]
 depende_de: [F-18]
@@ -85,3 +85,4 @@ El usuario dice para qué va a consultar la información de un paciente o regist
 - 0.3.4 · 2026-11-08 · Se define a dónde vuelve el médico si cancela el propósito de la lista justo después de iniciar sesión.
 - 0.3.5 · 2026-11-08 · Nuevo criterio para cancelar el propósito de la lista justo después de iniciar sesión (A2).
 - 0.3.6 · 2026-11-08 · Al registrar una atención el médico solo ve dos propósitos (regla y CA nuevo).
+- 0.3.7 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

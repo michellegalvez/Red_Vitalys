@@ -1,9 +1,9 @@
 ---
 id: F-20
 titulo: Registro de eventos de acceso
-version: 0.4.6
-fecha: 2026-11-08
-estado: borrador
+version: 0.4.7
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-14, RF-17, RF-31]
 depende_de: [F-18]
@@ -114,3 +114,4 @@ Cada evento de acceso tiene:
 - 0.4.4 · 2026-11-08 · El propósito No aplica cubre también los rechazos sin propósito; el ingreso sin sedes deja evento; CA-8 pasa a ser un criterio real (campos vacíos, sin evento).
 - 0.4.5 · 2026-11-08 · La atención rechazada por validación tampoco es evento (F-04), y la búsqueda rechazada queda sin paciente.
 - 0.4.6 · 2026-11-08 · Emergencia es Urgencia con resultado Permitido; se corrige la frase del paciente vacío; si de los dos eventos de la historia solo se crea uno, no se muestra nada.
+- 0.4.7 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

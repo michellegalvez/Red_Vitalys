@@ -1,9 +1,9 @@
 ---
 id: F-07
 titulo: Factores que explican el riesgo de reingreso
-version: 0.2.8
-fecha: 2026-11-08
-estado: borrador
+version: 0.2.9
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-07]
 depende_de: [F-05, F-06, F-16, F-18]
@@ -87,3 +87,4 @@ El médico abre a un paciente con riesgo de reingreso y ve por qué su riesgo es
 - 0.2.6 · 2026-11-08 · El riesgo se ve dentro de la historia y se abre con el mismo propósito. Los factores se ordenan por magnitud (CA-3). El puntaje es la base del modelo más los factores (CA-9). Nuevo desplegable Cómo se calcula (CA-10). Se cierra la pregunta abierta sobre el puntaje base.
 - 0.2.7 · 2026-11-08 · La historia lleva el riesgo: el flujo remite a F-02 para el propósito, la relación y los eventos, y los rechazos dejan los dos eventos. La base del modelo es el puntaje menos la suma de los factores. Se reescribe la pregunta abierta de la lista.
 - 0.2.8 · 2026-11-08 · Redacción: el paso 4 no nombra un componente de pantalla.
+- 0.2.9 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

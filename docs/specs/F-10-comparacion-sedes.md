@@ -1,9 +1,9 @@
 ---
 id: F-10
 titulo: Comparación entre sedes de un indicador
-version: 0.1.3
-fecha: 2026-11-08
-estado: borrador
+version: 0.1.4
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-11]
 depende_de: [F-08]
@@ -74,3 +74,4 @@ El usuario compara las sedes en un indicador, en el último periodo, con el prom
 - 0.1.1 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
 - 0.1.2 · 2026-11-06 · La red tiene una cadena de laboratorios clínicos propia: "el laboratorio" pasa a plural.
 - 0.1.3 · 2026-11-08 · Las sedes van de la peor a la mejor, como en el Figma y en el tablero (F-08); cambian el flujo, la regla de orden, CA-2 y CA-3.
+- 0.1.4 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

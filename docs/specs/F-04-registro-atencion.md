@@ -1,9 +1,9 @@
 ---
 id: F-04
 titulo: Registro de una atención
-version: 0.3.6
-fecha: 2026-11-08
-estado: borrador
+version: 0.3.7
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-04]
 depende_de: [F-02, F-05, F-16, F-18]
@@ -104,3 +104,4 @@ El médico registra la atención que acaba de dar a un paciente, y esa atención
 - 0.3.4 · 2026-11-08 · Las fechas se escriben como "30 oct 2026" (RNF-05). Al registrar solo se ofrecen dos propósitos y no se inventa un rechazo nuevo. Una atención rechazada por validación no crea evento, como la medición. A6 va después de A5 y se agregan CA-15 y CA-16.
 - 0.3.5 · 2026-11-08 · El médico con relación también puede declarar Urgencia al registrar (regla), y una atención con Urgencia y alta reciente no da relación (CA-17).
 - 0.3.6 · 2026-11-08 · El aviso de emergencia al guardar se pide en el flujo (F-17).
+- 0.3.7 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

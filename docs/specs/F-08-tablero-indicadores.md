@@ -1,9 +1,9 @@
 ---
 id: F-08
 titulo: Tablero de indicadores
-version: 0.1.6
-fecha: 2026-11-08
-estado: borrador
+version: 0.1.7
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-08, RF-09, RF-26, RF-27]
 depende_de: [F-13]
@@ -100,3 +100,4 @@ Ninguna.
 - 0.1.4 · 2026-11-08 · Se definen el orden de las sedes (de la peor a la mejor), la categoría de cada indicador, la marca Mejora/Empeora/Sin cambio, el cambio con valores redondeados y el cero (CA-12 a CA-14). CA-4 usa un valor posible: una sede tiene 1 decimal. Se cierra la pregunta abierta de la unidad.
 - 0.1.5 · 2026-11-08 · La regla no nombra un rango que la tabla no tiene, y el desempate de las sedes es el de F-10.
 - 0.1.6 · 2026-11-08 · CA-11 admite la sede de prueba sin medición que piden CA-5 y A1.
+- 0.1.7 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).

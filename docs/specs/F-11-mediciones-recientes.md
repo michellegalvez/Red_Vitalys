@@ -1,9 +1,9 @@
 ---
 id: F-11
 titulo: Mediciones recientes de un indicador
-version: 0.1.1
-fecha: 2026-11-06
-estado: borrador
+version: 0.1.2
+fecha: 2026-11-27
+estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
 requisitos: [RF-12]
 depende_de: [F-08]
@@ -71,3 +71,4 @@ El usuario revisa las mediciones registradas de un indicador, con la sede, el pe
 
 - 0.1.0 · 2026-11-06 · Primera versión.
 - 0.1.1 · 2026-11-06 · Se aprueban los textos de los estados como definitivos. Se cierra esa pregunta abierta.
+- 0.1.2 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).
