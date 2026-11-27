@@ -6,6 +6,7 @@ import 'package:red_vitalys/datos/fuente_de_datos.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/repositorios/foto_repositorio.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
+import 'package:red_vitalys/services/account_service.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/history_service.dart';
 import 'package:red_vitalys/services/indicator_service.dart';
@@ -31,6 +32,7 @@ Future<void> main() async {
       fotos: elegirFotos(cliente: cliente),
       lockStore: LockDevice(),
       relationships: elegirRelaciones(cliente: cliente),
+      accounts: elegirCuentas(datos: datos, cliente: cliente),
     ),
   );
 }
@@ -74,6 +76,7 @@ class RedVitalysApp extends StatelessWidget {
     this.fotos,
     this.lockStore,
     this.relationships,
+    this.accounts,
   });
 
   final DatosSimulados datos;
@@ -85,6 +88,7 @@ class RedVitalysApp extends StatelessWidget {
   final FotoPerfilRepositorio? fotos;
   final LockStore? lockStore;
   final RelationshipService? relationships;
+  final AccountService? accounts;
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +109,7 @@ class RedVitalysApp extends StatelessWidget {
         fotos: fotos,
         lockStore: lockStore,
         relationships: relationships,
+        accounts: accounts,
       ),
     );
   }

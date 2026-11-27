@@ -57,7 +57,10 @@ class AuditoriaPage extends StatelessWidget {
           : e.correoIntento ?? '—',
       accion: e.accion.nombre,
       recurso: e.recurso.nombre,
-      paciente: pacienteId != null ? nombresPacientes[pacienteId] ?? '—' : '—',
+      // En los cambios de una cuenta va la cuenta que cambió (F-24).
+      paciente: e.cuentaAfectada != null
+          ? 'Cuenta ${e.cuentaAfectada}'
+          : (pacienteId != null ? nombresPacientes[pacienteId] ?? '—' : '—'),
       proposito: e.propositoTexto,
       propositoCompleto: e.propositoTexto,
       emergencia: e.esEmergencia,

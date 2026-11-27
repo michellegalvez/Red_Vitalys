@@ -38,6 +38,7 @@ class AccesoPage extends StatelessWidget {
     required this.onElegirSede,
     required this.onConfirmarSede,
     required this.onVolver,
+    this.onCrearCuenta,
     this.simularFallas = false,
     this.onSimularFallas,
     this.conServidor = false,
@@ -69,6 +70,9 @@ class AccesoPage extends StatelessWidget {
   final ValueChanged<String?> onElegirSede;
   final VoidCallback onConfirmarSede;
   final VoidCallback onVolver;
+
+  /// Crear una cuenta nueva, que el director aprueba (F-24).
+  final VoidCallback? onCrearCuenta;
 
   /// Interruptor de demo *Simular fallas de red*.
   final bool simularFallas;
@@ -216,6 +220,15 @@ class AccesoPage extends StatelessWidget {
         expandido: true,
         onPressed: ingresando ? null : onIngresar,
       ),
+      if (onCrearCuenta != null) ...[
+        const SizedBox(height: 12),
+        BotonVitalys(
+          texto: 'Crear cuenta',
+          variante: VarianteBoton.secundario,
+          expandido: true,
+          onPressed: ingresando ? null : onCrearCuenta,
+        ),
+      ],
     ];
   }
 

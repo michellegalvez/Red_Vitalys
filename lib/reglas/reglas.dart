@@ -83,6 +83,7 @@ List<Proposito> propositosDe(Rol rol) => switch (rol) {
   Rol.medico => Proposito.values,
   Rol.administrativo => const [Proposito.revisionCalidad],
   Rol.auditor => const [],
+  Rol.director => const [],
 };
 
 /// Propósitos con los que se puede registrar una atención: *Atención del
@@ -235,6 +236,7 @@ enum AccionPermitida {
   verTablero,
   registrarMedicion,
   verAuditoria,
+  gestionarUsuarios,
   verPerfil,
 }
 
@@ -248,6 +250,7 @@ extension AccionPermitidaTexto on AccionPermitida {
       'Ver el tablero y el detalle de los indicadores',
     AccionPermitida.registrarMedicion => 'Registrar una medición',
     AccionPermitida.verAuditoria => 'Ver la auditoría de accesos',
+    AccionPermitida.gestionarUsuarios => 'Gestionar usuarios',
     AccionPermitida.verPerfil => 'Ver el perfil y cerrar sesión',
   };
 }
@@ -255,12 +258,14 @@ extension AccionPermitidaTexto on AccionPermitida {
 /// Si el rol tiene la acción en la tabla de F-18. Lo que no está, se
 /// rechaza.
 bool rolPermite(Rol rol, AccionPermitida accion) => switch (accion) {
-  AccionPermitida.buscarPaciente => rol != Rol.auditor,
+  AccionPermitida.buscarPaciente =>
+    rol == Rol.medico || rol == Rol.administrativo,
   AccionPermitida.verHistoria => rol == Rol.medico,
   AccionPermitida.registrarAtencion => rol == Rol.medico,
-  AccionPermitida.verTablero => true,
+  AccionPermitida.verTablero => rol != Rol.director,
   AccionPermitida.registrarMedicion => rol == Rol.administrativo,
   AccionPermitida.verAuditoria => rol == Rol.auditor,
+  AccionPermitida.gestionarUsuarios => rol == Rol.director,
   AccionPermitida.verPerfil => true,
 };
 

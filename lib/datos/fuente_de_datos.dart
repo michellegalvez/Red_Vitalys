@@ -5,6 +5,7 @@ import 'package:red_vitalys/repositorios/auditoria_supabase.dart';
 import 'package:red_vitalys/repositorios/foto_repositorio.dart';
 import 'package:red_vitalys/repositorios/foto_supabase.dart';
 import 'package:red_vitalys/services/auth_memory.dart';
+import 'package:red_vitalys/services/account_service.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/auth_supabase.dart';
 import 'package:red_vitalys/services/history_memory.dart';
@@ -103,4 +104,17 @@ IndicatorService elegirIndicadores({
 RelationshipService elegirRelaciones({SupabaseClient? cliente}) {
   if (cliente == null) return const RelationshipMemory();
   return RelationshipSupabase(cliente);
+}
+
+/// Quién crea y gestiona las cuentas: Supabase si hay [cliente]; si no, la
+/// Screen usa las de memoria (F-24).
+AccountService? elegirCuentas({
+  required DatosSimulados datos,
+  SupabaseClient? cliente,
+}) {
+  if (cliente == null) return null;
+  return AccountSupabase(
+    client: cliente,
+    sitesByName: {for (final s in datos.sedes) s.nombre: s.id},
+  );
 }

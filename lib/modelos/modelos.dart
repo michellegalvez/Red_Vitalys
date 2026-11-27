@@ -3,13 +3,14 @@
 /// y viven en memoria: todavía no hay base de datos.
 library;
 
-enum Rol { medico, administrativo, auditor }
+enum Rol { medico, administrativo, auditor, director }
 
 extension RolTexto on Rol {
   String get nombre => switch (this) {
     Rol.medico => 'Médico',
     Rol.administrativo => 'Administrativo',
     Rol.auditor => 'Auditor',
+    Rol.director => 'Director',
   };
 }
 
@@ -190,7 +191,7 @@ enum RecursoAuditoria {
   medicionIndicador,
   pacientesAltaReciente,
   auditoriaAccesos,
-  // Los cambios de una cuenta (F-24). Se lee aunque esta versión no los cree.
+  // Los cambios de una cuenta que hace el director (F-24).
   usuario,
 }
 
@@ -234,6 +235,7 @@ class EventoAuditoria {
     this.proposito,
     this.sedeId,
     this.ip,
+    this.cuentaAfectada,
   });
 
   final String id;
@@ -260,6 +262,9 @@ class EventoAuditoria {
 
   /// Solo en los inicios de sesión fallidos.
   final String? ip;
+
+  /// El correo de la cuenta que cambió el director (F-24).
+  final String? cuentaAfectada;
 
   /// Es de emergencia si se declaró *Urgencia* y el acceso se permitió (F-17).
   bool get esEmergencia =>

@@ -118,14 +118,27 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
         .from('evento_auditoria')
         .select(
           'id_evento, fecha_hora_evento, accion, tipo_recurso, resultado, '
-          'proposito_uso, correo_intento, ip, id_paciente, usuario(correo), '
+          'proposito_uso, correo_intento, ip, id_paciente, '
+          'id_usuario_afectado, usuario(correo), '
           'sede(nombre)',
         )
         .order('fecha_hora_evento', ascending: false);
     final pacientes = filas.any((f) => f['id_paciente'] != null)
         ? await _pacientesDeLosEventos()
         : const <int, String>{};
-    return [for (final fila in filas) ?_evento(fila, pacientes)];
+    final cuentas = filas.any((f) => f['id_usuario_afectado'] != null)
+        ? await _correosDeCuentas()
+        : const <String, String>{};
+    return [for (final fila in filas) ?_evento(fila, pacientes, cuentas)];
+  }
+
+  /// El correo de cada cuenta, para los cambios que hizo el director (F-24).
+  Future<Map<String, String>> _correosDeCuentas() async {
+    final filas = await cliente.from('usuario').select('id_usuario, correo');
+    return {
+      for (final fila in filas)
+        fila['id_usuario'] as String: fila['correo'] as String,
+    };
   }
 
   /// Un evento que esta versión no sabe leer se salta en vez de dejar la
@@ -133,6 +146,7 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
   EventoAuditoria? _evento(
     Map<String, dynamic> fila,
     Map<int, String> pacientes,
+    Map<String, String> cuentas,
   ) {
     try {
       return EventoAuditoria(
@@ -148,6 +162,7 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
         pacienteId: pacientes[fila['id_paciente']],
         correoIntento: fila['correo_intento'] as String?,
         ip: fila['ip'] as String?,
+        cuentaAfectada: cuentas[fila['id_usuario_afectado']],
       );
     } catch (error) {
       debugPrint('Evento de auditoría que no se pudo leer: $error');

@@ -149,6 +149,7 @@ class AuthSupabase implements AuthService {
     'medico' => Rol.medico,
     'administrativo' => Rol.administrativo,
     'auditor' => Rol.auditor,
+    'director' => Rol.director,
     _ => null,
   };
 

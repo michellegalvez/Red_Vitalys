@@ -4,7 +4,15 @@ import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
 
 /// Las secciones de la app a las que se llega desde la navegación.
-enum Seccion { inicio, pacientes, buscar, indicadores, mediciones, auditoria }
+enum Seccion {
+  inicio,
+  pacientes,
+  buscar,
+  indicadores,
+  mediciones,
+  auditoria,
+  usuarios,
+}
 
 extension SeccionDestino on Seccion {
   DestinoNavegacion get destino => switch (this) {
@@ -23,6 +31,10 @@ extension SeccionDestino on Seccion {
       icono: Icons.fact_check_outlined,
       nombre: 'Auditoría',
     ),
+    Seccion.usuarios => (
+      icono: Icons.manage_accounts_outlined,
+      nombre: 'Usuarios',
+    ),
   };
 
   /// Inicio y Pacientes muestran la lista de pacientes con alta reciente,
@@ -39,6 +51,7 @@ RecursoAuditoria recursoDeSeccion(Seccion seccion) => switch (seccion) {
   Seccion.indicadores => RecursoAuditoria.medicionIndicador,
   Seccion.mediciones => RecursoAuditoria.medicionIndicador,
   Seccion.auditoria => RecursoAuditoria.auditoriaAccesos,
+  Seccion.usuarios => RecursoAuditoria.usuario,
 };
 
 /// La acción de la tabla de permisos (F-18) que pide cada sección.
@@ -48,6 +61,7 @@ AccionPermitida accionDeSeccion(Seccion seccion) => switch (seccion) {
   Seccion.indicadores => AccionPermitida.verTablero,
   Seccion.mediciones => AccionPermitida.registrarMedicion,
   Seccion.auditoria => AccionPermitida.verAuditoria,
+  Seccion.usuarios => AccionPermitida.gestionarUsuarios,
 };
 
 /// Secciones de cada rol, según la tabla de permisos (F-18). La primera es
@@ -65,4 +79,5 @@ List<Seccion> seccionesDe(Rol rol) => switch (rol) {
     Seccion.mediciones,
   ],
   Rol.auditor => const [Seccion.auditoria, Seccion.indicadores],
+  Rol.director => const [Seccion.usuarios],
 };

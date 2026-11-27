@@ -176,6 +176,7 @@ void main() {
       Seccion.auditoria: AccionPermitida.verAuditoria,
       Seccion.inicio: AccionPermitida.verHistoria,
       Seccion.pacientes: AccionPermitida.verHistoria,
+      Seccion.usuarios: AccionPermitida.gestionarUsuarios,
     };
 
     test('seccionesDe(rol) es lo que rolPermite deja ver', () {

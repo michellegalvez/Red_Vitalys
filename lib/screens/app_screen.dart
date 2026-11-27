@@ -12,7 +12,9 @@ import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/pages/acceso_page.dart';
 import 'package:red_vitalys/pages/auditoria_page.dart';
 import 'package:red_vitalys/pages/buscar_pacientes_page.dart';
+import 'package:red_vitalys/pages/crear_cuenta_page.dart';
 import 'package:red_vitalys/pages/datos_basicos_page.dart';
+import 'package:red_vitalys/pages/editar_cuenta_page.dart';
 import 'package:red_vitalys/pages/consulta_page.dart';
 import 'package:red_vitalys/pages/indicadores_page.dart';
 import 'package:red_vitalys/pages/inicio_page.dart';
@@ -22,9 +24,11 @@ import 'package:red_vitalys/pages/proposito_lista_page.dart';
 import 'package:red_vitalys/pages/registrar_atencion_page.dart';
 import 'package:red_vitalys/pages/registrar_medicion_page.dart';
 import 'package:red_vitalys/pages/seguimiento_page.dart';
+import 'package:red_vitalys/pages/usuarios_page.dart';
 import 'package:red_vitalys/reglas/busqueda.dart';
 import 'package:red_vitalys/reglas/foto.dart';
 import 'package:red_vitalys/reglas/indicadores.dart';
+import 'package:red_vitalys/reglas/cuentas.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
 import 'package:red_vitalys/repositorios/auditoria_memoria.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
@@ -34,6 +38,7 @@ import 'package:red_vitalys/repositorios/selector_foto.dart';
 import 'package:red_vitalys/screens/secciones.dart';
 import 'package:red_vitalys/services/access_control_service.dart';
 import 'package:red_vitalys/services/auth_memory.dart';
+import 'package:red_vitalys/services/account_service.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/history_memory.dart';
 import 'package:red_vitalys/services/history_service.dart';
@@ -52,6 +57,7 @@ import 'package:red_vitalys/widgets/proposito.dart';
 part 'app_screen_paginas.dart';
 part 'app_screen_guardado.dart';
 part 'app_screen_foto.dart';
+part 'app_screen_cuentas.dart';
 
 /// Una declaración de propósito en curso. Sin paciente es la de la lista de
 /// pacientes con alta reciente (F-06); con paciente, la de abrirlo o, si
@@ -121,6 +127,7 @@ class AppScreen extends StatefulWidget {
     this.fotos,
     this.lockStore,
     this.relationships,
+    this.accounts,
     this.selectorFoto,
   });
 
@@ -136,6 +143,9 @@ class AppScreen extends StatefulWidget {
   /// Quién confirma la relación médico-paciente. Sin él, los datos cargados
   /// (F-05).
   final RelationshipService? relationships;
+
+  /// Quién crea y gestiona las cuentas (F-24). Sin él, en memoria.
+  final AccountService? accounts;
 
   /// Cómo se elige la foto en el dispositivo. Sin él, el selector real.
   final SelectorFoto? selectorFoto;
@@ -165,7 +175,24 @@ class AppScreen extends StatefulWidget {
 class _AppScreenState extends State<AppScreen> {
   DatosSimulados get _datos => widget.datos;
 
-  late final AuthService _auth = widget.auth ?? AuthMemory(widget.datos);
+  // Las cuentas que crea el registro y gestiona el director (F-24). En
+  // memoria, el inicio de sesión simulado las lee para que una cuenta
+  // aprobada pueda entrar.
+  late final AccountService _cuentas =
+      widget.accounts ?? AccountMemory(widget.datos);
+  late final AuthService _auth =
+      widget.auth ??
+      AuthMemory(
+        widget.datos,
+        accounts: _cuentas is AccountMemory ? _cuentas : null,
+      );
+  List<Account> _listaCuentas = [];
+  bool _cargandoCuentas = false;
+  bool _errorCuentas = false;
+  int _pedidoCuentas = 0;
+  String? _cuentaAbierta;
+  bool _soloPendientes = false;
+  bool _registrando = false;
 
   final _access = const AccessControlService();
   // Quién confirma la relación médico-paciente: la base o los datos cargados.
@@ -485,6 +512,7 @@ class _AppScreenState extends State<AppScreen> {
     });
     _session.startInactivityTimer(() => _cerrarSesion(porInactividad: true));
     _cargarEventosSiHaceFalta();
+    unawaited(_cargarCuentas());
     unawaited(_cargarPacientes());
     unawaited(_cargarMediciones());
   }
@@ -569,6 +597,9 @@ class _AppScreenState extends State<AppScreen> {
 
   Future<void> _cargarMediciones() async {
     if (!_indicators.isRemote || _cargandoMediciones) return;
+    // Solo los roles que ven el tablero piden las mediciones (F-18, F-24).
+    final rol = _usuario?.rol;
+    if (rol == null || !rolPermite(rol, AccionPermitida.verTablero)) return;
     setState(() {
       _cargandoMediciones = true;
       _errorMediciones = false;
@@ -593,6 +624,14 @@ class _AppScreenState extends State<AppScreen> {
 
   Future<void> _cargarPacientes() async {
     if (!_patients.isRemote || _cargandoPacientes) return;
+    // Solo los roles que buscan pacientes o ven historias los piden (F-18,
+    // F-24).
+    final rol = _usuario?.rol;
+    if (rol == null ||
+        !(rolPermite(rol, AccionPermitida.buscarPaciente) ||
+            rolPermite(rol, AccionPermitida.verHistoria))) {
+      return;
+    }
     setState(() {
       _cargandoPacientes = true;
       _errorPacientes = false;
@@ -659,6 +698,12 @@ class _AppScreenState extends State<AppScreen> {
       _foto = null;
       _errorFoto = false;
       _avisoFoto = null;
+      _listaCuentas = [];
+      _cargandoCuentas = false;
+      _errorCuentas = false;
+      _pedidoCuentas++;
+      _cuentaAbierta = null;
+      _soloPendientes = false;
       _perfilRemoto = null;
       _cargandoPerfil = false;
       _errorPerfil = false;
@@ -930,6 +975,7 @@ class _AppScreenState extends State<AppScreen> {
     PacienteEnSeguimiento? paciente,
     Proposito? proposito,
     String? ip,
+    String? cuentaAfectada,
   }) {
     return EventoAuditoria(
       id: 'e${_eventos.length + 1}',
@@ -943,6 +989,7 @@ class _AppScreenState extends State<AppScreen> {
       proposito: proposito,
       sedeId: sedeId,
       ip: ip,
+      cuentaAfectada: cuentaAfectada,
     );
   }
 
@@ -1299,8 +1346,9 @@ class _AppScreenState extends State<AppScreen> {
   /// detalle o una declaración de propósito. Si no, Atrás sale de la app como
   /// siempre.
   bool get _atrasPendiente {
-    if (_usuario == null) return _paso == PasoAcceso.sede;
+    if (_usuario == null) return _paso == PasoAcceso.sede || _registrando;
     return _verPerfil ||
+        _cuentaAbierta != null ||
         _indicadorAbierto != null ||
         _datosBasicos != null ||
         _historia != null ||

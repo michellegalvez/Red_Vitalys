@@ -442,7 +442,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Permitido'), findsNWidgets(5));
-      expect(find.text('No incluido'), findsNWidgets(2));
+      expect(find.text('No incluido'), findsNWidgets(3));
       for (final a in AccionPermitida.values) {
         expect(find.text(a.nombre), findsOneWidget);
       }
@@ -460,7 +460,7 @@ void main() {
       await abrirPerfil(t);
       expect(find.text('Auditor'), findsOneWidget);
       expect(find.text('Permitido'), findsNWidgets(3));
-      expect(find.text('No incluido'), findsNWidgets(4));
+      expect(find.text('No incluido'), findsNWidgets(5));
       expect(find.text('Su rol no declara propósitos.'), findsOneWidget);
       expect(t.takeException(), isNull);
       await cerrarApp(t);

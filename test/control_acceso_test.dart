@@ -224,8 +224,11 @@ void main() {
       );
       expect(access.canDo(Rol.medico, AccionPermitida.verAuditoria), isFalse);
       for (final role in Rol.values) {
+        final director = role == Rol.director;
         expect(access.canDo(role, AccionPermitida.verPerfil), isTrue);
-        expect(access.canDo(role, AccionPermitida.verTablero), isTrue);
+        // El director solo gestiona usuarios (F-24).
+        expect(access.canDo(role, AccionPermitida.verTablero), !director);
+        expect(access.canDo(role, AccionPermitida.gestionarUsuarios), director);
       }
     });
 

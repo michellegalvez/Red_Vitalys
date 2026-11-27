@@ -143,6 +143,16 @@ extension _Paginas on _AppScreenState {
 
   Widget _acceso() {
     final validado = _usuarioValidado;
+    if (_registrando) {
+      return Scaffold(
+        body: SafeArea(
+          child: CrearCuentaPage(
+            onCrear: _crearCuenta,
+            onVolver: () => _actualizar(() => _registrando = false),
+          ),
+        ),
+      );
+    }
     return PopScope(
       canPop: _paso == PasoAcceso.credenciales,
       onPopInvokedWithResult: (hizoPop, _) {
@@ -183,6 +193,7 @@ extension _Paginas on _AppScreenState {
           _errorSede = null;
         }),
         onConfirmarSede: _confirmarSede,
+        onCrearCuenta: () => _actualizar(() => _registrando = true),
         onVolver: _volverACredenciales,
       ),
     );
@@ -255,7 +266,8 @@ extension _Paginas on _AppScreenState {
         onPerfil: _abrirPerfil,
         onSalir: _pedirCierreDeSesion,
       ),
-      bottomNavigationBar: escritorio
+      // Con una sola sección, como la del director, no hay barra inferior.
+      bottomNavigationBar: escritorio || destinos.length < 2
           ? null
           : BarraInferior(
               destinos: destinos,
@@ -278,6 +290,7 @@ extension _Paginas on _AppScreenState {
       Seccion.buscar => _buscar(usuario),
       Seccion.mediciones => _registrarMedicion(),
       Seccion.auditoria => _auditoria(),
+      Seccion.usuarios => _usuarios(),
     };
   }
 

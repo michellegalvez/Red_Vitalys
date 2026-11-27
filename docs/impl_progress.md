@@ -1,6 +1,6 @@
 # Avance de la implementación · Red Vitalys
 
-Actualizado: 2026-11-26 · Hechas: 22 de 22
+Actualizado: 2026-11-27 · Hechas: 26 de 26
 
 Lo escribe la skill `sdd-tecnicas` (tareas nuevas, `[ ]`) y lo marca la skill `sdd-implementar` (`[x]`). Una tarea se marca cuando pasa `flutter analyze` sin errores. La prueba a mano la haces tú: si falla, desmárcala y vuelve a pedirla.
 
@@ -120,3 +120,22 @@ Los ids siguen desde `T-03`: `T-00` a `T-02` ya se usaron en `docs/tasks/` (cone
   - Hecha: 2026-11-26
   - Archivos: `lib/services/indicator_supabase.dart`, `lib/pages/registrar_medicion_page.dart`, `lib/screens/app_screen_guardado.dart`, `test/indicadores_servicio_test.dart`
   - Notas: La Page espera el guardado. Si la base ya tiene esa medición (código `23505`) se ve el mensaje de medición repetida. Las mediciones de la base se cargan sin quién y cuándo, así la lista *Registradas en esta sesión* solo muestra las de la sesión. Verificada con una prueba temporal contra `red-vitalys` (no se sube): el administrativo guardó la de eventos adversos de Envigado en octubre (ya son 180), la repetida da el aviso y al médico la base lo rechaza. En el navegador no se pudo escribir el valor con Playwright, así que el formulario queda para la prueba a mano.
+
+## TS-24 · Registro de cuentas y gestión de usuarios
+
+- [x] **T-25** Crear una cuenta desde el acceso · CA-1, CA-2, CA-3, CA-4 · depende de: ninguna
+  - Hecha: 2026-11-27
+  - Archivos: `lib/services/account_service.dart`, `lib/reglas/cuentas.dart`, `lib/pages/crear_cuenta_page.dart` (nuevos), `lib/pages/acceso_page.dart`, `lib/screens/app_screen_paginas.dart`, `test/gestion_usuarios_test.dart` (nuevo)
+  - Notas: *Crear cuenta* usa el registro de Supabase Auth; un correo ya registrado vuelve sin identidades y se muestra el aviso. Supabase pide confirmar el correo, así que con los de prueba la cuenta no se puede confirmar. No se probó en vivo contra la base para no crear cuentas con correos que no existen.
+- [x] **T-26** La sección *Usuarios* del director · CA-5, CA-6, CA-7, CA-8, CA-11 · depende de: T-25, T-27
+  - Hecha: 2026-11-27
+  - Archivos: `supabase/migraciones/013_director.sql` (nuevo), `lib/pages/usuarios_page.dart`, `lib/pages/editar_cuenta_page.dart`, `lib/screens/app_screen_cuentas.dart` (nuevos), `lib/screens/app_screen.dart`, `lib/main.dart`, `lib/datos/fuente_de_datos.dart`
+  - Notas: `guardar_cuenta` valida, crea el evento y guarda en una sola operación. Verificada en el navegador contra `red-vitalys`: la directora aprobó a Tomás como médico en Cali Norte, él entró desde Cali Norte y la auditora vio el evento; después Tomás volvió a quedar sin sedes por ser el caso de prueba de F-13 A3.
+- [x] **T-27** El rol Director en la tabla de permisos, el inicio de sesión y su pantalla inicial · CA-9, CA-10, CA-12 · depende de: ninguna
+  - Hecha: 2026-11-27
+  - Archivos: `lib/modelos/modelos.dart`, `lib/reglas/reglas.dart`, `lib/screens/secciones.dart`, `lib/services/auth_supabase.dart`, `lib/services/auth_memory.dart`, `lib/datos/datos_simulados.dart`
+  - Notas: El director solo tiene *Usuarios*, así que en el celular no se muestra la barra inferior. La base no le deja leer pacientes, indicadores ni auditoría.
+- [x] **T-28** La auditoría muestra los cambios de cuentas · CA-6 · depende de: T-26
+  - Hecha: 2026-11-27
+  - Archivos: `lib/repositorios/auditoria_supabase.dart`, `lib/pages/auditoria_page.dart`
+  - Notas: En `main` se subió antes un arreglo para que la auditoría de la demo lea el recurso *Usuario* y salte lo que no conoce, porque la base es la misma.

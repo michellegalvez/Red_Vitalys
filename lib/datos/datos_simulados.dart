@@ -156,6 +156,16 @@ class DatosSimulados {
         rol: Rol.medico,
         sedesAsignadas: [],
       ),
+      // La directora, que aprueba y gestiona las cuentas (F-24, RNF-04).
+      Usuario(
+        id: 'u5',
+        nombre: 'Patricia Londoño Vélez',
+        saludo: 'Patricia',
+        iniciales: 'PL',
+        correo: 'direccion@vitalys.co',
+        rol: Rol.director,
+        sedesAsignadas: ['s1'],
+      ),
     ],
     // Los 8 eventos de la auditoría del Figma (RNF-04: 2 denegados y 1 de
     // emergencia). La sede es la primera sede asignada de cada usuario.
