@@ -1,10 +1,10 @@
 ---
 documento: architectural_spine
 proyecto: Red Vitalys
-version: 0.7.0
-fecha: 2026-11-24
+version: 0.8.0
+fecha: 2026-11-27
 estado: borrador
-basado_en: [prd 0.8.0, requisitos 0.8.0]
+basado_en: [prd 0.8.0, requisitos 0.9.0]
 ---
 
 # Architectural spine · Red Vitalys
@@ -45,7 +45,7 @@ flowchart LR
 
 ## Qué cubre cada servicio
 
-- **Auth**: inicio y cierre de sesión con correo institucional y contraseña. Las cuentas ya existen y no hay registro desde la app. Auth no guarda el rol ni la sede.
+- **Auth**: inicio y cierre de sesión con correo institucional y contraseña. Las cuentas se crean desde la pantalla de acceso (RF-39) y quedan sin sedes hasta que el director les asigna rol y sedes (RF-40). Auth no guarda el rol ni la sede.
 - **Base de datos**: pacientes y sus identificadores en cada sistema de origen, sistemas de origen, sedes, atenciones, predicciones de riesgo de reingreso con sus factores, indicadores con sus mediciones, usuarios con su rol y sus sedes asignadas, y eventos de auditoría. El detalle irá en `docs/modelo.md`.
 - **Storage**: un bucket privado, `fotos-perfil`, con la foto de perfil de cada usuario (AD-16).
 
@@ -161,3 +161,4 @@ flowchart LR
 - 0.6.9 · 2026-11-08 · AD-07: abrir la historia crea dos eventos. Alineada con el prd 0.7.5 y los requisitos 0.7.6.
 - 0.6.10 · 2026-11-08 · Alineada con el prd 0.7.6 y los requisitos 0.7.7, sin cambios en las invariantes.
 - 0.7.0 · 2026-11-24 · Storage entra al stack con la foto de perfil (AD-16). AD-02: Supabase es la fuente y la memoria queda para pruebas. Alineada con el prd 0.8.0 y los requisitos 0.8.0.
+- 0.8.0 · 2026-11-27 · Auth: las cuentas se crean desde la app y el director las aprueba (RF-39, RF-40). Alineada con el prd 0.8.0 y los requisitos 0.9.0.

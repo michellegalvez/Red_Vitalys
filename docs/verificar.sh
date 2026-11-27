@@ -246,16 +246,17 @@ retirada 'Registrar una atención le da al médico relación con ese paciente \(
 # ----------------------------------------------------------- tablas coherentes
 titulo "Tabla de permisos"
 # tabla_permisos lee un texto por la entrada estándar y devuelve las filas de la
-# tabla de permisos, con "Sí"/"No" escritos como "Permitido"/"No incluido".
+# tabla de permisos (4 roles), con "Sí"/"No" escritos como "Permitido"/"No incluido".
 tabla_permisos() {
   awk -F'|' '
-    NF>4 { for (i=2;i<=5;i++) { gsub(/^ +| +$/, "", $i) }
+    NF>5 { for (i=2;i<=6;i++) { gsub(/^ +| +$/, "", $i) }
            if ($2=="Acción" || $2 ~ /^-+$/) next
-           c3=$3; c4=$4; c5=$5
+           c3=$3; c4=$4; c5=$5; c6=$6
            sub(/^Sí$/,"Permitido",c3); sub(/^No$/,"No incluido",c3)
            sub(/^Sí$/,"Permitido",c4); sub(/^No$/,"No incluido",c4)
            sub(/^Sí$/,"Permitido",c5); sub(/^No$/,"No incluido",c5)
-           if (c3 ~ /^(Permitido|No incluido)$/) print $2 "|" c3 "|" c4 "|" c5 }' | sort
+           sub(/^Sí$/,"Permitido",c6); sub(/^No$/,"No incluido",c6)
+           if (c3 ~ /^(Permitido|No incluido)$/) print $2 "|" c3 "|" c4 "|" c5 "|" c6 }' | sort
 }
 base=$(awk '/^### Tabla de permisos/{p=1;next} /^### /{p=0} p' requisitos.md | tabla_permisos)
 [ -n "$base" ] || fallo "no se pudo leer la tabla de permisos de requisitos.md"

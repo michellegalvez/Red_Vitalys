@@ -1,7 +1,7 @@
 ---
 id: F-18
 titulo: Control de acceso por rol
-version: 0.2.7
+version: 0.3.0
 fecha: 2026-11-27
 estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -39,20 +39,21 @@ El sistema permite a cada rol solo lo que su rol permite, rechaza lo demás y de
   - **El médico no tiene relación con el paciente:** "No tiene relación con este paciente. Si es una emergencia, declare *Urgencia*."
 - La tabla de permisos por rol:
 
-| Acción | Médico | Administrativo | Auditor |
-|---|---|---|---|
-| Buscar paciente y ver sus datos básicos | Permitido | Permitido | No incluido |
-| Ver la historia clínica y el riesgo de reingreso | Permitido | No incluido | No incluido |
-| Registrar una atención | Permitido | No incluido | No incluido |
-| Ver el tablero y el detalle de los indicadores | Permitido | Permitido | Permitido |
-| Registrar una medición | No incluido | Permitido | No incluido |
-| Ver la auditoría de accesos | No incluido | No incluido | Permitido |
-| Ver el perfil y cerrar sesión | Permitido | Permitido | Permitido |
+| Acción | Médico | Administrativo | Auditor | Director |
+|---|---|---|---|---|
+| Buscar paciente y ver sus datos básicos | Permitido | Permitido | No incluido | No incluido |
+| Ver la historia clínica y el riesgo de reingreso | Permitido | No incluido | No incluido | No incluido |
+| Registrar una atención | Permitido | No incluido | No incluido | No incluido |
+| Ver el tablero y el detalle de los indicadores | Permitido | Permitido | Permitido | No incluido |
+| Registrar una medición | No incluido | Permitido | No incluido | No incluido |
+| Ver la auditoría de accesos | No incluido | No incluido | Permitido | No incluido |
+| Gestionar usuarios | No incluido | No incluido | No incluido | Permitido |
+| Ver el perfil y cerrar sesión | Permitido | Permitido | Permitido | Permitido |
 
-- Propósitos por rol: el médico los 5, el administrativo solo *Revisión de calidad* y el auditor ninguno.
+- Propósitos por rol: el médico los 5, el administrativo solo *Revisión de calidad*, y el auditor y el director ninguno.
 - Las pantallas pueden ocultar las opciones que el rol no tiene, pero el rechazo lo decide el sistema, no la pantalla (AD-06).
 - Toda acción rechazada de un usuario con sesión crea un evento *Denegado* con el usuario, la acción, el recurso, el propósito (*No aplica* si no declaró ninguno) y la sede, sea o no sobre un paciente. Las pantallas no ofrecen las acciones que el rol no tiene; si la orden llega al sistema por otro camino, se rechaza igual y queda el evento. El inicio de sesión fallido, sin sesión ni sede, es de F-20.
-- El usuario no puede cambiar su rol desde la app.
+- Nadie cambia su propio rol desde la app. Solo el director cambia el rol de las demás cuentas (F-24).
 - Los datos son simulados.
 
 ## Estados
@@ -104,3 +105,4 @@ Ninguna.
 - 0.2.5 · 2026-11-08 · Un rechazo sin propósito declarado lleva No aplica, y las pantallas no ofrecen las acciones que el rol no tiene.
 - 0.2.6 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: "No se pudo verificar el acceso" (CA-9) solo se ve en el modo de demostración.
 - 0.2.7 · 2026-11-27 · Resuelto lo pendiente: con Supabase, si la base no puede confirmar la relación se ve "No se pudo verificar el acceso" y la acción no se hace (CA-9).
+- 0.3.0 · 2026-11-27 · Rol Director en la tabla de permisos, con la acción *Gestionar usuarios* (RF-40).

@@ -1,7 +1,7 @@
 ---
 id: F-13
 titulo: Inicio de sesión con la sede asignada
-version: 0.4.4
+version: 0.5.0
 fecha: 2026-11-27
 estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -35,9 +35,9 @@ El médico, el administrativo y el auditor entran a la app con su correo institu
 
 ## Reglas
 
-- Los 3 roles inician sesión de la misma manera.
-- La pantalla inicial depende del rol (RF-37): el médico entra a *Pacientes con alta reciente* (F-06), el administrativo al *Tablero de indicadores* (F-08) y el auditor a la *Auditoría de accesos* (F-21).
-- Las cuentas ya existen. No hay registro desde la app ni recuperación de contraseña.
+- Los 4 roles inician sesión de la misma manera.
+- La pantalla inicial depende del rol (RF-37): el médico entra a *Pacientes con alta reciente* (F-06), el administrativo al *Tablero de indicadores* (F-08), el auditor a la *Auditoría de accesos* (F-21) y el director a *Usuarios* (F-24).
+- Las cuentas se crean desde el acceso y entran cuando el director les asigna rol y sedes (F-24). No hay recuperación de contraseña.
 - La contraseña no se muestra mientras se escribe.
 - El mensaje de datos incorrectos es el mismo si el correo no existe o si la contraseña está mal.
 - Solo se pueden elegir sedes asignadas al usuario. La sede elegida queda en la sesión y se muestra en el perfil (F-22).
@@ -69,8 +69,8 @@ El médico, el administrativo y el auditor entran a la app con su correo institu
 - **CA-8** Dado el correo vacío, cuando el usuario elige *Ingresar*, entonces ve "Escriba su correo y su contraseña" y no se intenta ingresar.
 - **CA-9** Dado que el sistema no responde, cuando el usuario elige *Ingresar*, entonces ve "No se pudo iniciar sesión. Intente de nuevo." y el correo sigue escrito.
 - **CA-10** Dado un usuario que inició sesión, cuando el auditor revisa la auditoría, entonces ve un evento con su nombre, la acción *Ingresar*, el recurso *Sesión*, el propósito *No aplica*, el resultado *Permitido* y la sede elegida.
-- **CA-11** Dados los datos simulados, cuando se prueban los 3 roles, entonces hay un usuario por rol con al menos una sede asignada y una cuenta sin sedes asignadas para A3 (RNF-04).
-- **CA-12** Dado un usuario de cada rol, cuando confirma la sede, entonces el médico ve que se le pide el propósito para abrir *Pacientes con alta reciente*, el administrativo ve el *Tablero de indicadores* y el auditor ve la *Auditoría de accesos*.
+- **CA-11** Dados los datos simulados, cuando se prueban los 4 roles, entonces hay un usuario por rol con al menos una sede asignada y una cuenta sin sedes asignadas para A3 (RNF-04).
+- **CA-12** Dado un usuario de cada rol, cuando confirma la sede, entonces el médico ve que se le pide el propósito para abrir *Pacientes con alta reciente*, el administrativo ve el *Tablero de indicadores*, el auditor ve la *Auditoría de accesos* y el director ve *Usuarios*.
 - **CA-13** Dado un usuario que validó su correo y su contraseña, cuando sale sin confirmar la sede, entonces no entra a la app y el auditor no ve un evento *Permitido* de su ingreso.
 
 ## Fuera de alcance
@@ -94,3 +94,4 @@ Ninguna.
 - 0.4.2 · 2026-11-08 · El usuario sin sedes asignadas deja un evento Denegado, sin sede y con el correo y la IP, y no suma al bloqueo. Se cierra esa pregunta abierta.
 - 0.4.3 · 2026-11-08 · A3 aclara que el ingreso sin sedes ni suma ni reinicia el conteo; CA-11 cuenta la cuenta sin sedes de prueba.
 - 0.4.4 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7).
+- 0.5.0 · 2026-11-27 · Rol Director: entra a *Usuarios* (RF-37). Las cuentas se crean desde el acceso y las aprueba el director (F-24).

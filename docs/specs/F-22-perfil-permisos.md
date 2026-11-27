@@ -1,7 +1,7 @@
 ---
 id: F-22
 titulo: Perfil del usuario
-version: 0.3.2
+version: 0.4.0
 fecha: 2026-11-27
 estado: implementada
 autores: [Gabriela Cardona Bernal, Juan Diego Valverde Fierro, Jazmin Michelle Galvez Orozco, Samuel Cardoso Martinez]
@@ -13,7 +13,7 @@ depende_de: [F-18]
 
 ## Objetivo
 
-Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qué rol y desde qué sede está trabajando, y qué puede hacer y qué no con su rol (O-05). Además puede tener una foto de perfil, que ve y cambia desde ahí.
+Cualquier usuario (médico, administrativo, auditor o director) ve con qué cuenta, con qué rol y desde qué sede está trabajando, y qué puede hacer y qué no con su rol (O-05). Además puede tener una foto de perfil, que ve y cambia desde ahí.
 
 ## Flujo principal
 
@@ -37,18 +37,19 @@ Cualquier usuario (médico, administrativo o auditor) ve con qué cuenta, con qu
 - Todos los roles pueden ver su propio perfil.
 - El perfil solo muestra datos de la persona que inició sesión.
 - La sede que se muestra es la que el usuario eligió al iniciar sesión. Las sedes asignadas son las que podía elegir (F-13).
-- Los propósitos que se muestran son los de la tabla de F-18: el médico los 5 (*Atención del paciente*, *Consulta de historia clínica*, *Seguimiento de reingreso*, *Revisión de calidad* y *Urgencia*), el administrativo solo *Revisión de calidad* y el auditor ninguno.
-- La lista tiene siempre las mismas 7 acciones, en este orden, para los 3 roles:
+- Los propósitos que se muestran son los de la tabla de F-18: el médico los 5 (*Atención del paciente*, *Consulta de historia clínica*, *Seguimiento de reingreso*, *Revisión de calidad* y *Urgencia*), el administrativo solo *Revisión de calidad*, y el auditor y el director ninguno.
+- La lista tiene siempre las mismas 8 acciones, en este orden, para los 4 roles:
 
-| Acción | Médico | Administrativo | Auditor |
-|---|---|---|---|
-| Buscar paciente y ver sus datos básicos | Permitido | Permitido | No incluido |
-| Ver la historia clínica y el riesgo de reingreso | Permitido | No incluido | No incluido |
-| Registrar una atención | Permitido | No incluido | No incluido |
-| Ver el tablero y el detalle de los indicadores | Permitido | Permitido | Permitido |
-| Registrar una medición | No incluido | Permitido | No incluido |
-| Ver la auditoría de accesos | No incluido | No incluido | Permitido |
-| Ver el perfil y cerrar sesión | Permitido | Permitido | Permitido |
+| Acción | Médico | Administrativo | Auditor | Director |
+|---|---|---|---|---|
+| Buscar paciente y ver sus datos básicos | Permitido | Permitido | No incluido | No incluido |
+| Ver la historia clínica y el riesgo de reingreso | Permitido | No incluido | No incluido | No incluido |
+| Registrar una atención | Permitido | No incluido | No incluido | No incluido |
+| Ver el tablero y el detalle de los indicadores | Permitido | Permitido | Permitido | No incluido |
+| Registrar una medición | No incluido | Permitido | No incluido | No incluido |
+| Ver la auditoría de accesos | No incluido | No incluido | Permitido | No incluido |
+| Gestionar usuarios | No incluido | No incluido | No incluido | Permitido |
+| Ver el perfil y cerrar sesión | Permitido | Permitido | Permitido | Permitido |
 
 Es la misma tabla de F-18.
 
@@ -90,7 +91,7 @@ Es la misma tabla de F-18.
 - **CA-8** Dado que los datos del perfil no se pueden cargar, cuando el usuario abre el perfil, entonces ve "No se pudo cargar su perfil", puede elegir *Reintentar* y todavía puede cerrar sesión.
 - **CA-9** Dado un administrativo, cuyo perfil muestra *Registrar una medición* como *Permitido*, cuando registra la medición de un indicador para una sede, entonces ve esa medición entre las mediciones registradas.
 - **CA-10** Dado un usuario con 2 sedes asignadas que ingresó desde una de ellas, cuando abre el perfil, entonces ve la sede de la sesión y las 2 sedes asignadas.
-- **CA-11** Dado un médico, cuando abre el perfil, entonces ve los 5 propósitos; dado un administrativo, ve solo *Revisión de calidad*; y dado un auditor, ve que no declara ninguno.
+- **CA-11** Dado un médico, cuando abre el perfil, entonces ve los 5 propósitos; dado un administrativo, ve solo *Revisión de calidad*; y dado un auditor o un director, ve que no declara ninguno.
 - **CA-12** Dado un usuario sin foto, cuando abre el perfil, entonces ve sus iniciales y el botón *Subir foto*, y no ve *Quitar foto*.
 - **CA-13** Dado un usuario que elige un PNG de 500 KB, cuando la sube, entonces ve su foto en el perfil, el botón pasa a *Cambiar foto* y, si cierra la app y vuelve a entrar, la foto sigue ahí.
 - **CA-14** Dado un usuario con foto, cuando elige *Quitar foto*, entonces vuelve a ver sus iniciales y, al volver a entrar, no hay foto.
@@ -121,3 +122,4 @@ Ninguna.
 - 0.3.0 · 2026-11-24 · Foto de perfil guardada en Supabase Storage (A2 a A6, CA-12 a CA-18) y requisito RF-38.
 - 0.3.1 · 2026-11-27 · Implementada en la entrega 3 con Supabase (main 499e3e7). Pendiente: el error al cargar el perfil (CA-8) solo se ve en el modo de demostración.
 - 0.3.2 · 2026-11-27 · Resuelto lo pendiente: con Supabase el perfil se vuelve a leer de la base y, si falla, se ve "No se pudo cargar su perfil" con Reintentar y Cerrar sesión (CA-8).
+- 0.4.0 · 2026-11-27 · Rol Director: su columna y la acción *Gestionar usuarios* en la lista (RF-40).

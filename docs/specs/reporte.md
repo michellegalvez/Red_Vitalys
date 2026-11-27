@@ -1,12 +1,12 @@
 # Reporte de specs · Red Vitalys
 
-Fecha: 2026-11-24 · Revisado: prd 0.8.0 · requisitos 0.8.0 · spine 0.7.0 · 23 specs (F-01 a F-23)
+Fecha: 2026-11-24 · Revisado: prd 0.8.0 · requisitos 0.9.0 · spine 0.8.0 · 23 specs (F-01 a F-23)
 
 Este reporte reemplaza al anterior. Se hicieron cuatro pasadas de la crítica sobre los documentos y se corrigió en cada una lo que encontró. La primera dejó la consistencia en rojo con 5 contradicciones; la segunda, con 8 (nacidas de los cambios de esa misma ronda: la historia con el riesgo y sus dos eventos, el formulario de la atención, el orden de las sedes); la tercera, con 2; la cuarta, con 3. Las 3 de la cuarta pasada se corrigieron en el texto, pero la crítica no se volvió a ejecutar después de esa última ronda, así que no hay una quinta lectura que lo confirme. El script de verificación pasa.
 
-Versiones de las specs: F-01 0.1.5 · F-02 0.1.11 · F-03 0.1.4 · F-04 0.3.7 · F-05 0.2.8 · F-06 0.3.7 · F-07 0.2.9 · F-08 0.1.7 · F-09 0.1.4 · F-10 0.1.4 · F-11 0.1.2 · F-12 0.2.4 · F-13 0.4.4 · F-14 0.2.5 · F-15 0.2.5 · F-16 0.3.7 · F-17 0.2.8 · F-18 0.2.7 · F-19 0.2.2 · F-20 0.4.7 · F-21 0.1.10 · F-22 0.3.2 · F-23 0.1.3.
+Versiones de las specs: F-01 0.1.5 · F-02 0.1.11 · F-03 0.1.4 · F-04 0.3.7 · F-05 0.2.8 · F-06 0.3.7 · F-07 0.2.9 · F-08 0.1.7 · F-09 0.1.4 · F-10 0.1.4 · F-11 0.1.2 · F-12 0.2.4 · F-13 0.5.0 · F-14 0.2.5 · F-15 0.2.5 · F-16 0.3.7 · F-17 0.2.8 · F-18 0.3.0 · F-19 0.2.2 · F-20 0.4.7 · F-21 0.1.10 · F-22 0.4.0 · F-23 0.1.3 · F-24 0.1.0.
 
-El 27 nov las 23 specs pasaron a *implementada*. Ese cambio solo tocó el estado y una línea del historial, así que las métricas de abajo siguen valiendo; la crítica no se volvió a ejecutar.
+El 27 nov las 23 specs pasaron a *implementada*. Ese mismo día entró la F-24 (rol Director), con los requisitos 0.9.0 y la spine 0.8.0; la F-13, la F-18 y la F-22 se ajustaron al rol nuevo. Ese cambio solo tocó el estado y una línea del historial, así que las métricas de abajo siguen valiendo; la crítica no se volvió a ejecutar.
 
 ## Métricas
 
@@ -14,13 +14,13 @@ El 27 nov las 23 specs pasaron a *implementada*. Ese cambio solo tocó el estado
 - **Trazabilidad** (amarillo):
   - RF → objetivo: 38/38 · 100 %.
   - Spec → RF: 22/23 · 96 %. F-19 cita solo RNF, a propósito. Con RF o RNF, el resultado es 23/23 · 100 %.
-- **Verificabilidad** (verde): 248/248 · 100 %. Cada criterio empieza con Dado y tiene "cuando" antes de "entonces". Ninguna spec está sin criterios.
+- **Verificabilidad** (verde): 260/260 · 100 %. Con la F-24 se sumaron 12 criterios, revisados con el mismo script. Cada criterio empieza con Dado y tiene "cuando" antes de "entonces". Ninguna spec está sin criterios.
 - **Ambigüedad** (verde): 0.
 - **Consistencia** (sin confirmar): 0 contradicciones conocidas. La cuarta pasada encontró 3 y se corrigieron, pero falta una lectura posterior que lo confirme.
 - **Atomicidad** (verde): 0. F-19 reúne a propósito 4 requisitos no funcionales, sin flujo propio.
 - **Pureza funcional** (verde): 0.
 - **Formato** (verde): 0 defectos. Los criterios y los flujos alternos de las 23 specs van en orden y ningún historial repite una versión.
-- **Preguntas abiertas:** 28. Bajó de 31 en el reporte anterior. Ninguna cambia lo que ya está escrito.
+- **Preguntas abiertas:** 30. Eran 28; la F-24 suma 2. Ninguna cambia lo que ya está escrito.
 - **Avance de implementación:** todo en borrador. Hay 0 specs aprobadas o implementadas.
 - **Estabilidad:** ninguna spec ha subido de versión mayor. Las que más versiones menores acumulan son F-13 y F-20 (0.4), y F-04, F-06 y F-16 (0.3).
 

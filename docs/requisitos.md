@@ -1,8 +1,8 @@
 ---
 documento: requisitos
 proyecto: Red Vitalys
-version: 0.8.0
-fecha: 2026-11-24
+version: 0.9.0
+fecha: 2026-11-27
 estado: borrador
 basado_en: prd 0.8.0
 ---
@@ -62,25 +62,29 @@ basado_en: prd 0.8.0
 - **RF-23** El sistema debe permitir que el usuario cierre sesión. *Debe*
 - **RF-35** El sistema debe cerrar la sesión de un usuario después de 15 minutos sin uso. *Debe*
 - **RF-38** El sistema debe permitir que el usuario suba, cambie y quite su foto de perfil, que debe ser JPG o PNG de hasta 2 MB. La foto se guarda en Supabase Storage y solo su dueño puede verla y cambiarla. *Debe*
-- **RF-37** El sistema debe llevar al usuario, al abrir la sesión, a la pantalla inicial de su rol: *Pacientes con alta reciente* para el médico, el *Tablero de indicadores* para el administrativo y la *Auditoría de accesos* para el auditor. *Debe*
+- **RF-37** El sistema debe llevar al usuario, al abrir la sesión, a la pantalla inicial de su rol: *Pacientes con alta reciente* para el médico, el *Tablero de indicadores* para el administrativo, la *Auditoría de accesos* para el auditor y *Usuarios* para el director. *Debe*
+- **RF-39** El sistema debe permitir que una persona cree su cuenta desde la pantalla de acceso con su nombre completo, su correo y una contraseña de al menos 8 caracteres. La cuenta queda sin sedes, así que no puede entrar a la app hasta que el director le asigne un rol y al menos una sede (RF-18). *Debe*
+- **RF-40** El sistema debe permitir que el director vea todas las cuentas, con su nombre, correo, rol, sedes asignadas y si está activa, primero las que esperan aprobación, y que a cada una le asigne un rol (médico, administrativo, auditor o director), le asigne o quite sedes y la active o desactive. Una cuenta activa necesita al menos una sede. El director no puede quitarse su propio rol ni desactivar su cuenta. Cada cambio se registra antes de guardarse y, si no se puede registrar, no se guarda. *Debe*
 
 ### Tabla de permisos
 
-| Acción | Médico | Administrativo | Auditor |
-|---|---|---|---|
-| Buscar paciente y ver sus datos básicos | Sí | Sí | No |
-| Ver la historia clínica y el riesgo de reingreso | Sí | No | No |
-| Registrar una atención | Sí | No | No |
-| Ver el tablero y el detalle de los indicadores | Sí | Sí | Sí |
-| Registrar una medición | No | Sí | No |
-| Ver la auditoría de accesos | No | No | Sí |
-| Ver el perfil y cerrar sesión | Sí | Sí | Sí |
+| Acción | Médico | Administrativo | Auditor | Director |
+|---|---|---|---|---|
+| Buscar paciente y ver sus datos básicos | Sí | Sí | No | No |
+| Ver la historia clínica y el riesgo de reingreso | Sí | No | No | No |
+| Registrar una atención | Sí | No | No | No |
+| Ver el tablero y el detalle de los indicadores | Sí | Sí | Sí | No |
+| Registrar una medición | No | Sí | No | No |
+| Ver la auditoría de accesos | No | No | Sí | No |
+| Gestionar usuarios | No | No | No | Sí |
+| Ver el perfil y cerrar sesión | Sí | Sí | Sí | Sí |
 
 Propósitos que puede declarar cada rol:
 
 - **Médico:** los 5.
 - **Administrativo:** solo *Revisión de calidad*.
 - **Auditor:** ninguno, porque no consulta información de pacientes.
+- **Director:** ninguno, porque no consulta información de pacientes.
 
 ### Tabla de indicadores
 
@@ -98,7 +102,7 @@ Los laboratorios no tienen indicadores. Un mes cierra cuando termina: la medici�
 - **RNF-01** La app funciona en Chrome y Edge, en su versión actual, en un computador, y como app instalada en celulares con Android 10 o superior. iPhone no se incluye. (O-01, O-02, O-03, O-04, O-05) *Debe*
 - **RNF-02** Todos los datos de pacientes son simulados y no se guarda ningún dato real, por la Ley 1581 de 2012. (O-01, O-02, O-04) *Debe*
 - **RNF-03** En la entrega 2 la app funciona completa con datos en memoria, sin conexión a la nube. (O-01, O-02, O-03, O-04, O-05) *Debe*
-- **RNF-04** Los datos simulados incluyen como mínimo: 8 sedes entre clínicas y centros ambulatorios, más al menos 2 laboratorios clínicos; 8 pacientes en seguimiento, de los que al menos 4 tienen alerta de riesgo y al menos 3 tienen atenciones en 2 sedes o más; 3 usuarios, uno por rol, cada uno con al menos una sede asignada, más una cuenta sin sedes asignadas y un usuario con 2 sedes; los indicadores que aplican a cada sede con mediciones de los últimos 6 meses, salvo una sede de prueba sin medición en el último periodo; y al menos 8 registros de acceso, con al menos 1 denegado y al menos 1 de emergencia; y una fecha de hoy fija, el 6 de noviembre de 2026, para todos los datos simulados. (O-01, O-02, O-03, O-04, O-05) *Debe*
+- **RNF-04** Los datos simulados incluyen como mínimo: 8 sedes entre clínicas y centros ambulatorios, más al menos 2 laboratorios clínicos; 8 pacientes en seguimiento, de los que al menos 4 tienen alerta de riesgo y al menos 3 tienen atenciones en 2 sedes o más; 4 usuarios, uno por rol, cada uno con al menos una sede asignada, más una cuenta sin sedes asignadas y un usuario con 2 sedes; los indicadores que aplican a cada sede con mediciones de los últimos 6 meses, salvo una sede de prueba sin medición en el último periodo; y al menos 8 registros de acceso, con al menos 1 denegado y al menos 1 de emergencia; y una fecha de hoy fija, el 6 de noviembre de 2026, para todos los datos simulados. (O-01, O-02, O-03, O-04, O-05) *Debe*
 - **RNF-05** Toda la interfaz está en español, con las fechas en formato día, mes abreviado y año (por ejemplo, "30 oct 2026") y la hora en formato de 24 horas. (O-01, O-02, O-03, O-04, O-05) *Debe*
 - **RNF-06** Con los datos simulados, la búsqueda de pacientes, la lista de pacientes con alta reciente, la historia unificada, el tablero de indicadores y el registro de accesos se muestran en menos de 2 segundos desde que el usuario los abre. (O-01, O-02, O-03, O-04) *Debe*
 - **RNF-07** Todas las pantallas se pueden usar sin desplazamiento horizontal en un ancho de 360 px (celular) y de 1280 px (computador). (O-01, O-02, O-03, O-04, O-05) *Debe*
@@ -127,3 +131,4 @@ Ninguna.
 - 0.7.6 · 2026-11-08 · RF-25: la atención con Urgencia no da relación ni por su alta. RF-14: dos eventos al abrir la historia y el ingreso sin sedes. Alineado con el prd 0.7.5.
 - 0.7.7 · 2026-11-08 · RF-19: al registrar solo dos propósitos. RNF-04: la cuenta sin sedes, el usuario con 2 sedes y la sede sin medición de prueba. Alineado con el prd 0.7.6.
 - 0.8.0 · 2026-11-24 · RF-38: foto de perfil. RNF-08: los datos de la entrega 3 viven en Supabase. Alineado con el prd 0.8.0.
+- 0.9.0 · 2026-11-27 · Nuevos RF-39 (crear una cuenta) y RF-40 (el director gestiona las cuentas). Rol Director en la tabla de permisos, RF-37 y RNF-04.
