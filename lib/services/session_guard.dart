@@ -54,8 +54,8 @@ class SessionGuard {
 
   final SupabaseClient client;
 
-  /// The limit of each request; shorter in the tests.
-  @visibleForTesting
+  /// The limit of each request, also for signing in and out; the tests
+  /// make it shorter.
   Duration timeout = remoteTimeout;
 
   int _generation = 0;

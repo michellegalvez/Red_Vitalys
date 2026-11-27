@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:red_vitalys/models/sign_in_result.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/repositorios/auditoria_supabase.dart';
 import 'package:red_vitalys/services/auth_supabase.dart';
@@ -125,4 +126,34 @@ void main() {
     );
     expect(servidor.cliente.auth.currentSession, isNotNull);
   });
+
+  test('el inicio de sesión que no responde avisa del error de red en vez de '
+      'quedarse en "Ingresando…"', () async {
+    final servidor = ServidorFalso((pedido) async => respuestaJson([], pedido))
+      ..authNoResponde = true;
+    SessionGuard.of(servidor.cliente).timeout = const Duration(
+      milliseconds: 50,
+    );
+
+    final resultado = await _auth(servidor)
+        .signIn('camila.martinez@vitalys.co', 'vitalys2026');
+
+    expect(resultado.status, SignInStatus.networkError);
+  });
+
+  test(
+    'cerrar sesión sin respuesta falla a tiempo y la sesión sigue',
+    () async {
+      final servidor = await ServidorFalso(
+        (pedido) async => respuestaJson([], pedido),
+      ).conSesion();
+      SessionGuard.of(servidor.cliente).timeout = const Duration(
+        milliseconds: 50,
+      );
+      servidor.authNoResponde = true;
+
+      await expectLater(_auth(servidor).signOut(), throwsA(anything));
+      expect(servidor.cliente.auth.currentSession, isNotNull);
+    },
+  );
 }

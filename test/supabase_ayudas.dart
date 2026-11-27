@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -45,6 +46,9 @@ class ServidorFalso {
   /// Si la renovación del token falla (la sesión ya no sirve).
   var renovacionFalla = false;
   var renovaciones = 0;
+
+  /// Si Auth deja de responder (sin red a medias).
+  var authNoResponde = false;
   var cierres = 0;
 
   /// Los pedidos que no son de Auth, en orden.
@@ -67,6 +71,9 @@ class ServidorFalso {
 
   Future<http.Response> _atender(http.Request pedido) async {
     final ruta = pedido.url.path;
+    if (authNoResponde && ruta.contains('/auth/v1/')) {
+      return Completer<http.Response>().future;
+    }
     if (ruta.endsWith('/auth/v1/logout')) {
       cierres++;
       return http.Response('', 204, request: pedido);
