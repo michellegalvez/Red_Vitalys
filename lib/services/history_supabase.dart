@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
@@ -61,9 +62,13 @@ class HistorySupabase implements HistoryService {
       birthDate: DateTime.parse(person['fecha_nacimiento'] as String),
       phone: person['telefono'] as String? ?? 'No registrado',
       address: person['direccion'] as String? ?? 'No registrada',
-      systemIdentifiers: _identifiers(person['identificador_paciente'] as List),
+      systemIdentifiers: _identifiers(
+        person['identificador_paciente'] as List?,
+      ),
       readmissionRisk: null,
-      encounters: ordenarAtenciones([for (final row in rows) _encounter(row)]),
+      encounters: ordenarAtenciones([
+        for (final row in rows) ?_safeEncounter(row),
+      ]),
     );
   }
 
@@ -119,17 +124,31 @@ class HistorySupabase implements HistoryService {
     );
   }
 
-  List<SystemIdentifier> _identifiers(List<dynamic> rows) {
-    final others = [
-      for (final row in rows.cast<Map<String, dynamic>>())
-        if (row['es_principal'] != true)
-          SystemIdentifier(
-            systemName: (row['sistema_origen'] as Map)['nombre'] as String,
-            identifier: row['numero_identificacion'] as String,
-          ),
-    ];
+  List<SystemIdentifier> _identifiers(List<dynamic>? rows) {
+    final others = <SystemIdentifier>[];
+    for (final row in (rows ?? const []).cast<Map<String, dynamic>>()) {
+      if (row['es_principal'] == true) continue;
+      final system = (row['sistema_origen'] as Map?)?['nombre'];
+      final number = row['numero_identificacion'];
+      if (system is! String || number is! String) {
+        debugPrint('Skipped an identifier without its system or number');
+        continue;
+      }
+      others.add(SystemIdentifier(systemName: system, identifier: number));
+    }
     others.sort((a, b) => a.systemName.compareTo(b.systemName));
     return others;
+  }
+
+  /// An encounter that cannot be read is skipped and logged instead of
+  /// leaving the whole history without any (F-02).
+  Encounter? _safeEncounter(Map<String, dynamic> row) {
+    try {
+      return _encounter(row);
+    } on Object catch (error) {
+      debugPrint('Skipped encounter ${row['id_atencion']}: $error');
+      return null;
+    }
   }
 
   Encounter _encounter(Map<String, dynamic> row) {
