@@ -49,3 +49,4 @@ app.*.map.json
 
 # Llaves de Supabase (AD-13): nunca se suben
 env.json
+assets/config/env.json

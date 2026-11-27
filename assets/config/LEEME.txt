@@ -1,0 +1,1 @@
+Pon aquí env.json (copia de env.example.json) para que flutter run use Supabase. No se sube al repositorio.

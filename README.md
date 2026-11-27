@@ -32,28 +32,29 @@ flutter test              # corre las pruebas
 
 ## Configuración de Supabase
 
-La entrega 3 conecta la app a Supabase (`supabase_flutter`). La URL y la publishable key **no están en el código** (AD-13): se pasan al compilar desde un archivo local.
+La entrega 3 conecta la app a Supabase (`supabase_flutter`). La URL y la publishable key **no están en el código** (AD-13): salen de un archivo local que no se sube.
 
-1. Copia el ejemplo: `cp env.example.json env.json` (en Windows: `copy env.example.json env.json`).
-2. Llena `env.json` con los valores de tu proyecto, en el panel de Supabase:
+1. Copia el ejemplo: `cp env.example.json assets/config/env.json` (en Windows: `copy env.example.json assets\config\env.json`).
+2. Llena `assets/config/env.json` con los valores de tu proyecto, en el panel de Supabase:
 
    | Variable | De dónde sale |
    |---|---|
    | `SUPABASE_URL` | *Settings → Data API*, «Project URL» (`https://<id>.supabase.co`) |
    | `SUPABASE_PUBLISHABLE_KEY` | *Settings → API Keys → Publishable key* (`sb_publishable_...`) |
 
-3. Ejecuta pasando el archivo:
+3. Ejecuta sin parámetros: con ese archivo la app ya usa Supabase.
 
 ```bash
-flutter run -d chrome --dart-define-from-file=env.json
-flutter run --dart-define-from-file=env.json     # Android
-flutter build web --dart-define-from-file=env.json
+flutter run -d chrome
+flutter run                # Android
+flutter build web
 ```
 
-- `env.json` está en `.gitignore`: no lo subas. Solo se sube `env.example.json`, con los valores vacíos.
-- **Nunca** pongas la secret key (`sb_secret_...`) en la app, en `env.json` ni en el repositorio.
-- Sin `env.json` la app funciona igual, con los datos simulados, y la consola avisa «Supabase no está configurado». Con las llaves bien puestas dice «Supabase inicializado».
-- Por ahora todos los datos siguen en memoria: la conexión está lista, pero ninguna pantalla lee de Supabase. La fuente de datos se elige en un solo punto, `lib/datos/fuente_de_datos.dart` (AD-02).
+- Sigue funcionando la forma anterior, `--dart-define-from-file=env.json` con el archivo en la raíz; si se pasa, manda sobre `assets/config/env.json`.
+- `env.json` y `assets/config/env.json` están en `.gitignore`: no los subas. Solo se sube `env.example.json`, con los valores vacíos.
+- **Nunca** pongas la secret key (`sb_secret_...`) en la app, en `env.json` ni en el repositorio. La app la rechaza si aparece.
+- Sin el archivo la app funciona igual, con los datos simulados, y la consola avisa «Supabase no está configurado». Con las llaves bien puestas dice «Supabase inicializado».
+- La fuente de datos se elige en un solo punto, `lib/datos/fuente_de_datos.dart` (AD-02).
 
 ## Base de datos en Supabase
 

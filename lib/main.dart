@@ -38,18 +38,19 @@ Future<void> main() async {
 /// Único punto donde se inicializa Supabase. Si faltan las variables o falla,
 /// avisa en la consola y la app sigue con los datos simulados.
 Future<bool> _iniciarSupabase() async {
-  if (!Entorno.configurado) {
+  final config = await Entorno.cargar();
+  if (config == null) {
     debugPrint(
-      'Supabase no está configurado (faltan SUPABASE_URL o '
-      'SUPABASE_PUBLISHABLE_KEY): la app usa los datos simulados. '
-      'Ejecuta con --dart-define-from-file=env.json.',
+      'Supabase no está configurado: la app usa los datos simulados. '
+      'Copia env.example.json en ${Entorno.rutaArchivo} con la URL y la '
+      'publishable key.',
     );
     return false;
   }
   try {
     await Supabase.initialize(
-      url: Entorno.supabaseUrl,
-      publishableKey: Entorno.supabasePublishableKey,
+      url: config.url,
+      publishableKey: config.publishableKey,
     );
     debugPrint('Supabase inicializado.');
     return true;
