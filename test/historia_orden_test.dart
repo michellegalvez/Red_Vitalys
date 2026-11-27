@@ -7,12 +7,17 @@ import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/services/history_supabase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-Map<String, Object?> _row(int id, String start) => {
+Map<String, Object?> _row(
+  int id,
+  String start, {
+  String? end,
+  String? destination,
+}) => {
   'id_atencion': id,
   'tipo_atencion': 'urgencias',
   'fecha_inicio': start,
-  'fecha_fin': null,
-  'destino_alta': null,
+  'fecha_fin': end,
+  'destino_alta': destination,
   'sede': {'nombre_corto': 'Cali Norte'},
   'usuario': {'nombre_completo': 'Dra. Camila Martínez'},
   'prediccion_reingreso': <Object>[],
@@ -75,5 +80,29 @@ void main() {
       today: data.hoy,
     );
     expect(history.encounters.map((e) => e.id), ['enc-42', 'enc-41', 'enc-40']);
+  });
+
+  test('F-04: una atención en curso muestra el destino Sin definir y una '
+      'con alta muestra el suyo', () async {
+    final data = DatosSimulados.porDefecto;
+    final patient = data.pacientes.first;
+    final service = _serviceAnswering([
+      _row(
+        41,
+        '2026-11-01T15:00:00Z',
+        end: '2026-11-03T15:00:00Z',
+        destination: 'Domicilio',
+      ),
+      _row(42, '2026-11-06T15:00:00Z'),
+    ]);
+    final history = await service.historyOf(
+      patient,
+      siteName: data.sede(patient.sedeAltaId).nombre,
+      today: data.hoy,
+    );
+    expect(
+      {for (final e in history.encounters) e.id: e.dischargeDestination},
+      {'enc-42': 'Sin definir', 'enc-41': 'Domicilio'},
+    );
   });
 }

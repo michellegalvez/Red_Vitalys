@@ -163,6 +163,9 @@ class _AppScreenState extends State<AppScreen> {
   Patient? _historiaRemota;
   bool _cargandoHistoria = false;
   bool _errorHistoria = false;
+  // Cambia con cada pedido de la historia: solo se aplica la respuesta del
+  // último (T-04).
+  int _pedidoHistoria = 0;
 
   late final PatientService _patients =
       widget.patients ?? PatientMemory(widget.datos);
@@ -456,15 +459,20 @@ class _AppScreenState extends State<AppScreen> {
   Future<void> _cargarHistoria() async {
     final paciente = (_historia ?? _datosBasicos)?.paciente;
     if (!_histories.isRemote || paciente == null) return;
+    final pedido = ++_pedidoHistoria;
+    final sesion = _sesion;
     setState(() {
       _historiaRemota = null;
       _cargandoHistoria = true;
       _errorHistoria = false;
     });
-    // Si mientras tanto se cerró la consulta o se abrió otra, la respuesta
-    // ya no sirve.
+    // Si mientras tanto se cerró la consulta, se abrió otra, se pidió de nuevo
+    // o cambió la sesión, la respuesta ya no sirve.
     bool sigueAbierta() =>
-        mounted && (_historia ?? _datosBasicos)?.paciente.id == paciente.id;
+        mounted &&
+        pedido == _pedidoHistoria &&
+        sesion == _sesion &&
+        (_historia ?? _datosBasicos)?.paciente.id == paciente.id;
     try {
       final historia = await _histories.historyOf(
         paciente,
@@ -475,6 +483,7 @@ class _AppScreenState extends State<AppScreen> {
       setState(() {
         _historiaRemota = historia;
         _cargandoHistoria = false;
+        _errorHistoria = false;
       });
     } catch (error) {
       debugPrint('No se pudo cargar la historia: $error');
@@ -1094,6 +1103,7 @@ class _AppScreenState extends State<AppScreen> {
     _historiaRemota = null;
     _cargandoHistoria = false;
     _errorHistoria = false;
+    _pedidoHistoria++;
   }
 
   void _cerrarHistoria() => setState(() {

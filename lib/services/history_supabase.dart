@@ -136,7 +136,10 @@ class HistorySupabase implements HistoryService {
       startDate: start,
       endDate: end,
       lengthOfStayDays: end?.difference(start).inDays,
-      dischargeDestination: row['destino_alta'] as String?,
+      // Without a discharge date the destination is still to be defined (F-04).
+      dischargeDestination: end == null
+          ? destinoSinDefinir
+          : row['destino_alta'] as String?,
       doctorName:
           (row['usuario'] as Map?)?['nombre_completo'] as String? ?? '—',
     );

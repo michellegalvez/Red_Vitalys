@@ -138,35 +138,40 @@ class _RegistrarAtencionPageState extends State<RegistrarAtencionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ContenidoPagina(
-      children: [
-        BarraVolver(
-          texto: '${widget.nombrePaciente}  /  Nueva atención',
-          onPressed: widget.onCancelar,
-        ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.topLeft,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                EncabezadoPagina(
-                  sobretitulo: 'Nueva atención',
-                  titulo: 'Registrar atención',
-                  subtitulo:
-                      'De ${widget.nombrePaciente}. Propósito: '
-                      '${widget.proposito.nombreCorto}. Queda en su historia '
-                      'unificada.',
-                ),
-                const SizedBox(height: 22),
-                _formulario(),
-              ],
+    // Mientras se guarda no se puede salir: si falla, lo escrito sigue ahí
+    // (F-04).
+    return PopScope(
+      canPop: !_guardando,
+      child: ContenidoPagina(
+        children: [
+          BarraVolver(
+            texto: '${widget.nombrePaciente}  /  Nueva atención',
+            onPressed: _guardando ? () {} : widget.onCancelar,
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  EncabezadoPagina(
+                    sobretitulo: 'Nueva atención',
+                    titulo: 'Registrar atención',
+                    subtitulo:
+                        'De ${widget.nombrePaciente}. Propósito: '
+                        '${widget.proposito.nombreCorto}. Queda en su historia '
+                        'unificada.',
+                  ),
+                  const SizedBox(height: 22),
+                  _formulario(),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
