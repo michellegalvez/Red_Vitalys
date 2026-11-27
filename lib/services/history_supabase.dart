@@ -31,28 +31,13 @@ class HistorySupabase implements HistoryService {
     required DateTime today,
   }) async {
     final patientId = await _ids.patientId(patient);
-    final person = await _guard.run(
-      () => client
-          .from('paciente')
-          .select(
-            'fecha_nacimiento, direccion, telefono, '
-            'identificador_paciente(numero_identificacion, es_principal, '
-            'sistema_origen(nombre))',
-          )
-          .eq('id_paciente', patientId)
-          .single(),
-    );
-    final rows = await _guard.run(
-      () => client
-          .from('atencion')
-          .select(
-            'id_atencion, tipo_atencion, fecha_inicio, fecha_fin, destino_alta, '
-            'sede(nombre_corto), usuario(nombre_completo)',
-          )
-          .eq('id_paciente', patientId)
-          // Ties on the start date keep this order: the latest saved goes first.
-          .order('id_atencion', ascending: false),
-    );
+    // The person and the encounters do not depend on each other.
+    final results = await Future.wait<Object>([
+      _person(patientId),
+      _encounters(patientId),
+    ]);
+    final person = results[0] as Map<String, dynamic>;
+    final rows = results[1] as List<Map<String, dynamic>>;
 
     return Patient(
       id: 'pac-${patient.id}',
@@ -73,6 +58,37 @@ class HistorySupabase implements HistoryService {
       ]),
     );
   }
+
+  Future<Map<String, dynamic>> _person(int patientId) async {
+    final row = await _guard.run(
+      () => client
+          .from('paciente')
+          .select(
+            'fecha_nacimiento, direccion, telefono, '
+            'identificador_paciente(numero_identificacion, es_principal, '
+            'sistema_origen(nombre))',
+          )
+          .eq('id_paciente', patientId)
+          .maybeSingle(),
+    );
+    if (row == null) {
+      throw StateError('No se encontraron los datos del paciente');
+    }
+    return row;
+  }
+
+  Future<List<Map<String, dynamic>>> _encounters(int patientId) => _guard.run(
+    () => client
+        .from('atencion')
+        .select(
+          'id_atencion, tipo_atencion, fecha_inicio, fecha_fin, '
+          'destino_alta, sede(nombre_corto), usuario(nombre_completo)',
+        )
+        .eq('id_paciente', patientId)
+        // Ties on the start date keep this order: the latest saved goes
+        // first.
+        .order('id_atencion', ascending: false),
+  );
 
   @override
   Future<ReadmissionRisk?> riskOf(

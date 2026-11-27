@@ -914,9 +914,10 @@ class _AppScreenState extends State<AppScreen> {
   Future<bool> _guardarEventosAntes(List<EventoAuditoria> eventos) async {
     if (!_auditoria.esRemoto) return true;
     try {
-      for (final evento in eventos) {
-        await _auditoria.agregar(evento);
-      }
+      // Van a la vez: si alguno falla, la acción no se hace.
+      await Future.wait([
+        for (final evento in eventos) _auditoria.agregar(evento),
+      ]);
       return true;
     } catch (error) {
       debugPrint('No se pudo guardar el evento: $error');
