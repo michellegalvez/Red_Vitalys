@@ -122,12 +122,13 @@ extension _Guardado on _AppScreenState {
       paciente: paciente,
       proposito: registro.proposito,
     );
+    String? idGuardada;
     if (_histories.isRemote) {
       // Con Supabase, el evento se guarda con la atención en la misma
       // operación: si el evento no se crea, la atención tampoco, y si la
       // atención falla no queda un evento suelto.
       try {
-        await _histories.addEncounter(
+        idGuardada = await _histories.addEncounter(
           paciente,
           nueva,
           siteName: _datos.sede(nueva.sedeId).nombre,
@@ -147,14 +148,20 @@ extension _Guardado on _AppScreenState {
     if (!mounted || sesion != _sesion) return null;
     final total = _atenciones.values.fold<int>(0, (a, l) => a + l.length);
     final atencion = atencionDeFormulario(
-      id: 'enc-n${total + 1}',
+      id: idGuardada ?? 'enc-n${total + 1}',
       nueva: nueva,
       sede: _datos.sede(nueva.sedeId).nombreCorto,
       medico: usuario.nombre,
     );
     _actualizar(() {
-      // Con Supabase la atención ya está en la base y llega con la historia.
-      if (!_histories.isRemote) {
+      final remota = _historiaRemota;
+      if (_histories.isRemote && remota != null) {
+        // Ya está en la base: entra a la historia traída sin pedirla entera
+        // otra vez, en el lugar de su fecha de inicio (F-04 paso 5).
+        _historiaRemota = remota.copyWith(
+          encounters: ordenarAtenciones([atencion, ...remota.encounters]),
+        );
+      } else if (!_histories.isRemote) {
         _atenciones = {
           ..._atenciones,
           paciente.id: ordenarAtenciones([
@@ -175,7 +182,10 @@ extension _Guardado on _AppScreenState {
       _anotarEvento(evento, enviar: false);
       _registro = null;
     });
-    if (_histories.isRemote) unawaited(_cargarHistoria());
+    // Sin la historia traída (no se había cargado), se pide entera.
+    if (_histories.isRemote && _historiaRemota == null) {
+      unawaited(_cargarHistoria());
+    }
     // Con *Urgencia* también se avisa que queda registrado (F-17 CA-10).
     final esUrgencia = registro.proposito == Proposito.urgencia;
     ScaffoldMessenger.of(context).showSnackBar(

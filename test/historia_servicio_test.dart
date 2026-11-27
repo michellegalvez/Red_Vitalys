@@ -173,8 +173,8 @@ void main() {
       );
     }
 
-    testWidgets('la atención se guarda con su sede y su propósito y la '
-        'historia se vuelve a traer', (t) async {
+    testWidgets('la atención se guarda con su sede y su propósito y entra a '
+        'la historia sin volver a traerla', (t) async {
       final history = FakeHistory();
       await _openJorge(t, history);
       await register(t);
@@ -182,7 +182,7 @@ void main() {
       expect(encounter.tipo, EncounterType.urgencias);
       expect(purpose, Proposito.atencionPaciente);
       expect(site, isNotEmpty);
-      expect(history.calls, 2);
+      expect(history.calls, 1);
       expect(
         find.text('Atención registrada en la historia unificada'),
         findsOneWidget,

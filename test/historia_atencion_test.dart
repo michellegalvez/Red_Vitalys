@@ -240,11 +240,30 @@ void main() {
 
       history.failsSaving = false;
       await _tapSave(t);
-      await t.pump();
-      history.loads.last.complete(_historyOf('Sede de la base'));
       await t.pumpAndSettle();
       expect(history.saved.single.tipo, EncounterType.urgencias);
       expect(find.text('Guardar atención'), findsNothing);
+      await cerrarAppAyuda(t);
+    });
+
+    testWidgets('con Supabase la atención guardada entra a la historia sin '
+        'volver a pedirla entera', (t) async {
+      final history = QueuedHistory();
+      await _open(t, history);
+      await _openJorge(t);
+      history.loads.single.complete(_historyOf('Sede de la base'));
+      await t.pumpAndSettle();
+      final antes = find.textContaining('Urgencias').evaluate().length;
+      await _fillForm(t);
+      await _tapSave(t);
+      await t.pumpAndSettle();
+
+      expect(find.text('Guardar atención'), findsNothing);
+      expect(history.loads, hasLength(1));
+      expect(
+        find.textContaining('Urgencias').evaluate().length,
+        greaterThan(antes),
+      );
       await cerrarAppAyuda(t);
     });
 
