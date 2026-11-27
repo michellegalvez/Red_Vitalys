@@ -23,10 +23,16 @@ const remotePageSize = 1000;
 /// through `AuthService.sessionEnded` when it cannot be renewed, and gives up
 /// after [timeout] so the screen shows its error state.
 class SessionGuard {
-  SessionGuard._(this.client) {
+  SessionGuard._(this.client)
+    : _token = client.auth.currentSession?.accessToken {
     client.auth.onAuthStateChange.listen(
       (state) {
-        if (_sessionChanges.contains(state.event)) _generation++;
+        // The stream repeats the last event to a new listener: a session
+        // already known is not a change.
+        final token = state.session?.accessToken;
+        if (!_sessionChanges.contains(state.event) || token == _token) return;
+        _token = token;
+        _generation++;
       },
       onError: (Object error) {
         debugPrint('Auth state error: $error');
@@ -53,6 +59,7 @@ class SessionGuard {
   Duration timeout = remoteTimeout;
 
   int _generation = 0;
+  String? _token;
   String? _owner;
   Future<void>? _ending;
 

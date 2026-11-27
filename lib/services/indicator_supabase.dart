@@ -1,5 +1,6 @@
 import 'package:red_vitalys/modelos/indicadores.dart';
 import 'package:red_vitalys/services/indicator_service.dart';
+import 'package:red_vitalys/services/remote_ids.dart';
 import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -12,6 +13,8 @@ class IndicatorSupabase implements IndicatorService {
   final Map<String, String> sitesByName;
 
   late final _guard = SessionGuard.of(client);
+
+  late final _ids = RemoteIds.of(client);
 
   @override
   bool get isRemote => true;
@@ -56,24 +59,15 @@ class IndicatorSupabase implements IndicatorService {
     if (userId == null) {
       throw StateError('No hay sesión de Supabase para guardar la medición');
     }
-    final indicator = await _guard.run(
-      () => client
-          .from('indicador')
-          .select('id_indicador')
-          .eq('codigo', measurement.indicador.name)
-          .single(),
-    );
-    final site = await _guard.run(
-      () =>
-          client.from('sede').select('id_sede').eq('nombre', siteName).single(),
-    );
+    final indicatorId = await _ids.indicatorId(measurement.indicador.name);
+    final siteId = await _ids.siteId(siteName);
     final start = measurement.periodo;
     final end = DateTime(start.year, start.month + 1, 0);
     try {
       await _guard.run(
         () => client.from('medicion_indicador').insert({
-          'id_indicador': indicator['id_indicador'],
-          'id_sede': site['id_sede'],
+          'id_indicador': indicatorId,
+          'id_sede': siteId,
           'periodo_inicio': _date(start),
           'periodo_fin': _date(end),
           'valor': measurement.valor,

@@ -4,6 +4,7 @@ import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/atencion.dart';
 import 'package:red_vitalys/repositorios/auditoria_traduccion.dart';
 import 'package:red_vitalys/services/history_service.dart';
+import 'package:red_vitalys/services/remote_ids.dart';
 import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -15,6 +16,8 @@ class HistorySupabase implements HistoryService {
 
   late final _guard = SessionGuard.of(client);
 
+  late final _ids = RemoteIds.of(client);
+
   @override
   bool get isRemote => true;
 
@@ -24,7 +27,7 @@ class HistorySupabase implements HistoryService {
     required String siteName,
     required DateTime today,
   }) async {
-    final patientId = await _patientId(patient);
+    final patientId = await _ids.patientId(patient);
     final person = await _guard.run(
       () => client
           .from('paciente')
@@ -70,7 +73,7 @@ class HistorySupabase implements HistoryService {
     required String siteName,
     required DateTime today,
   }) async {
-    final patientId = await _patientId(patient);
+    final patientId = await _ids.patientId(patient);
     final rows = await _guard.run(
       () => client
           .from('atencion')
@@ -95,16 +98,13 @@ class HistorySupabase implements HistoryService {
     if (doctorId == null) {
       throw StateError('No hay sesión de Supabase para registrar la atención');
     }
-    final site = await _guard.run(
-      () =>
-          client.from('sede').select('id_sede').eq('nombre', siteName).single(),
-    );
+    final siteId = await _ids.siteId(siteName);
     final end = encounter.alta;
-    final patientId = await _patientId(patient);
+    final patientId = await _ids.patientId(patient);
     await _guard.run(
       () => client.from('atencion').insert({
         'id_paciente': patientId,
-        'id_sede': site['id_sede'],
+        'id_sede': siteId,
         'id_usuario': doctorId,
         'tipo_atencion': switch (encounter.tipo) {
           EncounterType.hospitalizacion => 'hospitalizacion',
@@ -117,21 +117,6 @@ class HistorySupabase implements HistoryService {
         'proposito': propositoATexto(purpose),
       }),
     );
-  }
-
-  Future<int> _patientId(PacienteEnSeguimiento patient) async {
-    if (patient.id.startsWith('db')) {
-      return int.parse(patient.id.substring(2));
-    }
-    final row = await _guard.run(
-      () => client
-          .from('identificador_paciente')
-          .select('id_paciente')
-          .eq('numero_identificacion', patient.numeroDocumento)
-          .eq('es_principal', true)
-          .single(),
-    );
-    return row['id_paciente'] as int;
   }
 
   List<SystemIdentifier> _identifiers(List<dynamic> rows) {

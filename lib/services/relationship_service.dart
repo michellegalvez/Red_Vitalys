@@ -1,5 +1,6 @@
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
+import 'package:red_vitalys/services/remote_ids.dart';
 import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -48,7 +49,7 @@ class RelationshipSupabase implements RelationshipService {
     PacienteEnSeguimiento patient,
     DateTime today,
   ) async {
-    final patientId = await _patientId(patient);
+    final patientId = await RemoteIds.of(client).patientId(patient);
     final result = await _guard.run(
       () => client.rpc<dynamic>(
         'tiene_relacion',
@@ -56,22 +57,5 @@ class RelationshipSupabase implements RelationshipService {
       ),
     );
     return result == true;
-  }
-
-  Future<int> _patientId(PacienteEnSeguimiento patient) async {
-    if (patient.id.startsWith('db')) {
-      return int.parse(patient.id.substring(2));
-    }
-    final row = await _guard.run(
-      () => client
-          .from('identificador_paciente')
-          .select('id_paciente')
-          .eq('tipo_documento', patient.tipoDocumento)
-          .eq('numero_identificacion', patient.numeroDocumento)
-          .eq('es_principal', true)
-          .limit(1)
-          .single(),
-    );
-    return row['id_paciente'] as int;
   }
 }

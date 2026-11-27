@@ -30,7 +30,9 @@ Future<HistorySupabase> _serviceAnswering(
   final servidor = await ServidorFalso((request) async {
     final Object body;
     if (request.url.path.endsWith('/identificador_paciente')) {
-      body = {'id_paciente': 7};
+      body = [
+        {'id_paciente': 7},
+      ];
     } else if (request.url.path.endsWith('/paciente')) {
       body = {
         'fecha_nacimiento': '1948-06-02',

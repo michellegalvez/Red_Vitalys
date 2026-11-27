@@ -1,5 +1,6 @@
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/services/patient_service.dart';
+import 'package:red_vitalys/services/remote_ids.dart';
 import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -21,6 +22,8 @@ class PatientSupabase implements PatientService {
   final Map<String, String> patientIdsByDocument;
 
   late final _guard = SessionGuard.of(client);
+
+  late final _ids = RemoteIds.of(client);
 
   @override
   bool get isRemote => true;
@@ -88,6 +91,14 @@ class PatientSupabase implements PatientService {
     ];
   }
 
+  /// The app id of a patient. Its database id is kept so opening it does not
+  /// have to look it up again.
+  String _appId(String number, int patientId) {
+    final appId = patientIdsByDocument[number] ?? 'db$patientId';
+    _ids.rememberPatient(appId, patientId);
+    return appId;
+  }
+
   /// A date far enough back that it never counts as a recent discharge.
   static final _noDischarge = DateTime(1900);
 
@@ -102,7 +113,7 @@ class PatientSupabase implements PatientService {
     final number = identifier['numero_identificacion'] as String;
     final patientId = person['id_paciente'] as int;
     return PacienteEnSeguimiento(
-      id: patientIdsByDocument[number] ?? 'db$patientId',
+      id: _appId(number, patientId),
       nombre: _fullName(person),
       iniciales: _initials(person),
       edad: _ageAt(DateTime.parse(person['fecha_nacimiento'] as String), today),
@@ -169,7 +180,7 @@ class PatientSupabase implements PatientService {
     final number = identifier['numero_identificacion'] as String;
 
     return PacienteEnSeguimiento(
-      id: patientIdsByDocument[number] ?? 'db$patientId',
+      id: _appId(number, patientId),
       nombre: _fullName(person),
       iniciales: _initials(person),
       edad: _ageAt(DateTime.parse(person['fecha_nacimiento'] as String), today),

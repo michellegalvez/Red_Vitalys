@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/repositorios/auditoria_traduccion.dart';
+import 'package:red_vitalys/services/remote_ids.dart';
 import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -20,6 +22,7 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
     required this.sedesPorNombre,
     required this.usuariosPorCorreo,
     required this.pacientesPorDocumento,
+    this.tiposDocumento = const {},
   });
 
   final SupabaseClient cliente;
@@ -34,50 +37,44 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
   /// no conoce se llama `db<id_paciente>`.
   final Map<String, String> pacientesPorDocumento;
 
-  late final _guardia = SessionGuard.of(cliente);
+  /// Id del paciente en la app → tipo de su documento principal.
+  final Map<String, String> tiposDocumento;
 
-  /// Id de la app → `id_sede` de la base. Se pide una sola vez.
-  Map<String, int>? _idsDeSede;
+  late final _guardia = SessionGuard.of(cliente);
 
   @override
   bool get esRemoto => true;
 
-  Future<Map<String, int>> _sedes() async {
-    final cargadas = _idsDeSede;
-    if (cargadas != null) return cargadas;
-    final filas = await _guardia.run(
-      () => cliente.from('sede').select('id_sede, nombre'),
-    );
-    final ids = <String, int>{};
-    for (final fila in filas) {
-      final idApp = sedesPorNombre[fila['nombre'] as String];
-      if (idApp != null) ids[idApp] = fila['id_sede'] as int;
-    }
-    return _idsDeSede = ids;
+  late final _ids = RemoteIds.of(cliente);
+
+  /// El `id_sede` de la sede que la app llama [idApp], por su nombre.
+  Future<int?> _idDeSede(String idApp) async {
+    final nombre = sedesPorNombre.entries
+        .where((e) => e.value == idApp)
+        .map((e) => e.key)
+        .firstOrNull;
+    if (nombre == null) return null;
+    final id = (await _ids.siteIds())[normalizarTexto(nombre)];
+    if (id == null) debugPrint('La sede del evento no está en la base');
+    return id;
   }
 
   /// El `id_paciente` de la base, o `null` si no se puede saber: entonces el
   /// evento se guarda sin paciente en lugar de perderse (AD-07).
   Future<int?> _idDePaciente(String idApp) async {
-    if (idApp.startsWith('db')) return int.tryParse(idApp.substring(2));
     final documento = pacientesPorDocumento.entries
         .where((e) => e.value == idApp)
         .map((e) => e.key)
         .firstOrNull;
-    if (documento == null) return null;
-    final filas = await _guardia.run(
-      () => cliente
-          .from('identificador_paciente')
-          .select('id_paciente')
-          .eq('numero_identificacion', documento)
-          .eq('es_principal', true)
-          .limit(1),
+    final id = await _ids.findPatient(
+      idApp,
+      documentType: tiposDocumento[idApp],
+      documentNumber: documento,
     );
-    if (filas.isEmpty) {
+    if (id == null) {
       debugPrint('No se encontró el paciente del evento de auditoría');
-      return null;
     }
-    return filas.first['id_paciente'] as int;
+    return id;
   }
 
   /// `id_paciente` → id de la app, para los pacientes de la auditoría.
@@ -103,7 +100,7 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
       }
     }
     final sedeId = evento.sedeId;
-    final idSede = sedeId == null ? null : (await _sedes())[sedeId];
+    final idSede = sedeId == null ? null : await _idDeSede(sedeId);
     final proposito = evento.proposito;
     final pacienteId = evento.pacienteId;
     final idPaciente = pacienteId == null
