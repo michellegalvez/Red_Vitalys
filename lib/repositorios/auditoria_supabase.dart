@@ -125,22 +125,33 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
     final pacientes = filas.any((f) => f['id_paciente'] != null)
         ? await _pacientesDeLosEventos()
         : const <int, String>{};
-    return [
-      for (final fila in filas)
-        EventoAuditoria(
-          id: 'e${fila['id_evento']}',
-          fechaHora: DateTime.parse(fila['fecha_hora_evento'] as String)
-              .toLocal(),
-          accion: textoAAccion(fila['accion'] as String),
-          recurso: textoARecurso(fila['tipo_recurso'] as String),
-          resultado: textoAResultado(fila['resultado'] as String),
-          proposito: textoAProposito(fila['proposito_uso'] as String?),
-          usuarioId: usuariosPorCorreo[(fila['usuario'] as Map?)?['correo']],
-          sedeId: sedesPorNombre[(fila['sede'] as Map?)?['nombre']],
-          pacienteId: pacientes[fila['id_paciente']],
-          correoIntento: fila['correo_intento'] as String?,
-          ip: fila['ip'] as String?,
-        ),
-    ];
+    return [for (final fila in filas) ?_evento(fila, pacientes)];
+  }
+
+  /// Un evento que esta versión no sabe leer se salta en vez de dejar la
+  /// auditoría sin ninguno (F-21).
+  EventoAuditoria? _evento(
+    Map<String, dynamic> fila,
+    Map<int, String> pacientes,
+  ) {
+    try {
+      return EventoAuditoria(
+        id: 'e${fila['id_evento']}',
+        fechaHora: DateTime.parse(fila['fecha_hora_evento'] as String)
+            .toLocal(),
+        accion: textoAAccion(fila['accion'] as String),
+        recurso: textoARecurso(fila['tipo_recurso'] as String),
+        resultado: textoAResultado(fila['resultado'] as String),
+        proposito: textoAProposito(fila['proposito_uso'] as String?),
+        usuarioId: usuariosPorCorreo[(fila['usuario'] as Map?)?['correo']],
+        sedeId: sedesPorNombre[(fila['sede'] as Map?)?['nombre']],
+        pacienteId: pacientes[fila['id_paciente']],
+        correoIntento: fila['correo_intento'] as String?,
+        ip: fila['ip'] as String?,
+      );
+    } catch (error) {
+      debugPrint('Evento de auditoría que no se pudo leer: $error');
+      return null;
+    }
   }
 }

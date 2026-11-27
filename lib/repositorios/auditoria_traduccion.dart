@@ -18,6 +18,7 @@ String recursoATexto(RecursoAuditoria r) => switch (r) {
   RecursoAuditoria.medicionIndicador => 'medicion_indicador',
   RecursoAuditoria.pacientesAltaReciente => 'pacientes_alta_reciente',
   RecursoAuditoria.auditoriaAccesos => 'auditoria_accesos',
+  RecursoAuditoria.usuario => 'usuario',
 };
 
 String resultadoATexto(ResultadoAuditoria r) => switch (r) {
