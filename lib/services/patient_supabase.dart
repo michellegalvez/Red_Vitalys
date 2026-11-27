@@ -1,5 +1,6 @@
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/services/patient_service.dart';
+import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Reads the patients, their encounters and their stored risk from Supabase.
@@ -19,32 +20,38 @@ class PatientSupabase implements PatientService {
 
   final Map<String, String> patientIdsByDocument;
 
+  late final _guard = SessionGuard.of(client);
+
   @override
   bool get isRemote => true;
 
   @override
   Future<List<PacienteEnSeguimiento>> listPatients(DateTime today) async {
-    final rows = await client
-        .from('atencion')
-        .select(
-          'id_paciente, fecha_inicio, fecha_fin, tipo_atencion, proposito, '
-          'sede(nombre), usuario(correo), '
-          'prediccion_reingreso(score_riesgo, fecha_prediccion), '
-          'paciente(primer_nombre, segundo_nombre, primer_apellido, '
-          'segundo_apellido, fecha_nacimiento, sexo, '
-          'identificador_paciente(tipo_documento, numero_identificacion, '
-          'es_principal))',
-        )
-        .order('fecha_fin', ascending: false, nullsFirst: false);
+    final rows = await _guard.run(
+      () => client
+          .from('atencion')
+          .select(
+            'id_paciente, fecha_inicio, fecha_fin, tipo_atencion, proposito, '
+            'sede(nombre), usuario(correo), '
+            'prediccion_reingreso(score_riesgo, fecha_prediccion), '
+            'paciente(primer_nombre, segundo_nombre, primer_apellido, '
+            'segundo_apellido, fecha_nacimiento, sexo, '
+            'identificador_paciente(tipo_documento, numero_identificacion, '
+            'es_principal))',
+          )
+          .order('fecha_fin', ascending: false, nullsFirst: false),
+    );
 
-    final people = await client
-        .from('paciente')
-        .select(
-          'id_paciente, primer_nombre, segundo_nombre, primer_apellido, '
-          'segundo_apellido, fecha_nacimiento, sexo, '
-          'identificador_paciente(tipo_documento, numero_identificacion, '
-          'es_principal)',
-        );
+    final people = await _guard.run(
+      () => client
+          .from('paciente')
+          .select(
+            'id_paciente, primer_nombre, segundo_nombre, primer_apellido, '
+            'segundo_apellido, fecha_nacimiento, sexo, '
+            'identificador_paciente(tipo_documento, numero_identificacion, '
+            'es_principal)',
+          ),
+    );
 
     final latest = <int, Map<String, dynamic>>{};
     final lastSite = <int, String>{};

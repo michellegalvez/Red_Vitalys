@@ -4,6 +4,7 @@ import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/atencion.dart';
 import 'package:red_vitalys/repositorios/auditoria_traduccion.dart';
 import 'package:red_vitalys/services/history_service.dart';
+import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Reads a patient's history, identifiers and stored risk from Supabase.
@@ -11,6 +12,8 @@ class HistorySupabase implements HistoryService {
   HistorySupabase(this.client);
 
   final SupabaseClient client;
+
+  late final _guard = SessionGuard.of(client);
 
   @override
   bool get isRemote => true;
@@ -22,24 +25,28 @@ class HistorySupabase implements HistoryService {
     required DateTime today,
   }) async {
     final patientId = await _patientId(patient);
-    final person = await client
-        .from('paciente')
-        .select(
-          'fecha_nacimiento, direccion, telefono, '
-          'identificador_paciente(numero_identificacion, es_principal, '
-          'sistema_origen(nombre))',
-        )
-        .eq('id_paciente', patientId)
-        .single();
-    final rows = await client
-        .from('atencion')
-        .select(
-          'id_atencion, tipo_atencion, fecha_inicio, fecha_fin, destino_alta, '
-          'sede(nombre_corto), usuario(nombre_completo)',
-        )
-        .eq('id_paciente', patientId)
-        // Ties on the start date keep this order: the latest saved goes first.
-        .order('id_atencion', ascending: false);
+    final person = await _guard.run(
+      () => client
+          .from('paciente')
+          .select(
+            'fecha_nacimiento, direccion, telefono, '
+            'identificador_paciente(numero_identificacion, es_principal, '
+            'sistema_origen(nombre))',
+          )
+          .eq('id_paciente', patientId)
+          .single(),
+    );
+    final rows = await _guard.run(
+      () => client
+          .from('atencion')
+          .select(
+            'id_atencion, tipo_atencion, fecha_inicio, fecha_fin, destino_alta, '
+            'sede(nombre_corto), usuario(nombre_completo)',
+          )
+          .eq('id_paciente', patientId)
+          // Ties on the start date keep this order: the latest saved goes first.
+          .order('id_atencion', ascending: false),
+    );
 
     return Patient(
       id: 'pac-${patient.id}',
@@ -63,14 +70,17 @@ class HistorySupabase implements HistoryService {
     required String siteName,
     required DateTime today,
   }) async {
-    final rows = await client
-        .from('atencion')
-        .select(
-          'fecha_inicio, fecha_fin, '
-          'prediccion_reingreso(score_riesgo, fecha_prediccion, '
-          'factor_riesgo(id_factor, variable, contribucion))',
-        )
-        .eq('id_paciente', await _patientId(patient));
+    final patientId = await _patientId(patient);
+    final rows = await _guard.run(
+      () => client
+          .from('atencion')
+          .select(
+            'fecha_inicio, fecha_fin, '
+            'prediccion_reingreso(score_riesgo, fecha_prediccion, '
+            'factor_riesgo(id_factor, variable, contribucion))',
+          )
+          .eq('id_paciente', patientId),
+    );
     return _latestRisk(rows);
   }
 
@@ -85,38 +95,42 @@ class HistorySupabase implements HistoryService {
     if (doctorId == null) {
       throw StateError('No hay sesión de Supabase para registrar la atención');
     }
-    final site = await client
-        .from('sede')
-        .select('id_sede')
-        .eq('nombre', siteName)
-        .single();
+    final site = await _guard.run(
+      () =>
+          client.from('sede').select('id_sede').eq('nombre', siteName).single(),
+    );
     final end = encounter.alta;
-    await client.from('atencion').insert({
-      'id_paciente': await _patientId(patient),
-      'id_sede': site['id_sede'],
-      'id_usuario': doctorId,
-      'tipo_atencion': switch (encounter.tipo) {
-        EncounterType.hospitalizacion => 'hospitalizacion',
-        EncounterType.urgencias => 'urgencias',
-        EncounterType.consultaExterna => 'consulta_externa',
-      },
-      'fecha_inicio': encounter.inicio.toUtc().toIso8601String(),
-      'fecha_fin': end?.toUtc().toIso8601String(),
-      'destino_alta': end == null ? null : encounter.destino,
-      'proposito': propositoATexto(purpose),
-    });
+    final patientId = await _patientId(patient);
+    await _guard.run(
+      () => client.from('atencion').insert({
+        'id_paciente': patientId,
+        'id_sede': site['id_sede'],
+        'id_usuario': doctorId,
+        'tipo_atencion': switch (encounter.tipo) {
+          EncounterType.hospitalizacion => 'hospitalizacion',
+          EncounterType.urgencias => 'urgencias',
+          EncounterType.consultaExterna => 'consulta_externa',
+        },
+        'fecha_inicio': encounter.inicio.toUtc().toIso8601String(),
+        'fecha_fin': end?.toUtc().toIso8601String(),
+        'destino_alta': end == null ? null : encounter.destino,
+        'proposito': propositoATexto(purpose),
+      }),
+    );
   }
 
   Future<int> _patientId(PacienteEnSeguimiento patient) async {
     if (patient.id.startsWith('db')) {
       return int.parse(patient.id.substring(2));
     }
-    final row = await client
-        .from('identificador_paciente')
-        .select('id_paciente')
-        .eq('numero_identificacion', patient.numeroDocumento)
-        .eq('es_principal', true)
-        .single();
+    final row = await _guard.run(
+      () => client
+          .from('identificador_paciente')
+          .select('id_paciente')
+          .eq('numero_identificacion', patient.numeroDocumento)
+          .eq('es_principal', true)
+          .single(),
+    );
     return row['id_paciente'] as int;
   }
 

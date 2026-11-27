@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:red_vitalys/models/sign_in_result.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/services/auth_service.dart';
+import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Signs in with Supabase Auth and reads the role and the sites from the database (AD-04).
@@ -17,6 +18,8 @@ class AuthSupabase implements AuthService {
   final Map<String, String> sitesByName;
 
   final Map<String, Usuario> knownUsers;
+
+  late final _guard = SessionGuard.of(client);
 
   @override
   bool get isRemote => true;
@@ -77,13 +80,16 @@ class AuthSupabase implements AuthService {
   Future<Usuario> reloadProfile(Usuario current) async {
     final id = client.auth.currentUser?.id;
     if (id == null) throw StateError('No Supabase session to read the profile');
-    final row = await client
-        .from('usuario')
-        .select(
-          'nombre_completo, correo, activo, rol(nombre), usuario_sede(sede(nombre))',
-        )
-        .eq('id_usuario', id)
-        .single();
+    final row = await _guard.run(
+      () => client
+          .from('usuario')
+          .select(
+            'nombre_completo, correo, activo, rol(nombre), '
+            'usuario_sede(sede(nombre))',
+          )
+          .eq('id_usuario', id)
+          .single(),
+    );
     final role = _roleFrom((row['rol'] as Map?)?['nombre'] as String?);
     final sites = [
       for (final link in (row['usuario_sede'] as List? ?? const []))

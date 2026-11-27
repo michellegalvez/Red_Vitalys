@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/repositorios/auditoria_traduccion.dart';
+import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Los eventos en la tabla `evento_auditoria` de Supabase.
@@ -33,6 +34,8 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
   /// no conoce se llama `db<id_paciente>`.
   final Map<String, String> pacientesPorDocumento;
 
+  late final _guardia = SessionGuard.of(cliente);
+
   /// Id de la app → `id_sede` de la base. Se pide una sola vez.
   Map<String, int>? _idsDeSede;
 
@@ -42,7 +45,9 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
   Future<Map<String, int>> _sedes() async {
     final cargadas = _idsDeSede;
     if (cargadas != null) return cargadas;
-    final filas = await cliente.from('sede').select('id_sede, nombre');
+    final filas = await _guardia.run(
+      () => cliente.from('sede').select('id_sede, nombre'),
+    );
     final ids = <String, int>{};
     for (final fila in filas) {
       final idApp = sedesPorNombre[fila['nombre'] as String];
@@ -60,12 +65,14 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
         .map((e) => e.key)
         .firstOrNull;
     if (documento == null) return null;
-    final filas = await cliente
-        .from('identificador_paciente')
-        .select('id_paciente')
-        .eq('numero_identificacion', documento)
-        .eq('es_principal', true)
-        .limit(1);
+    final filas = await _guardia.run(
+      () => cliente
+          .from('identificador_paciente')
+          .select('id_paciente')
+          .eq('numero_identificacion', documento)
+          .eq('es_principal', true)
+          .limit(1),
+    );
     if (filas.isEmpty) {
       debugPrint('No se encontró el paciente del evento de auditoría');
       return null;
@@ -75,7 +82,9 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
 
   /// `id_paciente` → id de la app, para los pacientes de la auditoría.
   Future<Map<int, String>> _pacientesDeLosEventos() async {
-    final filas = await cliente.rpc<List<dynamic>>('pacientes_de_auditoria');
+    final filas = await _guardia.run(
+      () => cliente.rpc<List<dynamic>>('pacientes_de_auditoria'),
+    );
     return {
       for (final fila in filas.cast<Map<String, dynamic>>())
         fila['id_paciente'] as int:
@@ -100,28 +109,34 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
     final idPaciente = pacienteId == null
         ? null
         : await _idDePaciente(pacienteId);
-    await cliente.from('evento_auditoria').insert({
-      'id_usuario': idUsuario,
-      'id_paciente': idPaciente,
-      'accion': accionATexto(evento.accion),
-      'tipo_recurso': recursoATexto(evento.recurso),
-      'resultado': resultadoATexto(evento.resultado),
-      'proposito_uso': proposito == null ? null : propositoATexto(proposito),
-      'id_sede': idSede,
-      'correo_intento': evento.correoIntento,
-    });
+    await _guardia.run(
+      () => cliente.from('evento_auditoria').insert({
+        'id_usuario': idUsuario,
+        'id_paciente': idPaciente,
+        'accion': accionATexto(evento.accion),
+        'tipo_recurso': recursoATexto(evento.recurso),
+        'resultado': resultadoATexto(evento.resultado),
+        'proposito_uso': proposito == null ? null : propositoATexto(proposito),
+        'id_sede': idSede,
+        'correo_intento': evento.correoIntento,
+      }),
+      // Un inicio de sesión fallido todavía no tiene sesión (F-20 A4).
+      requiresSession: idUsuario != null,
+    );
   }
 
   @override
   Future<List<EventoAuditoria>> listar() async {
-    final filas = await cliente
-        .from('evento_auditoria')
-        .select(
-          'id_evento, fecha_hora_evento, accion, tipo_recurso, resultado, '
-          'proposito_uso, correo_intento, ip, id_paciente, usuario(correo), '
-          'sede(nombre)',
-        )
-        .order('fecha_hora_evento', ascending: false);
+    final filas = await _guardia.run(
+      () => cliente
+          .from('evento_auditoria')
+          .select(
+            'id_evento, fecha_hora_evento, accion, tipo_recurso, resultado, '
+            'proposito_uso, correo_intento, ip, id_paciente, usuario(correo), '
+            'sede(nombre)',
+          )
+          .order('fecha_hora_evento', ascending: false),
+    );
     final pacientes = filas.any((f) => f['id_paciente'] != null)
         ? await _pacientesDeLosEventos()
         : const <int, String>{};

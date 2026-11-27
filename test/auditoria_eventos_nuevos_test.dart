@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/repositorios/auditoria_supabase.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'supabase_ayudas.dart';
 
 // La auditoría de la demo sigue funcionando aunque la base tenga eventos que
 // crea una versión más nueva de la app (F-21, F-24).
@@ -26,7 +26,7 @@ Map<String, Object?> _row(int id, String resource) => {
 
 void main() {
   test('lee los cambios de una cuenta y salta lo que no conoce', () async {
-    final client = MockClient(
+    final servidor = await ServidorFalso(
       (request) async => http.Response(
         jsonEncode([
           _row(3, 'usuario'),
@@ -37,14 +37,9 @@ void main() {
         request: request,
         headers: {'content-type': 'application/json; charset=utf-8'},
       ),
-    );
+    ).conSesion();
     final audit = AuditoriaSupabase(
-      cliente: SupabaseClient(
-        'https://ejemplo.supabase.co',
-        'clave-publica',
-        httpClient: client,
-        authOptions: const AuthClientOptions(autoRefreshToken: false),
-      ),
+      cliente: servidor.cliente,
       sedesPorNombre: const {'Clínica Vitalys Cali Norte': 's1'},
       usuariosPorCorreo: const {},
       pacientesPorDocumento: const {},

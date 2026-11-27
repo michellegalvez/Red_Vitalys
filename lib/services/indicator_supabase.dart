@@ -1,5 +1,6 @@
 import 'package:red_vitalys/modelos/indicadores.dart';
 import 'package:red_vitalys/services/indicator_service.dart';
+import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Reads and saves the indicator measurements in Supabase.
@@ -10,19 +11,23 @@ class IndicatorSupabase implements IndicatorService {
 
   final Map<String, String> sitesByName;
 
+  late final _guard = SessionGuard.of(client);
+
   @override
   bool get isRemote => true;
 
   @override
   Future<List<Medicion>> listMeasurements() async {
-    final rows = await client
-        .from('medicion_indicador')
-        .select(
-          'id_medicion, periodo_inicio, valor, indicador(codigo), '
-          'sede(nombre)',
-        )
-        .order('periodo_inicio')
-        .order('id_medicion');
+    final rows = await _guard.run(
+      () => client
+          .from('medicion_indicador')
+          .select(
+            'id_medicion, periodo_inicio, valor, indicador(codigo), '
+            'sede(nombre)',
+          )
+          .order('periodo_inicio')
+          .order('id_medicion'),
+    );
     return [for (final row in rows) _toMeasurement(row)];
   }
 
@@ -51,27 +56,30 @@ class IndicatorSupabase implements IndicatorService {
     if (userId == null) {
       throw StateError('No hay sesión de Supabase para guardar la medición');
     }
-    final indicator = await client
-        .from('indicador')
-        .select('id_indicador')
-        .eq('codigo', measurement.indicador.name)
-        .single();
-    final site = await client
-        .from('sede')
-        .select('id_sede')
-        .eq('nombre', siteName)
-        .single();
+    final indicator = await _guard.run(
+      () => client
+          .from('indicador')
+          .select('id_indicador')
+          .eq('codigo', measurement.indicador.name)
+          .single(),
+    );
+    final site = await _guard.run(
+      () =>
+          client.from('sede').select('id_sede').eq('nombre', siteName).single(),
+    );
     final start = measurement.periodo;
     final end = DateTime(start.year, start.month + 1, 0);
     try {
-      await client.from('medicion_indicador').insert({
-        'id_indicador': indicator['id_indicador'],
-        'id_sede': site['id_sede'],
-        'periodo_inicio': _date(start),
-        'periodo_fin': _date(end),
-        'valor': measurement.valor,
-        'registrada_por': userId,
-      });
+      await _guard.run(
+        () => client.from('medicion_indicador').insert({
+          'id_indicador': indicator['id_indicador'],
+          'id_sede': site['id_sede'],
+          'periodo_inicio': _date(start),
+          'periodo_fin': _date(end),
+          'valor': measurement.valor,
+          'registrada_por': userId,
+        }),
+      );
     } on PostgrestException catch (error) {
       if (error.code == '23505') throw const DuplicateMeasurement();
       rethrow;
