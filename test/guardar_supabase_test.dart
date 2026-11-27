@@ -99,6 +99,9 @@ void main() {
     expect(params['p_id_sede_sesion'], 4);
     expect(params['p_proposito'], 'atencion_paciente');
     expect(params['p_tipo_atencion'], 'urgencias');
+    // Las fechas del formulario son de Colombia, como las de la base.
+    expect(params['p_fecha_inicio'], '2026-11-05T00:00:00-05:00');
+    expect(params['p_fecha_fin'], '2026-11-06T00:00:00-05:00');
     expect(_rutas(servidor), isNot(contains(endsWith('/evento_auditoria'))));
     expect(_rutas(servidor), isNot(contains(endsWith('/atencion'))));
   });

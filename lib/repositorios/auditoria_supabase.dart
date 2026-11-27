@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:red_vitalys/formato/formato.dart';
+import 'package:red_vitalys/formato/hora_colombia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/repositorios/auditoria_traduccion.dart';
@@ -151,8 +152,8 @@ class AuditoriaSupabase implements AuditoriaRepositorio {
     try {
       return EventoAuditoria(
         id: 'e${fila['id_evento']}',
-        fechaHora: DateTime.parse(fila['fecha_hora_evento'] as String)
-            .toLocal(),
+        // La hora de Colombia, la misma en cualquier equipo.
+        fechaHora: horaColombia(fila['fecha_hora_evento'] as String),
         accion: textoAAccion(fila['accion'] as String),
         recurso: textoARecurso(fila['tipo_recurso'] as String),
         resultado: textoAResultado(fila['resultado'] as String),

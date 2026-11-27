@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:red_vitalys/formato/formato.dart';
+import 'package:red_vitalys/formato/hora_colombia.dart';
 import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/atencion.dart';
@@ -123,8 +124,8 @@ class HistorySupabase implements HistoryService {
               EncounterType.urgencias => 'urgencias',
               EncounterType.consultaExterna => 'consulta_externa',
             },
-            'p_fecha_inicio': encounter.inicio.toUtc().toIso8601String(),
-            'p_fecha_fin': end?.toUtc().toIso8601String(),
+            'p_fecha_inicio': textoColombia(encounter.inicio),
+            'p_fecha_fin': end == null ? null : textoColombia(end),
             'p_destino_alta': end == null ? null : encounter.destino,
             'p_proposito': propositoATexto(purpose),
             'p_id_sede_sesion': sessionSiteId,
@@ -233,8 +234,6 @@ class HistorySupabase implements HistoryService {
     );
   }
 
-  DateTime _day(String timestamp) {
-    final local = DateTime.parse(timestamp).toLocal();
-    return DateTime(local.year, local.month, local.day);
-  }
+  /// The day in Colombia, as the database counts it (America/Bogota).
+  DateTime _day(String timestamp) => diaColombia(timestamp);
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:red_vitalys/formato/formato.dart';
+import 'package:red_vitalys/formato/hora_colombia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/services/patient_service.dart';
 import 'package:red_vitalys/services/remote_ids.dart';
@@ -221,10 +222,8 @@ class PatientSupabase implements PatientService {
     );
   }
 
-  DateTime _day(String timestamp) {
-    final local = DateTime.parse(timestamp).toLocal();
-    return DateTime(local.year, local.month, local.day);
-  }
+  /// The day in Colombia, as the database counts it (America/Bogota).
+  DateTime _day(String timestamp) => diaColombia(timestamp);
 
   String _fullName(Map<String, dynamic> person) => [
     person['primer_nombre'],
