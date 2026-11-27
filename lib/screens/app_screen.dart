@@ -29,11 +29,16 @@ import 'package:red_vitalys/repositorios/auditoria_memoria.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/repositorios/foto_memoria.dart';
 import 'package:red_vitalys/repositorios/foto_repositorio.dart';
+import 'package:red_vitalys/repositorios/historia_memoria.dart';
+import 'package:red_vitalys/repositorios/historia_repositorio.dart';
 import 'package:red_vitalys/repositorios/selector_foto.dart';
 import 'package:red_vitalys/repositorios/sesion_supabase.dart';
 import 'package:red_vitalys/screens/secciones.dart';
 import 'package:red_vitalys/tema/tema.dart';
+import 'package:red_vitalys/widgets/barra_volver.dart';
+import 'package:red_vitalys/widgets/boton.dart';
 import 'package:red_vitalys/widgets/navegacion.dart';
+import 'package:red_vitalys/widgets/pagina.dart';
 import 'package:red_vitalys/widgets/proposito.dart';
 
 part 'app_screen_paginas.dart';
@@ -96,6 +101,7 @@ class AppScreen extends StatefulWidget {
     this.sesion,
     this.fotos,
     this.selectorFoto,
+    this.historia,
   });
 
   final DatosSimulados datos;
@@ -108,6 +114,9 @@ class AppScreen extends StatefulWidget {
 
   /// Dónde se guardan los eventos de auditoría. Sin él, en memoria (P-01).
   final AuditoriaRepositorio? auditoria;
+
+  /// Dónde se consulta la historia y se registran atenciones (P-04).
+  final HistoriaRepositorio? historia;
 
   /// TEMPORAL (P-01): sesión de Supabase junto al inicio simulado.
   final SesionSupabase? sesion;
@@ -154,6 +163,7 @@ class _AppScreenState extends State<AppScreen> {
   Seccion? _seccionPrevia;
   _Solicitud? _solicitud;
   _ConsultaAbierta? _historia;
+  Future<Patient>? _futuraHistoria;
   _ConsultaAbierta? _registro;
   _Denegado? _denegado;
   bool _verPerfil = false;
@@ -189,6 +199,11 @@ class _AppScreenState extends State<AppScreen> {
 
   // Filtros de Pacientes en seguimiento.
   String _busqueda = '';
+
+  // Historia clínica y atenciones (P-04).
+  late final HistoriaRepositorio _historiaRepo =
+      widget.historia ??
+      HistoriaMemoria(datos: _datos, atencionesIniciales: _atenciones);
 
   // Auditoría de accesos (F-20, F-21). Los eventos solo se agregan con
   // [_registrarEvento]: nunca se editan ni se borran (AD-08).
@@ -838,6 +853,7 @@ class _AppScreenState extends State<AppScreen> {
       );
       if (permitido) {
         _historia = (paciente: paciente, proposito: elegido);
+        _futuraHistoria = _historiaRepo.obtenerHistoria(paciente.id);
       } else {
         _denegado = (
           paciente: paciente,
@@ -869,6 +885,7 @@ class _AppScreenState extends State<AppScreen> {
   /// Llamar dentro de `setState`.
   void _cerrarDetalles() {
     _historia = null;
+    _futuraHistoria = null;
     _registro = null;
     _denegado = null;
     _verPerfil = false;
@@ -879,6 +896,7 @@ class _AppScreenState extends State<AppScreen> {
 
   void _cerrarHistoria() => setState(() {
     _historia = null;
+    _futuraHistoria = null;
     _registro = null;
   });
 

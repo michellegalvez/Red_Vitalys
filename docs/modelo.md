@@ -209,12 +209,12 @@ La spine difiere RLS hasta usar datos reales. Se propone activarla desde ya en `
 
 ## Preguntas abiertas
 
-1. **Puntaje de riesgo.** El MER guarda `contribucion` con 4 decimales y la app muestra puntos enteros con signo (F-07). ¿Guardamos enteros?
-2. **Documento principal del paciente.** El MER pone el documento en `identificador_paciente`, uno por sistema de origen. La app muestra uno solo. Propuesta: `es_principal`. ¿O es el del sistema propio de Red Vitalys?
+1. **Puntaje de riesgo.** El MER guarda `contribucion` con 4 decimales y la app muestra puntos enteros con signo (F-07). *Respuesta / Decisión:* En la base de datos Postgres (`factor_riesgo.contribucion`) se almacena como `numeric(8,4)` conservando fidelidad con el modelo MER/analítico, mientras que la capa de repositorio y frontend de la aplicación redondea el valor a puntos enteros con signo para cumplir F-07.
+2. **Documento principal del paciente.** El MER pone el documento en `identificador_paciente`, uno por sistema de origen. La app muestra uno solo. Propuesta: `es_principal`. ¿O es el del sistema propio de Red Vitalys? *Respuesta / Decisión:* Se adoptó la columna `es_principal boolean not null default false` con un índice único condicional por paciente (`where es_principal`). La fila con `es_principal = true` representa el documento oficial de identidad del paciente en la red; las filas con `es_principal = false` corresponden a los identificadores en sistemas de historia clínica de origen (F-02, AD-09).
 3. **Registro de usuarios (nuevo).** ¿Quién elige el rol y las sedes de una cuenta nueva? Propuesta: el registro crea el usuario como `medico`, sin sedes, y alguien con acceso a la base las asigna.
 4. **Intentos fallidos por IP (AD-14).** ¿Se cuentan en la base o se mantiene el bloqueo por dispositivo? Lo segundo no exige una función en la base.
-5. **Atención.** ¿Qué campos más tiene el formulario de F-04 (motivo, notas)? Hoy no se guardan.
-6. **Descripción del periodo del riesgo** ("30 días tras el alta"). Hoy es un texto de la app. ¿Se deja fijo en la app?
+5. **Atención.** ¿Qué campos más tiene el formulario de F-04 (motivo, notas)? Hoy no se guardan. *Respuesta / Decisión:* Se mantienen estrictamente los campos acordados en F-04 y el MER: tipo de atención (`hospitalizacion`, `urgencias`, `consulta_externa`), sede (`id_sede`), fecha de inicio (`fecha_inicio`), fecha de fin opcional (`fecha_fin`), destino al alta opcional (`destino_alta`) y propósito (`proposito`). No se agregan campos libres fuera de especificación.
+6. **Descripción del periodo del riesgo** ("30 días tras el alta"). Hoy es un texto de la app. ¿Se deja fijo en la app? *Respuesta / Decisión:* Se mantiene fijo en la aplicación como texto estándar ("30 días tras el alta") conforme a F-07 y AD-10, pues el cálculo y definición temporal del modelo predictivo es externo a la app.
 
 ## Historial
 

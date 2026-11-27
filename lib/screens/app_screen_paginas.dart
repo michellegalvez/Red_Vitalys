@@ -522,25 +522,66 @@ extension _Paginas on _AppScreenState {
       (p) => p.id == h.paciente.id,
       orElse: () => h.paciente,
     );
-    final historia = historiaDe(
-      paciente,
-      sedeAlta: _nombresSedes[paciente.sedeAltaId] ?? '',
-      hoy: _datos.hoy,
-      nuevas: _atenciones[paciente.id] ?? const [],
-    );
     return _marco(
       usuario: usuario,
       sede: _sedeDe(usuario),
       escritorio: MediaQuery.sizeOf(context).width >= anchoEscritorio,
       onDestino: _irASeccion(usuario),
-      body: PacientePage(
-        historia: historia,
-        proposito: h.proposito,
-        fechaConsulta: formatoFechaHora(_datos.hoy),
-        puedeRegistrar: usuario.rol == Rol.medico,
-        onVolver: _cerrarHistoria,
-        onRegistrarAtencion: () => _pedirRegistro(paciente),
-        simularFallas: _simularFallas,
+      body: FutureBuilder<Patient>(
+        future: _futuraHistoria,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const ContenidoPagina(
+              children: [
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Text('Cargando historia…'),
+                  ),
+                ),
+              ],
+            );
+          }
+          if (snapshot.hasError || !snapshot.hasData) {
+            return ContenidoPagina(
+              children: [
+                BarraVolver(
+                  texto: 'Pacientes  /  ${paciente.nombre}',
+                  onPressed: _cerrarHistoria,
+                ),
+                const SizedBox(height: 24),
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('No se pudo cargar la historia'),
+                      const SizedBox(height: 12),
+                      BotonVitalys(
+                        texto: 'Reintentar',
+                        variante: VarianteBoton.secundario,
+                        onPressed: () => _actualizar(() {
+                          _futuraHistoria = _historiaRepo.obtenerHistoria(
+                            paciente.id,
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }
+          final historia = snapshot.data!;
+          return PacientePage(
+            historia: historia,
+            proposito: h.proposito,
+            fechaConsulta: formatoFechaHora(_datos.hoy),
+            puedeRegistrar: usuario.rol == Rol.medico,
+            onVolver: _cerrarHistoria,
+            onRegistrarAtencion: () => _pedirRegistro(paciente),
+            simularFallas: _simularFallas,
+          );
+        },
       ),
     );
   }

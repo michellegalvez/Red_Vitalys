@@ -65,60 +65,86 @@ extension _Guardado on _AppScreenState {
   ///
   /// Devuelve el mensaje de error, o `null` si se guardó. Con error no se
   /// guarda la atención ni se crea el evento (F-20).
-  String? _guardarAtencion(NuevaAtencion nueva) {
+  Future<String?> _guardarAtencion(NuevaAtencion nueva) async {
     final registro = _registro;
     final usuario = _usuario;
     if (registro == null || usuario == null) return null;
     if (_falla('evento-atencion')) return _mensajeFallaAccion;
     if (_falla('guardar-atencion')) return _mensajeFallaAtencion;
     final paciente = registro.paciente;
-    final total = _atenciones.values.fold<int>(0, (a, l) => a + l.length);
-    final atencion = atencionDeFormulario(
-      id: 'enc-n${total + 1}',
-      nueva: nueva,
-      sede: _datos.sede(nueva.sedeId).nombreCorto,
-      medico: usuario.nombre,
+
+    // Auditoría previa obligatoria (AD-07)
+    final evento = _armarEvento(
+      usuario: usuario,
+      sedeId: _sedeSesion,
+      accion: AccionAuditoria.registrar,
+      recurso: RecursoAuditoria.atencion,
+      resultado: ResultadoAuditoria.permitido,
+      paciente: paciente,
+      proposito: registro.proposito,
     );
-    _actualizar(() {
-      _atenciones = {
-        ..._atenciones,
-        paciente.id: ordenarAtenciones([
-          atencion,
-          ...?_atenciones[paciente.id],
-        ]),
-      };
-      if (registro.proposito == Proposito.atencionPaciente &&
-          !paciente.medicosConAtencion.contains(usuario.id)) {
-        final actualizado = paciente.copyWith(
-          medicosConAtencion: [...paciente.medicosConAtencion, usuario.id],
+    if (_auditoria.esRemoto) {
+      try {
+        await _auditoria.agregar(evento);
+      } catch (e) {
+        debugPrint(
+          'Fallo al registrar auditoría previa de atención (AD-07): $e',
         );
-        _pacientes = [
-          for (final p in _pacientes) p.id == paciente.id ? actualizado : p,
-        ];
+        return _mensajeFallaAccion;
       }
-      _registrarEvento(
-        usuario: usuario,
-        sedeId: _sedeSesion,
-        accion: AccionAuditoria.registrar,
-        recurso: RecursoAuditoria.atencion,
-        resultado: ResultadoAuditoria.permitido,
-        paciente: paciente,
+    }
+
+    try {
+      final atencion = await _historiaRepo.registrarAtencion(
+        pacienteId: paciente.id,
+        nueva: nueva,
+        medicoId: usuario.id,
+        medicoNombre: usuario.nombre,
         proposito: registro.proposito,
       );
-      _registro = null;
-    });
+
+      _actualizar(() {
+        _atenciones = {
+          ..._atenciones,
+          paciente.id: ordenarAtenciones([
+            atencion,
+            ...?_atenciones[paciente.id],
+          ]),
+        };
+        if (registro.proposito == Proposito.atencionPaciente &&
+            !paciente.medicosConAtencion.contains(usuario.id)) {
+          final actualizado = paciente.copyWith(
+            medicosConAtencion: [...paciente.medicosConAtencion, usuario.id],
+          );
+          _pacientes = [
+            for (final p in _pacientes) p.id == paciente.id ? actualizado : p,
+          ];
+        }
+        if (!_auditoria.esRemoto) {
+          _eventos.add(evento);
+        }
+        _futuraHistoria = _historiaRepo.obtenerHistoria(paciente.id);
+        _registro = null;
+      });
+    } catch (e) {
+      debugPrint('Error al registrar atención en repositorio: $e');
+      return _mensajeFallaAtencion;
+    }
+
     // Con *Urgencia* también se avisa que queda registrado (F-17 CA-10).
     final esUrgencia = registro.proposito == Proposito.urgencia;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          esUrgencia
-              ? '$avisoAccesoEmergencia. Atención registrada en la historia '
-                    'unificada'
-              : 'Atención registrada en la historia unificada',
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            esUrgencia
+                ? '$avisoAccesoEmergencia. Atención registrada en la historia '
+                      'unificada'
+                : 'Atención registrada en la historia unificada',
+          ),
         ),
-      ),
-    );
+      );
+    }
     return null;
   }
 }
