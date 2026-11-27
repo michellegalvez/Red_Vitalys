@@ -18,6 +18,9 @@ class AuthMemory implements AuthService {
   bool get isRemote => false;
 
   @override
+  Stream<void> get sessionEnded => const Stream.empty();
+
+  @override
   Future<SignInResult> signIn(String email, String password) async {
     final accounts = this.accounts;
     if (accounts != null) {

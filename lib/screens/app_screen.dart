@@ -235,6 +235,8 @@ class _AppScreenState extends State<AppScreen> {
   bool _ingresando = false;
   String? _mensajeError;
   String? _avisoInactividad;
+  // Avisa si el servidor cierra la sesión mientras se usa la app.
+  StreamSubscription<void>? _finDeSesion;
   String? _sedeElegida;
   String? _errorSede;
 
@@ -339,6 +341,15 @@ class _AppScreenState extends State<AppScreen> {
     HardwareKeyboard.instance.addHandler(_teclaPulsada);
     // El bloqueo es del equipo: sigue aunque se recargue la página (F-14).
     unawaited(_session.restore());
+    _finDeSesion = _auth.sessionEnded.listen((_) => _sesionTerminada());
+  }
+
+  /// La sesión venció o la cerraron desde el servidor: sin ella la base ya no
+  /// devuelve datos, así que se vuelve al acceso con el aviso en vez de
+  /// mostrar pantallas vacías o errores.
+  void _sesionTerminada() {
+    if (!mounted || _usuario == null || _cerrandoSesion) return;
+    _cerrarSesion(cerrarAuth: false, aviso: mensajeSesionTerminada);
   }
 
   bool _teclaPulsada(KeyEvent _) {
@@ -349,6 +360,7 @@ class _AppScreenState extends State<AppScreen> {
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_teclaPulsada);
+    unawaited(_finDeSesion?.cancel());
     _session.stop();
     _correo.dispose();
     _contrasena.dispose();
@@ -678,7 +690,11 @@ class _AppScreenState extends State<AppScreen> {
 
   /// Cierra la sesión a mano (F-23) o por inactividad (F-15). Se borran la
   /// sede, la consulta abierta y lo que no se había guardado.
-  void _cerrarSesion({bool porInactividad = false, bool cerrarAuth = true}) {
+  void _cerrarSesion({
+    bool porInactividad = false,
+    bool cerrarAuth = true,
+    String? aviso,
+  }) {
     _session.stop();
     if (cerrarAuth) _cerrarSesionDeAuth();
     setState(() {
@@ -715,7 +731,7 @@ class _AppScreenState extends State<AppScreen> {
       _correo.clear();
       _contrasena.clear();
       _mensajeError = null;
-      _avisoInactividad = porInactividad ? mensajeInactividad : null;
+      _avisoInactividad = porInactividad ? mensajeInactividad : aviso;
       // Lo traído de la base es de quien tenía la sesión: el siguiente
       // usuario lo vuelve a pedir con sus permisos.
       _sesion++;

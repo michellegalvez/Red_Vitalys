@@ -22,6 +22,9 @@ class FakeAuth implements AuthService {
   bool get isRemote => true;
 
   @override
+  Stream<void> get sessionEnded => const Stream.empty();
+
+  @override
   Future<SignInResult> signIn(String email, String password) async {
     calls.add('$email|$password');
     final index = calls.length - 1;
