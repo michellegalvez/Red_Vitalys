@@ -5,6 +5,10 @@ import 'package:red_vitalys/modelos/modelos.dart';
 abstract interface class AuthService {
   bool get isRemote;
 
+  /// Fires when the session ends outside the app: it expired or was closed
+  /// from the server, so the data can no longer be read with it.
+  Stream<void> get sessionEnded;
+
   Future<SignInResult> signIn(String email, String password);
 
   Future<void> signOut();

@@ -29,6 +29,7 @@ const String mensajeBloqueo =
 const String mensajeSinSedes = 'Su cuenta no tiene sedes asignadas';
 const String mensajeElijaSede = 'Elija la sede desde la que ingresa.';
 const String mensajeInactividad = 'Su sesión se cerró por inactividad';
+const String mensajeSesionTerminada = 'Su sesión terminó. Ingrese de nuevo.';
 
 /// Mensajes de rechazo según la causa (F-18).
 const String rechazoRol = 'Su rol no permite esta acción.';

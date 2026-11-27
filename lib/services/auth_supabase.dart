@@ -22,6 +22,11 @@ class AuthSupabase implements AuthService {
   bool get isRemote => true;
 
   @override
+  Stream<void> get sessionEnded => client.auth.onAuthStateChange
+      .where((state) => state.event == AuthChangeEvent.signedOut)
+      .map((_) {});
+
+  @override
   Future<SignInResult> signIn(String email, String password) async {
     try {
       final response = await client.auth.signInWithPassword(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
@@ -47,9 +49,13 @@ class RemoteAuth implements AuthService {
   var failsSignOut = false;
   var failsProfile = false;
   var signOuts = 0;
+  final ended = StreamController<void>.broadcast();
 
   @override
   bool get isRemote => true;
+
+  @override
+  Stream<void> get sessionEnded => ended.stream;
 
   @override
   Future<SignInResult> signIn(String email, String password) async {
@@ -64,6 +70,9 @@ class RemoteAuth implements AuthService {
   Future<void> signOut() async {
     signOuts++;
     if (failsSignOut) throw StateError('sin red');
+    // Like Supabase: the session-ended event arrives before the call returns.
+    ended.add(null);
+    await Future<void>.delayed(Duration.zero);
   }
 
   @override
@@ -280,5 +289,35 @@ void main() {
     expect(find.text('Ingresar'), findsOneWidget);
     expect(auth.signOuts, 2);
     await cerrarAppAyuda(t);
+  });
+
+  group('La sesión que cierra el servidor', () {
+    testWidgets('vuelve al acceso con el aviso, sin pantallas vacías', (
+      t,
+    ) async {
+      final auth = RemoteAuth();
+      await _open(t, auth: auth);
+      await entrarSedeUnica(t, 'Auditor');
+      expect(find.byTooltip('Menú de usuario'), findsOneWidget);
+
+      auth.ended.add(null);
+      await t.pumpAndSettle();
+      expect(find.byTooltip('Menú de usuario'), findsNothing);
+      expect(find.text('Ingresar'), findsOneWidget);
+      expect(find.text(mensajeSesionTerminada), findsOneWidget);
+      expect(auth.signOuts, 0);
+      await cerrarAppAyuda(t);
+    });
+
+    testWidgets('cerrar sesión a mano no muestra el aviso', (t) async {
+      final auth = RemoteAuth();
+      await _open(t, auth: auth);
+      await entrarSedeUnica(t, 'Auditor');
+      await _profile(t);
+      await tocarAyuda(t, find.text('Cerrar sesión').last);
+      expect(find.text('Ingresar'), findsOneWidget);
+      expect(find.text(mensajeSesionTerminada), findsNothing);
+      await cerrarAppAyuda(t);
+    });
   });
 }
