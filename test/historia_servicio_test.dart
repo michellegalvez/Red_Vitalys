@@ -50,14 +50,17 @@ class FakeHistory implements HistoryService {
   }
 
   @override
-  Future<void> addEncounter(
+  Future<String?> addEncounter(
     PacienteEnSeguimiento patient,
     NuevaAtencion encounter, {
     required String siteName,
     required Proposito purpose,
+    required String? sessionSiteName,
   }) async {
     if (failsSaving) throw StateError('sin red');
     saved.add((encounter, purpose, siteName));
+
+    return null;
   }
 }
 

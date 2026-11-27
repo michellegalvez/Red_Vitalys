@@ -4,6 +4,7 @@ import 'package:red_vitalys/modelos/historia.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/atencion.dart';
 import 'package:red_vitalys/repositorios/auditoria_traduccion.dart';
+import 'package:red_vitalys/services/audit_event_not_saved.dart';
 import 'package:red_vitalys/services/history_service.dart';
 import 'package:red_vitalys/services/remote_ids.dart';
 import 'package:red_vitalys/services/session_guard.dart';
@@ -93,35 +94,48 @@ class HistorySupabase implements HistoryService {
   }
 
   @override
-  Future<void> addEncounter(
+  Future<String?> addEncounter(
     PacienteEnSeguimiento patient,
     NuevaAtencion encounter, {
     required String siteName,
     required Proposito purpose,
+    required String? sessionSiteName,
   }) async {
-    final doctorId = client.auth.currentUser?.id;
-    if (doctorId == null) {
-      throw StateError('No hay sesión de Supabase para registrar la atención');
-    }
-    final siteId = await _ids.siteId(siteName);
+    final [siteId, patientId] = await Future.wait([
+      _ids.siteId(siteName),
+      _ids.patientId(patient),
+    ]);
+    final sessionSiteId = sessionSiteName == null
+        ? null
+        : await _ids.siteId(sessionSiteName);
     final end = encounter.alta;
-    final patientId = await _ids.patientId(patient);
-    await _guard.run(
-      () => client.from('atencion').insert({
-        'id_paciente': patientId,
-        'id_sede': siteId,
-        'id_usuario': doctorId,
-        'tipo_atencion': switch (encounter.tipo) {
-          EncounterType.hospitalizacion => 'hospitalizacion',
-          EncounterType.urgencias => 'urgencias',
-          EncounterType.consultaExterna => 'consulta_externa',
-        },
-        'fecha_inicio': encounter.inicio.toUtc().toIso8601String(),
-        'fecha_fin': end?.toUtc().toIso8601String(),
-        'destino_alta': end == null ? null : encounter.destino,
-        'proposito': propositoATexto(purpose),
-      }),
-    );
+    final Object? id;
+    try {
+      // The encounter and its audit event, in one transaction (014).
+      id = await _guard.run(
+        () => client.rpc<dynamic>(
+          'registrar_atencion',
+          params: {
+            'p_id_paciente': patientId,
+            'p_id_sede': siteId,
+            'p_tipo_atencion': switch (encounter.tipo) {
+              EncounterType.hospitalizacion => 'hospitalizacion',
+              EncounterType.urgencias => 'urgencias',
+              EncounterType.consultaExterna => 'consulta_externa',
+            },
+            'p_fecha_inicio': encounter.inicio.toUtc().toIso8601String(),
+            'p_fecha_fin': end?.toUtc().toIso8601String(),
+            'p_destino_alta': end == null ? null : encounter.destino,
+            'p_proposito': propositoATexto(purpose),
+            'p_id_sede_sesion': sessionSiteId,
+          },
+        ),
+      );
+    } on PostgrestException catch (error) {
+      if (error.code == auditEventErrorCode) throw const AuditEventNotSaved();
+      rethrow;
+    }
+    return id == null ? null : 'enc-$id';
   }
 
   List<SystemIdentifier> _identifiers(List<dynamic>? rows) {

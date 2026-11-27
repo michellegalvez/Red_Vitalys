@@ -33,6 +33,7 @@ import 'package:red_vitalys/repositorios/foto_repositorio.dart';
 import 'package:red_vitalys/repositorios/selector_foto.dart';
 import 'package:red_vitalys/screens/secciones.dart';
 import 'package:red_vitalys/services/access_control_service.dart';
+import 'package:red_vitalys/services/audit_event_not_saved.dart';
 import 'package:red_vitalys/services/auth_memory.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/history_memory.dart';

@@ -42,7 +42,7 @@ class PatientSupabase implements PatientService {
   @override
   Future<List<PacienteEnSeguimiento>> listPatients(DateTime today) async {
     // Independent queries: they go together, not one after the other.
-    final (rows, people) = await (_encounters(), _people()).wait;
+    final [rows, people] = await Future.wait([_encounters(), _people()]);
     final latest = <int, Map<String, dynamic>>{};
     final lastSite = <int, String>{};
     final doctors = <int, List<String>>{};

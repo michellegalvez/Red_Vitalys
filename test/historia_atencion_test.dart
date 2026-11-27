@@ -9,6 +9,7 @@ import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/atencion.dart';
 import 'package:red_vitalys/repositorios/auditoria_repositorio.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
+import 'package:red_vitalys/services/audit_event_not_saved.dart';
 import 'package:red_vitalys/services/history_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
 import 'package:red_vitalys/widgets/boton.dart';
@@ -29,6 +30,7 @@ class QueuedHistory implements HistoryService {
   final loads = <Completer<Patient>>[];
   Completer<void>? saving;
   var failsSaving = false;
+  var failsEvent = false;
   final saved = <NuevaAtencion>[];
 
   @override
@@ -57,15 +59,19 @@ class QueuedHistory implements HistoryService {
   }
 
   @override
-  Future<void> addEncounter(
+  Future<String?> addEncounter(
     PacienteEnSeguimiento patient,
     NuevaAtencion encounter, {
     required String siteName,
     required Proposito purpose,
+    required String? sessionSiteName,
   }) async {
     await saving?.future;
+    if (failsEvent) throw const AuditEventNotSaved();
     if (failsSaving) throw StateError('sin red');
     saved.add(encounter);
+
+    return null;
   }
 }
 
@@ -185,7 +191,7 @@ void main() {
       history.loads.single.complete(_historyOf('Sede de la base'));
       await t.pumpAndSettle();
       await _fillForm(t);
-      audit.fails = true;
+      history.failsEvent = true;
       await tocarAyuda(
         t,
         find.widgetWithText(BotonVitalys, 'Guardar atención'),
@@ -193,6 +199,27 @@ void main() {
       expect(find.text(_falla), findsOneWidget);
       expect(history.saved, isEmpty);
       _expectFormKept(t);
+      await cerrarAppAyuda(t);
+    });
+
+    testWidgets('con Supabase el evento va con la atención: si el guardado '
+        'falla no queda un evento suelto, ni uno por reintento', (t) async {
+      final history = QueuedHistory()..failsSaving = true;
+      final audit = FlakyAudit();
+      await _open(t, history, audit: audit);
+      await _openJorge(t);
+      history.loads.single.complete(_historyOf('Sede de la base'));
+      await t.pumpAndSettle();
+      await _fillForm(t);
+      for (var i = 0; i < 2; i++) {
+        await _tapSave(t);
+        await t.pumpAndSettle();
+        expect(find.text(_fallaGuardar), findsOneWidget);
+      }
+      expect(
+        audit.saved.where((e) => e.accion == AccionAuditoria.registrar),
+        isEmpty,
+      );
       await cerrarAppAyuda(t);
     });
 

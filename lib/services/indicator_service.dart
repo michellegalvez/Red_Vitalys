@@ -6,7 +6,14 @@ abstract interface class IndicatorService {
 
   Future<List<Medicion>> listMeasurements();
 
-  Future<void> addMeasurement(Medicion measurement, {required String siteName});
+  /// Saves [measurement]. A remote source saves its audit event in the same
+  /// operation (F-12, F-20) and throws `AuditEventNotSaved` if the event
+  /// cannot be created; [sessionSiteName] is the site of that event.
+  Future<void> addMeasurement(
+    Medicion measurement, {
+    required String siteName,
+    required String? sessionSiteName,
+  });
 }
 
 /// The measurement already exists for that indicator, site and month (F-12).

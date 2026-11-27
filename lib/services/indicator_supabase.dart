@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:red_vitalys/formato/formato.dart';
 import 'package:red_vitalys/modelos/indicadores.dart';
+import 'package:red_vitalys/services/audit_event_not_saved.dart';
 import 'package:red_vitalys/services/indicator_service.dart';
 import 'package:red_vitalys/services/remote_ids.dart';
 import 'package:red_vitalys/services/session_guard.dart';
@@ -73,28 +74,32 @@ class IndicatorSupabase implements IndicatorService {
   Future<void> addMeasurement(
     Medicion measurement, {
     required String siteName,
+    required String? sessionSiteName,
   }) async {
-    final userId = client.auth.currentUser?.id;
-    if (userId == null) {
-      throw StateError('No hay sesión de Supabase para guardar la medición');
-    }
-    final indicatorId = await _ids.indicatorId(measurement.indicador.name);
-    final siteId = await _ids.siteId(siteName);
-    final start = measurement.periodo;
-    final end = DateTime(start.year, start.month + 1, 0);
+    final [indicatorId, siteId] = await Future.wait([
+      _ids.indicatorId(measurement.indicador.name),
+      _ids.siteId(siteName),
+    ]);
+    final sessionSiteId = sessionSiteName == null
+        ? null
+        : await _ids.siteId(sessionSiteName);
     try {
+      // The measurement and its audit event, in one transaction (014).
       await _guard.run(
-        () => client.from('medicion_indicador').insert({
-          'id_indicador': indicatorId,
-          'id_sede': siteId,
-          'periodo_inicio': _date(start),
-          'periodo_fin': _date(end),
-          'valor': measurement.valor,
-          'registrada_por': userId,
-        }),
+        () => client.rpc<dynamic>(
+          'registrar_medicion',
+          params: {
+            'p_id_indicador': indicatorId,
+            'p_id_sede': siteId,
+            'p_periodo_inicio': _date(measurement.periodo),
+            'p_valor': measurement.valor,
+            'p_id_sede_sesion': sessionSiteId,
+          },
+        ),
       );
     } on PostgrestException catch (error) {
       if (error.code == '23505') throw const DuplicateMeasurement();
+      if (error.code == auditEventErrorCode) throw const AuditEventNotSaved();
       rethrow;
     }
   }

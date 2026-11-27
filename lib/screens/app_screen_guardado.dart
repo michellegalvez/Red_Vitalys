@@ -4,6 +4,12 @@ part of 'app_screen.dart';
 /// mediciones (F-12) y las atenciones (F-04). Cambia el estado solo con
 /// `_actualizar`.
 extension _Guardado on _AppScreenState {
+  /// El nombre de la sede de la sesión, la de los eventos (AD-05).
+  String? get _nombreSedeSesion {
+    final id = _sedeSesion;
+    return id == null ? null : _datos.sede(id).nombre;
+  }
+
   /// Valida una medición con las reglas de F-12. Devuelve el mensaje de
   /// rechazo o `null` si se puede guardar.
   String? _validarMedicion(NuevaMedicion m) {
@@ -58,24 +64,28 @@ extension _Guardado on _AppScreenState {
       recurso: RecursoAuditoria.medicionIndicador,
       resultado: ResultadoAuditoria.permitido,
     );
-    if (!await _guardarEventosAntes([evento])) {
-      return mounted ? _mensajeFallaAccion : null;
-    }
-    if (!mounted || sesion != _sesion) return null;
     if (_indicators.isRemote) {
+      // Con Supabase, el evento se guarda con la medición en la misma
+      // operación: si el evento no se crea, la medición tampoco, y si la
+      // medición falla no queda un evento suelto.
       try {
         await _indicators.addMeasurement(
           medicion,
           siteName: _datos.sede(nueva.sedeId).nombre,
+          sessionSiteName: _nombreSedeSesion,
         );
       } on DuplicateMeasurement {
         return mensajeMedicionRepetida;
+      } on AuditEventNotSaved {
+        return mounted ? _mensajeFallaAccion : null;
       } catch (error) {
         debugPrint('No se pudo guardar la medición: $error');
         return _mensajeFallaMedicion;
       }
-      if (!mounted || sesion != _sesion) return null;
+    } else if (!await _guardarEventosAntes([evento])) {
+      return mounted ? _mensajeFallaAccion : null;
     }
+    if (!mounted || sesion != _sesion) return null;
     _actualizar(() {
       _mediciones = [..._mediciones, medicion];
       _anotarEvento(evento, enviar: false);
@@ -112,25 +122,29 @@ extension _Guardado on _AppScreenState {
       paciente: paciente,
       proposito: registro.proposito,
     );
-    if (!await _guardarEventosAntes([evento])) {
-      return mounted ? _mensajeFallaAccion : null;
-    }
-    // Si la sesión cambió, no se escribe a nombre de otro usuario.
-    if (!mounted || sesion != _sesion) return null;
     if (_histories.isRemote) {
+      // Con Supabase, el evento se guarda con la atención en la misma
+      // operación: si el evento no se crea, la atención tampoco, y si la
+      // atención falla no queda un evento suelto.
       try {
         await _histories.addEncounter(
           paciente,
           nueva,
           siteName: _datos.sede(nueva.sedeId).nombre,
           purpose: registro.proposito,
+          sessionSiteName: _nombreSedeSesion,
         );
+      } on AuditEventNotSaved {
+        return mounted ? _mensajeFallaAccion : null;
       } catch (error) {
         debugPrint('No se pudo registrar la atención: $error');
         return mounted ? _mensajeFallaAtencion : null;
       }
-      if (!mounted || sesion != _sesion) return null;
+    } else if (!await _guardarEventosAntes([evento])) {
+      return mounted ? _mensajeFallaAccion : null;
     }
+    // Si la sesión cambió, no se escribe a nombre de otro usuario.
+    if (!mounted || sesion != _sesion) return null;
     final total = _atenciones.values.fold<int>(0, (a, l) => a + l.length);
     final atencion = atencionDeFormulario(
       id: 'enc-n${total + 1}',
