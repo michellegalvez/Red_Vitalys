@@ -19,5 +19,6 @@ class IndicatorMemory implements IndicatorService {
   Future<void> addMeasurement(
     Medicion measurement, {
     required String siteName,
+    required String? sessionSiteName,
   }) async {}
 }

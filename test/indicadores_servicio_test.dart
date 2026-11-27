@@ -7,6 +7,7 @@ import 'package:red_vitalys/reglas/indicadores.dart';
 import 'package:red_vitalys/models/sign_in_result.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/screens/app_screen.dart';
+import 'package:red_vitalys/services/audit_event_not_saved.dart';
 import 'package:red_vitalys/services/auth_service.dart';
 import 'package:red_vitalys/services/indicator_service.dart';
 import 'package:red_vitalys/tema/tema.dart';
@@ -17,6 +18,7 @@ import 'ayudas.dart';
 class FakeIndicators implements IndicatorService {
   var failsLoading = false;
   var duplicate = false;
+  var failsEvent = false;
   var loads = 0;
   final saved = <(Medicion, String)>[];
 
@@ -34,7 +36,9 @@ class FakeIndicators implements IndicatorService {
   Future<void> addMeasurement(
     Medicion measurement, {
     required String siteName,
+    required String? sessionSiteName,
   }) async {
+    if (failsEvent) throw const AuditEventNotSaved();
     if (duplicate) throw const DuplicateMeasurement();
     saved.add((measurement, siteName));
   }
@@ -155,6 +159,16 @@ void main() {
       await _register(t);
       expect(indicators.saved, isEmpty);
       expect(find.text(mensajeMedicionRepetida), findsOneWidget);
+      await cerrarAppAyuda(t);
+    });
+
+    testWidgets('si la base no crea el evento, no se guarda y avisa que la '
+        'acción no se hizo (F-20)', (t) async {
+      final indicators = FakeIndicators()..failsEvent = true;
+      await _enterAsAdmin(t, indicators);
+      await _register(t);
+      expect(indicators.saved, isEmpty);
+      expect(find.text('No se pudo completar la acción'), findsOneWidget);
       await cerrarAppAyuda(t);
     });
   });

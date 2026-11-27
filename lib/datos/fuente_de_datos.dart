@@ -48,6 +48,7 @@ AuditoriaRepositorio elegirAuditoria({
     pacientesPorDocumento: {
       for (final p in datos.pacientes) p.numeroDocumento: p.id,
     },
+    tiposDocumento: {for (final p in datos.pacientes) p.id: p.tipoDocumento},
   );
 }
 

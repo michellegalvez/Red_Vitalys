@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:red_vitalys/models/sign_in_result.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/services/auth_service.dart';
+import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Signs in with Supabase Auth and reads the role and the sites from the database (AD-04).
@@ -18,6 +21,8 @@ class AuthSupabase implements AuthService {
 
   final Map<String, Usuario> knownUsers;
 
+  late final _guard = SessionGuard.of(client);
+
   @override
   bool get isRemote => true;
 
@@ -29,15 +34,16 @@ class AuthSupabase implements AuthService {
   @override
   Future<SignInResult> signIn(String email, String password) async {
     try {
-      final response = await client.auth.signInWithPassword(
-        email: email.trim(),
-        password: password,
-      );
+      final response = await client.auth
+          .signInWithPassword(email: email.trim(), password: password)
+          .timeout(_guard.timeout);
       final id = response.user?.id;
       if (id == null) return await _reject(SignInStatus.wrongCredentials);
       return await _loadProfile(id, email.trim());
     } on AuthRetryableFetchException {
       return const SignInResult(SignInStatus.networkError);
+    } on TimeoutException {
+      return _reject(SignInStatus.networkError);
     } on AuthException {
       return const SignInResult(SignInStatus.wrongCredentials);
     } on PostgrestException catch (error) {
@@ -58,7 +64,9 @@ class AuthSupabase implements AuthService {
     if (token != null) {
       try {
         // Only this session: the same account may be open on other devices.
-        await client.auth.admin.signOut(token, scope: SignOutScope.local);
+        await client.auth.admin
+            .signOut(token, scope: SignOutScope.local)
+            .timeout(_guard.timeout);
       } on AuthException catch (error) {
         // An expired or unknown token is already signed out on the server.
         const gone = {'401', '403', '404'};
@@ -66,7 +74,7 @@ class AuthSupabase implements AuthService {
       }
     }
     try {
-      await client.auth.signOut();
+      await client.auth.signOut().timeout(_guard.timeout);
     } catch (error) {
       // The server session is already closed; the device one is gone too.
       debugPrint('Could not tell the server again about the sign-out: $error');
@@ -77,13 +85,16 @@ class AuthSupabase implements AuthService {
   Future<Usuario> reloadProfile(Usuario current) async {
     final id = client.auth.currentUser?.id;
     if (id == null) throw StateError('No Supabase session to read the profile');
-    final row = await client
-        .from('usuario')
-        .select(
-          'nombre_completo, correo, activo, rol(nombre), usuario_sede(sede(nombre))',
-        )
-        .eq('id_usuario', id)
-        .single();
+    final row = await _guard.run(
+      () => client
+          .from('usuario')
+          .select(
+            'nombre_completo, correo, activo, rol(nombre), '
+            'usuario_sede(sede(nombre))',
+          )
+          .eq('id_usuario', id)
+          .single(),
+    );
     final role = _roleFrom((row['rol'] as Map?)?['nombre'] as String?);
     final sites = [
       for (final link in (row['usuario_sede'] as List? ?? const []))
@@ -110,7 +121,8 @@ class AuthSupabase implements AuthService {
           'nombre_completo, correo, activo, rol(nombre), usuario_sede(sede(nombre))',
         )
         .eq('id_usuario', id)
-        .maybeSingle();
+        .maybeSingle()
+        .timeout(_guard.timeout);
     if (row == null || row['activo'] == false) {
       return _reject(SignInStatus.wrongCredentials);
     }

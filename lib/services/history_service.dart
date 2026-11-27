@@ -20,10 +20,16 @@ abstract interface class HistoryService {
     required DateTime today,
   });
 
-  Future<void> addEncounter(
+  /// Saves [encounter]. A remote source saves its audit event in the same
+  /// operation (F-04 step 4, F-20) and throws `AuditEventNotSaved` if the
+  /// event cannot be created; [sessionSiteName] is the site of that event
+  /// (AD-05). Returns the id of the saved encounter, or `null` if the source
+  /// does not give one.
+  Future<String?> addEncounter(
     PacienteEnSeguimiento patient,
     NuevaAtencion encounter, {
     required String siteName,
     required Proposito purpose,
+    required String? sessionSiteName,
   });
 }

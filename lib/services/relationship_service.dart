@@ -1,5 +1,7 @@
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/reglas.dart';
+import 'package:red_vitalys/services/remote_ids.dart';
+import 'package:red_vitalys/services/session_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Tells whether a doctor has a relationship with a patient (F-05).
@@ -36,6 +38,8 @@ class RelationshipSupabase implements RelationshipService {
 
   final SupabaseClient client;
 
+  late final _guard = SessionGuard.of(client);
+
   @override
   bool get isRemote => true;
 
@@ -45,25 +49,13 @@ class RelationshipSupabase implements RelationshipService {
     PacienteEnSeguimiento patient,
     DateTime today,
   ) async {
-    final result = await client.rpc<dynamic>(
-      'tiene_relacion',
-      params: {'p_id_paciente': await _patientId(patient)},
+    final patientId = await RemoteIds.of(client).patientId(patient);
+    final result = await _guard.run(
+      () => client.rpc<dynamic>(
+        'tiene_relacion',
+        params: {'p_id_paciente': patientId},
+      ),
     );
     return result == true;
-  }
-
-  Future<int> _patientId(PacienteEnSeguimiento patient) async {
-    if (patient.id.startsWith('db')) {
-      return int.parse(patient.id.substring(2));
-    }
-    final row = await client
-        .from('identificador_paciente')
-        .select('id_paciente')
-        .eq('tipo_documento', patient.tipoDocumento)
-        .eq('numero_identificacion', patient.numeroDocumento)
-        .eq('es_principal', true)
-        .limit(1)
-        .single();
-    return row['id_paciente'] as int;
   }
 }

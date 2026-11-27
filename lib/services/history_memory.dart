@@ -27,10 +27,11 @@ class HistoryMemory implements HistoryService {
       historiaDe(patient, sedeAlta: siteName, hoy: today).readmissionRisk;
 
   @override
-  Future<void> addEncounter(
+  Future<String?> addEncounter(
     PacienteEnSeguimiento patient,
     NuevaAtencion encounter, {
     required String siteName,
     required Proposito purpose,
-  }) async {}
+    required String? sessionSiteName,
+  }) async => null;
 }

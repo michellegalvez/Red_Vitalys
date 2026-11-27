@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:red_vitalys/datos/datos_simulados.dart';
 import 'package:red_vitalys/modelos/modelos.dart';
 import 'package:red_vitalys/reglas/busqueda.dart';
@@ -14,9 +13,9 @@ import 'package:red_vitalys/screens/app_screen.dart';
 import 'package:red_vitalys/services/patient_service.dart';
 import 'package:red_vitalys/services/patient_supabase.dart';
 import 'package:red_vitalys/tema/tema.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'ayudas.dart';
+import 'supabase_ayudas.dart';
 
 // Arreglos de la revisión del 26 nov: relación por una atención en curso,
 // lo que queda al cerrar sesión, *Volver* al confirmar la sede y la carga y
@@ -140,11 +139,11 @@ Map<String, Object?> _encounter({
   };
 }
 
-PatientSupabase _serviceAnswering(
+Future<PatientSupabase> _serviceAnswering(
   List<Map<String, Object?>> rows, {
   List<Map<String, Object?>> extraPeople = const [],
-}) {
-  final client = MockClient((request) async {
+}) async {
+  final servidor = await ServidorFalso((request) async {
     final Object filtered;
     if (request.url.path.endsWith('/paciente')) {
       filtered = [
@@ -162,14 +161,9 @@ PatientSupabase _serviceAnswering(
       request: request,
       headers: {'content-type': 'application/json; charset=utf-8'},
     );
-  });
+  }).conSesion();
   return PatientSupabase(
-    client: SupabaseClient(
-      'https://ejemplo.supabase.co',
-      'clave-publica',
-      httpClient: client,
-      authOptions: const AuthClientOptions(autoRefreshToken: false),
-    ),
+    client: servidor.cliente,
     sitesByName: {for (final s in _datos.sedes) s.nombre: s.id},
     usersByEmail: {for (final u in _datos.usuarios) u.correo: u.id},
     patientIdsByDocument: const {},
@@ -179,7 +173,7 @@ PatientSupabase _serviceAnswering(
 void main() {
   group('F-05 · una atención en curso con Atención del paciente', () {
     test('da relación aunque el alta ya no cuente', () async {
-      final service = _serviceAnswering([
+      final service = await _serviceAnswering([
         _encounter(start: '2026-11-05T08:00:00Z', purpose: 'atencion_paciente'),
         _encounter(
           start: '2026-09-20T08:00:00Z',
@@ -199,7 +193,7 @@ void main() {
     test('F-01 y F-02: un paciente sin ningún alta se encuentra, pero no '
         'entra en la lista de altas recientes', () async {
       final camila = _datos.usuarioPorCorreo('camila.martinez@vitalys.co')!;
-      final service = _serviceAnswering(
+      final service = await _serviceAnswering(
         [
           _encounter(
             start: '2026-11-05T08:00:00Z',

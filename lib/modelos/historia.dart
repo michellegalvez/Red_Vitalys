@@ -139,4 +139,19 @@ class Patient {
   final List<Encounter> encounters;
 
   String get documentDisplay => '$documentType $documentNumber';
+
+  Patient copyWith({List<Encounter>? encounters}) => Patient(
+    id: id,
+    fullName: fullName,
+    age: age,
+    sex: sex,
+    documentType: documentType,
+    documentNumber: documentNumber,
+    birthDate: birthDate,
+    phone: phone,
+    address: address,
+    systemIdentifiers: systemIdentifiers,
+    readmissionRisk: readmissionRisk,
+    encounters: encounters ?? this.encounters,
+  );
 }
