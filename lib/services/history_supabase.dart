@@ -39,7 +39,9 @@ class HistorySupabase implements HistoryService {
           'prediccion_reingreso(score_riesgo, fecha_prediccion, '
           'factor_riesgo(id_factor, variable, contribucion))',
         )
-        .eq('id_paciente', patientId);
+        .eq('id_paciente', patientId)
+        // Ties on the start date keep this order: the latest saved goes first.
+        .order('id_atencion', ascending: false);
 
     return Patient(
       id: 'pac-${patient.id}',
